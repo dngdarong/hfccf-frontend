@@ -8,6 +8,7 @@ import StatusBadge from '@/components/badges/StatusBadge.vue'
 import RolesBadge from '@/components/badges/RolesBadge.vue'
 import PermissionBadge from '@/components/badges/PermissionBadge.vue'
 import ActionsButton from '@/components/buttons/ActionsButton.vue'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -38,6 +39,11 @@ const props = defineProps({
   rowKey: {
     type: String,
     default: 'id',
+  },
+  actionStyle: {
+    type: String,
+    default: 'menu',
+    validator: (value) => ['menu', 'buttons'].includes(value),
   },
 })
 
@@ -91,6 +97,7 @@ const defaultColumns = computed(() => [
   { key: 'actions', label: t('common.table.actions'), align: 'right' },
 ])
 const resolvedColumns = computed(() => (props.columns.length ? props.columns : defaultColumns.value))
+const useButtonActions = computed(() => props.actionStyle === 'buttons')
 
 function statusType(row) {
   const value = String(row?.status ?? '').toLowerCase()
@@ -240,7 +247,37 @@ watch(
         </template>
 
         <template v-else-if="column.key === 'actions'">
+          <div v-if="useButtonActions" class="ui-data-table__row-actions">
+            <Button
+              type="button"
+              icon="pi pi-eye"
+              rounded="full"
+              variant="ghost"
+              size="sm"
+              class="ui-data-table__row-action"
+              @click="emit('view', data)"
+            />
+            <Button
+              type="button"
+              icon="pi pi-pencil"
+              rounded="full"
+              variant="ghost"
+              size="sm"
+              class="ui-data-table__row-action"
+              @click="emit('edit', data)"
+            />
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded="full"
+              variant="ghost"
+              size="sm"
+              class="ui-data-table__row-action ui-data-table__row-action--danger"
+              @click="emit('delete', data)"
+            />
+          </div>
           <ActionsButton
+            v-else
             :item="data"
             @view="emit('view', data)"
             @edit="emit('edit', data)"
@@ -264,5 +301,24 @@ watch(
   color: #fff;
   box-shadow: 0 10px 18px -14px rgba(0, 174, 239, 0.55);
 }
-</style>
 
+.ui-data-table__row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.ui-data-table__row-action {
+  width: 2.15rem;
+  height: 2.15rem;
+}
+
+.ui-data-table__row-action--danger {
+  color: #b42318;
+}
+
+.ui-data-table__row-action :deep(.p-button-icon) {
+  font-size: 0.8rem;
+}
+</style>

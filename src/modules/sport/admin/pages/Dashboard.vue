@@ -4,6 +4,7 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import StatsCards from '@/components/data-display/StatsCards.vue'
 import TournamentBanner from '@/modules/sport/admin/components/admin-dashboard/TournamentBanner.vue'
+import TournamentList from '@/modules/sport/admin/components/admin-dashboard/TournamentList.vue'
 import TournamentQuickPanels from '@/modules/sport/admin/components/admin-dashboard/TournamentQuickPanels.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import adminDashboardData from '@/mocks/sport/admin-dashboard-data.json'
@@ -53,6 +54,7 @@ const cards = computed(() => [
 ])
 
 const tournament = computed(() => adminDashboardData.tournament)
+const tournaments = computed(() => adminDashboardData.tournaments || [])
 </script>
 
 <template>
@@ -65,10 +67,16 @@ const tournament = computed(() => adminDashboardData.tournament)
         </div>
         <TournamentBanner
           :tournamentTitle="tournament.title"
-          :tournamentSubtitle="`${tournament.subtitle} � ${tournament.location}`"
+          :tournamentSubtitle="tournament.subtitle"
+          :tournamentLocation="tournament.location"
+          :tournamentMatches="tournament.matches"
+          :tournamentStatus="tournament.status"
           :actionLabel="t('sportAdminDashboard.tournamentBanner.action')"
         />
-        <TournamentQuickPanels />
+        <TournamentList :tournaments="tournaments" />
+        <div class="sport-dashboard__quick-panels">
+          <TournamentQuickPanels />
+        </div>
       </div>
     </section>
   </MainLayout>
@@ -92,9 +100,9 @@ const tournament = computed(() => adminDashboardData.tournament)
   flex-direction: column;
   gap: 1.25rem;
 }
+
+.sport-dashboard__quick-panels {
+  display: flex;
+  flex-direction: column;
+}
 </style>
-
-
-
-
-

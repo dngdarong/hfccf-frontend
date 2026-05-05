@@ -8,6 +8,7 @@ import { englishRoutes } from '@/modules/english/routes'
 import { preschoolRoutes } from '@/modules/preschool/routes'
 import { scholarshipRoutes } from '@/modules/scholarship/routes'
 import { sportRoutes } from '@/modules/sport/routes'
+import { settingsRoutes } from '@/modules/settings/routes'
 
 const routes = [
   ...authRoutes,
@@ -17,6 +18,7 @@ const routes = [
   ...preschoolRoutes,
   ...scholarshipRoutes,
   ...sportRoutes,
+  ...settingsRoutes,
   {
     path: '/:pathMatch(.*)*',
     redirect: '/module/dashboard',

@@ -25,6 +25,7 @@ const pageSize = 8
 const roleOptions = [ROLES.TEACHER_PRESCHOOL]
 const statusOptions = ['Active', 'Pending', 'Inactive', 'Suspended']
 const addTeacherLabel = computed(() => 'Add Teacher')
+const addTeacherCaption = computed(() => 'Create preschool account')
 const tableColumns = [
   { key: 'number', label: 'No.', align: 'left' },
   { key: 'user', label: 'User', align: 'left' },
@@ -120,14 +121,24 @@ function onDeleteUser(user) {
           <Button
             variant="primary"
             size="lg"
-            rounded="full"
+            rounded="xl"
             class="preschool-users-page__add-button"
             @click="goToAddTeacher"
           >
             <template #iconLeft>
-              <i class="pi pi-user-plus text-sm" aria-hidden="true" />
+              <span class="preschool-users-page__add-button-icon" aria-hidden="true">
+                <i class="pi pi-user-plus text-sm" />
+              </span>
             </template>
-            {{ addTeacherLabel }}
+            <span class="preschool-users-page__add-button-content">
+              <span class="preschool-users-page__add-button-label">{{ addTeacherLabel }}</span>
+              <span class="preschool-users-page__add-button-caption">{{ addTeacherCaption }}</span>
+            </span>
+            <span class="preschool-users-page__add-button-trailing" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8" />
+              </svg>
+            </span>
           </Button>
         </div>
 
@@ -181,16 +192,77 @@ function onDeleteUser(user) {
 }
 
 .preschool-users-page__add-button {
-  min-width: 10.5rem;
-  box-shadow: 0 18px 30px -22px rgba(0, 174, 239, 0.55);
+  min-width: 15rem;
+  justify-content: space-between;
+  padding-inline: 0.95rem 1rem;
+  box-shadow: 0 20px 36px -24px rgba(0, 174, 239, 0.58);
 }
 
-.preschool-users-page__add-button :deep(.p-button-label) {
+.preschool-users-page__add-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.preschool-users-page__add-button-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.preschool-users-page__add-button-label {
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
+.preschool-users-page__add-button-caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.84;
+}
+
+.preschool-users-page__add-button-trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+}
+
+.preschool-users-page__add-button-trailing svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.preschool-users-page__add-button :deep(.p-button-label) {
+  width: 100%;
+}
+
 .preschool-users-page__add-button :deep(.p-button-icon) {
+  margin-right: 0.75rem;
   font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  .preschool-users-page__actions {
+    justify-content: stretch;
+  }
+
+  .preschool-users-page__add-button {
+    width: 100%;
+    min-width: 0;
+  }
 }
 </style>

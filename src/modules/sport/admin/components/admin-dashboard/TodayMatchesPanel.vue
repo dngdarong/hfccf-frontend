@@ -1,6 +1,5 @@
 <script setup>
 import { useLanguage } from '@/composables/useLanguage'
-import Button from '@/components/buttons/Button.vue'
 import adminDashboardData from '@/mocks/sport/admin-dashboard-data.json'
 
 const { t } = useLanguage()
@@ -30,12 +29,6 @@ const todayMatches = adminDashboardData.todayMatches
             <span class="today-matches__time">{{ match.time }}</span>
           </div>
         </div>
-      </div>
-
-      <div class="today-matches__actions">
-        <Button variant="primary" size="md" block rounded="xl">
-          {{ t('common.actions.viewAll') }}
-        </Button>
       </div>
     </div>
   </section>
@@ -159,11 +152,7 @@ const todayMatches = adminDashboardData.todayMatches
   color: #64748b;
 }
 
-.today-matches__actions {
-  margin-top: 1.25rem;
-}
 </style>
-
 
 
 

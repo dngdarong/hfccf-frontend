@@ -1,0 +1,42 @@
+__________________Users________________
+Role     : Super Admin
+Email    : superadmin01@hfccf.org
+Password : superadmin@123
+_______________________________________
+Role     : Sport Admin
+Email    : sport.admin01@hfccf.org
+Password : sportAdmin@123
+
+Role     : Coach
+Email    : coach03@hfccf.org
+Password : Coach@123"
+_______________________________________
+Role     : Scholarship Admin
+Email    : scholarship.admin02@hfccf.org
+Password : scholarshipadmin@123
+
+Role     : Scholarship Teacher
+Email    : teacher.scholarship04@hfccf.org
+Password : teacherscholarship@123
+_______________________________________
+Role     : Preschool Admin
+Email    : preschool.admin02@hfccf.org
+Password : preschooladmin@123
+
+Role     : Preschool Teacher
+Email    : teacher.preschool03@hfccf.org
+Password : teacherpreschool@123
+_______________________________________
+Role     : English Admin
+Email    : english.admin03@hfccf.org
+Password : adminenglish@123
+
+Role     : English Teacher
+Email    : teacher.english01@hfccf.org
+Password : teacherenglish@123
+
+
+
+Prompt Note: 
+
+codex resume 019de64a-ce5a-71a0-bd32-2000d5e14f02

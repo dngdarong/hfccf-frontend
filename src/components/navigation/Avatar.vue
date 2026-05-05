@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import PrimeAvatar from 'primevue/avatar'
 import { getCurrentUser } from '@/services/auth'
 import users from '@/mocks/users.json'
@@ -21,9 +22,13 @@ const props = defineProps({
     type: String,
     default: 'online',
   },
+  to: {
+    type: [String, Object],
+    default: null,
+  },
   href: {
-    type: String,
-    default: '#profile',
+    type: [String, Object],
+    default: null,
   },
   showMeta: {
     type: Boolean,
@@ -94,6 +99,7 @@ const avatarSize = computed(() => {
   if (props.size === 'lg') return 'large'
   return 'normal'
 })
+const resolvedTo = computed(() => props.to || props.href || { name: 'profile-settings' })
 
 watch(resolvedAvatar, () => {
   hasImageError.value = false
@@ -101,8 +107,8 @@ watch(resolvedAvatar, () => {
 </script>
 
 <template>
-  <a
-    :href="props.href"
+  <RouterLink
+    :to="resolvedTo"
     class="flex items-center gap-3 rounded-2xl text-inherit no-underline transition-all duration-200 hover:-translate-y-px hover:bg-slate-100/80"
     :class="
       compact
@@ -130,7 +136,7 @@ watch(resolvedAvatar, () => {
         :class="`navbar-profile__status-dot--${status}`"
       ></div>
     </div>
-  </a>
+  </RouterLink>
 </template>
 
 <style scoped>

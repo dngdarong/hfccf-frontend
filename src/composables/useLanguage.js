@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 export function useLanguage() {
-  const { t, locale } = useI18n()
+  const { t, te, tm, locale } = useI18n()
 
   const language = computed({
     get: () => (locale.value === 'kh' ? 'KH' : 'EN'),
@@ -15,8 +15,8 @@ export function useLanguage() {
 
   return {
     t,
+    te,
+    tm,
     language,
   }
 }
-
-

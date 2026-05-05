@@ -22,7 +22,7 @@ defineProps({
     default: '',
   },
 })
-const { t, language } = useLanguage()
+const { t, te, language } = useLanguage()
 const isKh = computed(() => language.value === 'KH')
 
 function toCardKey(value) {
@@ -34,13 +34,21 @@ function toCardKey(value) {
     .replace(/[\s-]+/g, '_')
 }
 
-function translateCardText(type, value) {
-  const raw = String(value ?? '').trim()
+function translateCardText(type, card) {
+  const explicitKey = type === 'title' ? card?.titleKey : card?.labelKey
+
+  if (explicitKey && te(explicitKey)) {
+    return t(explicitKey)
+  }
+
+  const rawValue = type === 'title' ? card?.title : card?.label
+  const raw = String(rawValue ?? '').trim()
   if (!raw) return ''
+
   const key = `common.dashboardStats.cards.${toCardKey(raw)}.${type}`
-  const translated = t(key)
-  // If no translation exists, preserve source text instead of showing key.
-  return translated !== key ? translated : raw
+
+  // Avoid missing-key warnings when cards already provide display text.
+  return te(key) ? t(key) : raw
 }
 
 function accentClass(status) {
@@ -129,7 +137,7 @@ function icon(status) {
             class="m-0 text-[0.76rem] uppercase tracking-[0.06em] text-surface-500 max-sm:text-[0.7rem]"
             :class="isKh ? 'stats__kh-title' : ''"
           >
-            {{ translateCardText('title', card.title) }}
+            {{ translateCardText('title', card) }}
           </p>
           <span
             class="inline-flex h-[1.9rem] w-[1.9rem] items-center justify-center rounded-[0.58rem] border text-[var(--stats-accent)] max-[420px]:h-[1.65rem] max-[420px]:w-[1.65rem] max-[420px]:rounded-[0.5rem]"
@@ -152,7 +160,7 @@ function icon(status) {
             class="m-0 text-[0.78rem] text-surface-500 max-sm:text-[0.74rem] max-[420px]:text-[0.7rem]"
             :class="isKh ? 'stats__kh-meta' : ''"
           >
-            {{ translateCardText('label', card.label) }}
+            {{ translateCardText('label', card) }}
           </p>
           <StatusBadge :status="card.status || 'info'" size="sm" />
         </div>
@@ -191,6 +199,5 @@ function icon(status) {
   font-size: 0.8rem;
 }
 </style>
-
 
 

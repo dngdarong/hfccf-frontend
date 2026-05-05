@@ -9,6 +9,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
   title: {
     type: String,
     default: '',
@@ -38,6 +46,7 @@ const resolvedTitle = computed(() => props.title || t('common.areYouSure'))
 const resolvedMessage = computed(() => props.message || t('common.actionCannotBeUndone'))
 const resolvedConfirmText = computed(() => props.confirmText || t('common.confirm'))
 const resolvedCancelText = computed(() => props.cancelText || t('common.cancel'))
+const isLocked = computed(() => props.loading || props.disabled)
 const dialogPt = computed(() => ({
   root: { class: 'alert-question-dialog' },
   header: { class: 'alert-question-dialog__header' },
@@ -81,12 +90,14 @@ const dialogPt = computed(() => ({
 
     <template #footer>
       <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" @click="$emit('cancel')">
+        <Button type="button" variant="outline" :disabled="isLocked" @click="$emit('cancel')">
           {{ resolvedCancelText }}
         </Button>
         <Button
           type="button"
           :variant="type === 'danger' ? 'danger' : 'primary'"
+          :loading="loading"
+          :disabled="isLocked"
           @click="$emit('confirm')"
         >
           {{ resolvedConfirmText }}
@@ -181,4 +192,3 @@ const dialogPt = computed(() => ({
   }
 }
 </style>
-

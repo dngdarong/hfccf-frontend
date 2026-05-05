@@ -1,9 +1,11 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
+import ActionsButton from '@/components/buttons/ActionsButton.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import SearchFilterBar from '@/components/forms/SearchFilterBar.vue'
@@ -16,6 +18,7 @@ defineOptions({
   name: 'SportTeamsManagementPage',
 })
 
+const router = useRouter()
 const { t, language } = useLanguage()
 const searchQuery = ref('')
 const statusFilter = ref('')
@@ -34,6 +37,28 @@ const toolbarEyebrow = computed(() => t('sportTeamsManagement.toolbarEyebrow'))
 const spotlightLabel = computed(() => t('sportTeamsManagement.spotlightLabel'))
 
 const teams = ref(Array.isArray(teamsManagementData) ? [...teamsManagementData] : [])
+
+async function goToAddTeam() {
+  await router.push({ name: 'dashboard-sport-admin-teams-add' })
+}
+
+function onViewTeam(team) {
+  const id = String(team?.id || '').trim()
+  if (!id) return
+  router.push({ path: '/module/sport-admin/teams/add', query: { mode: 'view', id } })
+}
+
+function onEditTeam(team) {
+  const id = String(team?.id || '').trim()
+  if (!id) return
+  router.push({ path: '/module/sport-admin/teams/add', query: { mode: 'edit', id } })
+}
+
+function onDeleteTeam(team) {
+  const id = String(team?.id || '').trim()
+  if (!id) return
+  teams.value = teams.value.filter((item) => item.id !== id)
+}
 
 function normalize(value) {
   return String(value ?? '')
@@ -59,6 +84,10 @@ function teamInitials(name) {
       .map((part) => part.charAt(0).toUpperCase())
       .join('') || '?'
   )
+}
+
+function teamLogoSrc(team) {
+  return String(team?.logo || team?.logoUrl || team?.image || '').trim()
 }
 
 const filteredTeams = computed(() => {
@@ -166,6 +195,7 @@ const summaryCards = computed(() => [
 
 const highlightItems = computed(() => {
   const visiblePlayers = filteredTeams.value.reduce((sum, team) => sum + Number(team.players || 0), 0)
+  const visibleMatches = filteredTeams.value.reduce((sum, team) => sum + Number(team.matches || 0), 0)
   const topPoints = filteredTeams.value.reduce(
     (max, team) => Math.max(max, Number(team.points || 0)),
     0,
@@ -179,6 +209,10 @@ const highlightItems = computed(() => {
     {
       label: t('sportTeamsManagement.highlights.visiblePlayers'),
       value: visiblePlayers,
+    },
+    {
+      label: t('sportTeamsManagement.highlights.visibleMatches'),
+      value: visibleMatches,
     },
     {
       label: t('sportTeamsManagement.highlights.topPoints'),
@@ -272,6 +306,7 @@ watch(
               :label="addTeamLabel"
               icon="pi pi-plus"
               class="teams-management-page__add-button"
+              @click="goToAddTeam"
             />
           </div>
         </div>
@@ -317,7 +352,12 @@ watch(
           <Column field="name" :header="t('sportTeamsManagement.table.team')">
             <template #body="{ data }">
               <div class="flex items-center gap-3">
-                <Avatar :label="teamInitials(data.name)" shape="circle" class="teams-management-page__avatar" />
+                <Avatar
+                  :image="teamLogoSrc(data) || undefined"
+                  :label="teamLogoSrc(data) ? undefined : teamInitials(data.name)"
+                  shape="circle"
+                  class="teams-management-page__avatar"
+                />
                 <div>
                   <div class="text-[13px] font-semibold leading-5 text-surface-900 sm:text-sm">
                     {{ data.name }}
@@ -344,6 +384,12 @@ watch(
             </template>
           </Column>
 
+          <Column field="matches" :header="t('sportTeamsManagement.table.matches')">
+            <template #body="{ data }">
+              <span class="font-semibold text-slate-700">{{ data.matches || 0 }}</span>
+            </template>
+          </Column>
+
           <Column field="record" :header="t('sportTeamsManagement.table.record')">
             <template #body="{ data }">
               <div class="flex flex-col gap-1">
@@ -362,6 +408,17 @@ watch(
           <Column field="status" :header="t('common.table.status')">
             <template #body="{ data }">
               <StatusBadge :status="statusType(data.status)" :label="data.status" size="sm" />
+            </template>
+          </Column>
+
+          <Column field="actions" :header="t('common.table.actions')" header-class="text-right">
+            <template #body="{ data }">
+              <ActionsButton
+                :item="data"
+                @view="onViewTeam"
+                @edit="onEditTeam"
+                @delete="onDeleteTeam"
+              />
             </template>
           </Column>
         </DataTable>
@@ -608,9 +665,16 @@ watch(
 .teams-management-page__avatar.p-avatar {
   width: 2.75rem;
   height: 2.75rem;
+  box-shadow: 0 10px 18px -14px rgba(0, 174, 239, 0.55);
+}
+
+.teams-management-page__avatar.p-avatar:not(.p-avatar-image) {
   background: linear-gradient(135deg, var(--brand-primary-500) 0%, var(--brand-primary-700) 100%);
   color: #fff;
-  box-shadow: 0 10px 18px -14px rgba(0, 174, 239, 0.55);
+}
+
+.teams-management-page__avatar :deep(img) {
+  object-fit: cover;
 }
 
 .teams-management-page__division-chip {
@@ -645,9 +709,14 @@ watch(
 
 .teams-management-page--kh .teams-management-page__summary-caption,
 .teams-management-page--kh .teams-management-page__toolbar-text,
-.teams-management-page--kh .teams-management-page__highlight-label {
+.teams-management-page--kh .teams-management-page__highlight-label,
+.teams-management-page--kh :deep(.actions-button-menu.p-menu),
+.teams-management-page--kh :deep(.actions-button-menu .p-menu-item-link),
+.teams-management-page--kh :deep(.actions-button-menu .p-menu-item-icon) {
   font-size: 0.92rem;
   line-height: 1.65;
+  font-family:
+    'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
 }
 
 @media (max-width: 640px) {

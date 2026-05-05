@@ -6,34 +6,31 @@ import StandingsPanel from './StandingsPanel.vue'
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <LiveMatchesPanel />
-    <TodayMatchesPanel />
-    <TopScorersPanel />
-    <StandingsPanel />
-  </div>
+  <section class="quick-panels" aria-label="Tournament quick panels">
+    <div class="quick-panels__grid">
+      <LiveMatchesPanel />
+      <TodayMatchesPanel />
+      <TopScorersPanel />
+      <StandingsPanel />
+    </div>
+  </section>
 </template>
 
 <style scoped>
-.tournament-panel {
-  background: color-mix(in srgb, white 94%, transparent);
+.quick-panels {
+  position: relative;
 }
 
-.tournament-panel h3 {
-  letter-spacing: 0.04em;
+.quick-panels__grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: start;
 }
 
-.tournament-panel .flex.items-center span {
-  background: color-mix(in srgb, var(--hope-red) 65%, white);
-}
-
-.tournament-panel table th {
-  color: #94a3b8;
-}
-
-.tournament-panel table td {
-  color: #0f172a;
+@media (min-width: 1024px) {
+  .quick-panels__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>
-
-

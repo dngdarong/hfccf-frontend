@@ -60,6 +60,17 @@
           }
         },
         {
+          "id": "preschool-students",
+          "routeName": "dashboard-preschool-admin-students",
+          "labelKey": "nav.items.students",
+          "icon": "users",
+          "badgeKey": "nav.badges.admin",
+          "access": {
+            "scopes": ["admin"],
+            "domains": ["preschool"]
+          }
+        },
+        {
           "id": "preschool-classes",
           "routeName": "dashboard-preschool-admin-classes",
           "label": "Classes",
@@ -96,6 +107,17 @@
           "id": "sport-teams",
           "routeName": "dashboard-sport-admin-teams",
           "labelKey": "nav.items.teams",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff",
+          "access": {
+            "scopes": ["admin"],
+            "domains": ["sport"]
+          }
+        },
+        {
+          "id": "sport-players",
+          "routeName": "dashboard-sport-admin-players",
+          "labelKey": "nav.items.players",
           "icon": "users",
           "badgeKey": "nav.badges.staff",
           "access": {
@@ -182,6 +204,13 @@
           "badgeKey": "nav.badges.staff"
         },
         {
+          "id": "preschool-students",
+          "routeName": "dashboard-preschool-admin-students",
+          "labelKey": "nav.items.students",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
           "id": "preschool-classes",
           "routeName": "dashboard-preschool-admin-classes",
           "labelKey": "nav.items.classes",
@@ -244,6 +273,13 @@
           "id": "sport-teams",
           "routeName": "dashboard-sport-admin-teams",
           "labelKey": "nav.items.teams",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-players",
+          "routeName": "dashboard-sport-admin-players",
+          "labelKey": "nav.items.players",
           "icon": "users",
           "badgeKey": "nav.badges.staff"
         }

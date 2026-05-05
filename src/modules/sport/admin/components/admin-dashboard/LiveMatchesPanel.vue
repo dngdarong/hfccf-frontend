@@ -1,6 +1,5 @@
 <script setup>
 import { useLanguage } from '@/composables/useLanguage'
-import Button from '@/components/buttons/Button.vue'
 import adminDashboardData from '@/mocks/sport/admin-dashboard-data.json'
 
 const { t } = useLanguage()
@@ -31,12 +30,6 @@ const liveMatches = adminDashboardData.liveMatches
             {{ t('sportAdminDashboard.quickPanels.liveLabel') }}
           </span>
         </div>
-      </div>
-
-      <div class="live-matches__actions">
-        <Button variant="primary" size="md" block rounded="xl">
-          {{ t('common.actions.viewAll') }}
-        </Button>
       </div>
     </div>
   </section>
@@ -176,11 +169,7 @@ const liveMatches = adminDashboardData.liveMatches
   color: white;
 }
 
-.live-matches__actions {
-  margin-top: 1.25rem;
-}
 </style>
-
 
 
 

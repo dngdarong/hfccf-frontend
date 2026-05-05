@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
@@ -11,6 +12,7 @@ defineOptions({
 })
 
 const { t, locale } = useI18n()
+const router = useRouter()
 
 const currentLocale = computed({
   get: () => locale.value,
@@ -23,6 +25,7 @@ const currentLocale = computed({
 })
 
 const isKh = computed(() => locale.value === 'kh')
+const calendarLabel = computed(() => (isKh.value ? 'កាលវិភាគ' : 'Calendar'))
 
 const localeOptions = [
   { label: 'EN', value: 'en' },
@@ -79,6 +82,10 @@ const localePt = {
     class: '!w-7 !text-surface-500 max-[480px]:!w-6',
   },
 }
+
+function goToRoute(name) {
+  router.push({ name })
+}
 </script>
 
 <template>
@@ -128,7 +135,8 @@ const localePt = {
         rounded
         class="icon-btn max-[480px]:hidden"
         :pt="menuButtonPt"
-        aria-label="Calendar"
+        :aria-label="calendarLabel"
+        @click="goToRoute('calendar')"
       >
         <template #icon>
           <Calendar :size="18" />
@@ -143,6 +151,7 @@ const localePt = {
         class="icon-btn icon-btn--notification"
         :pt="menuButtonPt"
         :aria-label="t('common.notifications')"
+        @click="goToRoute('notifications')"
       >
         <template #icon>
           <div class="relative flex items-center justify-center">

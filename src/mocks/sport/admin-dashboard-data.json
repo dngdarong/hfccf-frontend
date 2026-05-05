@@ -3,9 +3,66 @@
     "title": "Inter-Club Summer Showcase",
     "subtitle": "Final week structure, fixtures, and broadcast-ready highlights.",
     "matches": 14,
+    "totalTeams": 28,
     "location": "Phnom Penh Sports Complex",
     "status": "Live"
   },
+  "tournaments": [
+    {
+      "id": "inter-club-summer-showcase",
+      "title": "Inter-Club Summer Showcase",
+      "subtitle": "Final week structure, fixtures, and broadcast-ready highlights.",
+      "matches": 14,
+      "totalTeams": 28,
+      "location": "Phnom Penh Sports Complex",
+      "status": "Live"
+    },
+    {
+      "id": "youth-development-cup",
+      "title": "Youth Development Cup",
+      "subtitle": "Academy squads rotate through pool-stage fixtures this weekend.",
+      "matches": 10,
+      "totalTeams": 16,
+      "location": "North Training Grounds",
+      "status": "Upcoming"
+    },
+    {
+      "id": "community-night-series",
+      "title": "Community Night Series",
+      "subtitle": "Evening fixtures with community partners and exhibition coaching sessions.",
+      "matches": 8,
+      "totalTeams": 12,
+      "location": "West Wing Arena",
+      "status": "Completed"
+    },
+    {
+      "id": "community-night-series",
+      "title": "Community Night Series",
+      "subtitle": "Evening fixtures with community partners and exhibition coaching sessions.",
+      "matches": 8,
+      "totalTeams": 12,
+      "location": "West Wing Arena",
+      "status": "Completed"
+    },
+    {
+      "id": "community-night-series",
+      "title": "Community Night Series",
+      "subtitle": "Evening fixtures with community partners and exhibition coaching sessions.",
+      "matches": 8,
+      "totalTeams": 12,
+      "location": "West Wing Arena",
+      "status": "Completed"
+    },
+    {
+      "id": "community-night-series",
+      "title": "Community Night Series",
+      "subtitle": "Evening fixtures with community partners and exhibition coaching sessions.",
+      "matches": 8,
+      "totalTeams": 12,
+      "location": "West Wing Arena",
+      "status": "Completed"
+    }
+  ],
   "cards": {
     "totalTeams": 28,
     "totalPlayers": 86,
