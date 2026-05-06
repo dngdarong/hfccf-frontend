@@ -22,11 +22,11 @@ const props = defineProps({
   },
 })
 
-defineEmits(['back', 'edit'])
+defineEmits(['edit', 'cancel'])
 
 const { t } = useI18n()
-const backLabel = computed(() => t('sportAddCoach.backToCoaches'))
 const editLabel = computed(() => t('sportAddCoach.editAction'))
+const cancelLabel = computed(() => t('common.cancel'))
 const submitLabel = computed(() =>
   t(props.isEditMode ? 'sportAddCoach.updateAction' : 'sportAddCoach.createAction'),
 )
@@ -35,14 +35,15 @@ const submitLabel = computed(() =>
 <template>
   <div class="add-coach-form-actions">
     <Button
+      v-if="isEditMode"
       type="button"
       variant="outline"
       size="md"
       rounded="xl"
       :disabled="isSubmitting"
-      @click="$emit('back')"
+      @click="$emit('cancel')"
     >
-      {{ backLabel }}
+      {{ cancelLabel }}
     </Button>
 
     <Button

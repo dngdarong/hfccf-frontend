@@ -355,8 +355,8 @@ onBeforeUnmount(() => {
               :is-submitting="isSubmitting"
               :is-view-mode="isViewMode"
               :is-edit-mode="isEditMode"
-              @back="goBackToTeams"
               @edit="goToEditMode"
+              @cancel="goBackToTeams"
             />
           </template>
         </Form>

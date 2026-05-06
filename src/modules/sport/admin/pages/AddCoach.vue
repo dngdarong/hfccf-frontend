@@ -391,8 +391,8 @@ onBeforeUnmount(() => {
               :is-submitting="isSubmitting"
               :is-view-mode="isViewMode"
               :is-edit-mode="isEditMode"
-              @back="goBackToCoaches"
               @edit="goToEditMode"
+              @cancel="goBackToCoaches"
             />
           </template>
         </Form>
@@ -421,7 +421,7 @@ onBeforeUnmount(() => {
       :show="showSuccess"
       :title="isEditMode ? t('sportAddCoach.coachUpdated') : t('sportAddCoach.coachCreated')"
       :message="isEditMode ? t('sportAddCoach.updatedMessage') : t('sportAddCoach.createdMessage')"
-      :button-text="t('sportAddCoach.backToCoaches')"
+      :button-text="t('common.cancel')"
       @close="onSuccessClose"
     />
   </MainLayout>

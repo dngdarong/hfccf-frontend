@@ -61,6 +61,7 @@ export default {
     },
   },
   success: 'Success',
+  type: 'Type',
   actionCompleted: 'Action completed successfully.',
   errorOccurred: 'Something went wrong',
   errorTryAgain: 'Please try again.',

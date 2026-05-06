@@ -49,3 +49,7 @@ This document outlines the foundational mandates for developing the HFCCF Fronte
 *   **Preschool Teacher**: `teacher.preschool03@hfccf.org` / `teacherpreschool@123`
 *   **English Admin**: `english.admin03@hfccf.org` / `adminenglish@123`
 *   **English Teacher**: `teacher.english01@hfccf.org` / `teacherenglish@123`
+
+
+
+gemini --resume 'e6c712bb-b094-4cb4-b431-f96e8f537e62' 

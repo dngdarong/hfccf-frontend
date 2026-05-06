@@ -61,6 +61,7 @@ export default {
     },
   },
   success: 'ជោគជ័យ',
+  type: 'ប្រភេទ',
   actionCompleted: 'ប្រតិបត្តិការត្រូវបានបញ្ចប់ដោយជោគជ័យ។',
   errorOccurred: 'មានបញ្ហាអ្វីមួយកើតឡើង',
   errorTryAgain: 'សូមព្យាយាមម្ដងទៀត។',

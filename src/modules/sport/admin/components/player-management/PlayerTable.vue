@@ -179,7 +179,13 @@ function onPageChange(newPage) {
       <!-- Status Column -->
       <Column field="status" :header="t('common.table.status')">
         <template #body="{ data }">
-          <StatusBadge :status="statusType(data.status)" :label="statusText(data.status)" size="sm" />
+          <!-- Label is already localized in `statusText` (player statuses are domain-owned). -->
+          <StatusBadge
+            :status="statusType(data.status)"
+            :label="statusText(data.status)"
+            :translate-label="false"
+            size="sm"
+          />
         </template>
       </Column>
 

@@ -12,6 +12,14 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  /**
+   * When true, we treat `label` as a status code and try to translate it from `common.status.*`.
+   * When false, we render `label` as-is (useful when the caller already localized the label).
+   */
+  translateLabel: {
+    type: Boolean,
+    default: true,
+  },
   size: {
     type: String,
     default: 'md',
@@ -22,7 +30,7 @@ const props = defineProps({
   },
 })
 
-const { t } = useLanguage()
+const { t, te } = useLanguage()
 
 function toStatusKey(value) {
   return String(value ?? '')
@@ -44,15 +52,17 @@ function normalizeStatus(value) {
 
 const normalizedStatus = computed(() => normalizeStatus(props.status))
 const statusLabel = computed(() => {
-  if (props.label.trim()) {
-    const key = `common.status.${toStatusKey(props.label)}`
-    const translated = t(key)
-    return translated !== key ? translated : props.label
+  const rawLabel = String(props.label || '').trim()
+  if (rawLabel) {
+    if (!props.translateLabel) return rawLabel
+
+    const key = `common.status.${toStatusKey(rawLabel)}`
+    // Avoid `[intlify] Not found ...` warnings by checking key existence first.
+    return te(key) ? t(key) : rawLabel
   }
 
   const key = `common.status.${toStatusKey(normalizedStatus.value)}`
-  const localized = t(key)
-  return localized !== key ? localized : normalizedStatus.value
+  return te(key) ? t(key) : normalizedStatus.value
 })
 
 const sizeClass = computed(() => {

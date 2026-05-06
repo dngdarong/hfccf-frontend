@@ -69,7 +69,11 @@ const inputPt = {
 <template>
   <label class="block w-full" :for="inputId">
     <span class="sr-only">{{ resolvedPlaceholder }}</span>
-    <IconField icon-position="left" class="w-full">
+    <!--
+      PrimeVue `IconField` can shrink-to-fit inside flex layouts in some screens.
+      Force it to behave like a full-width field so only the icon doesn't remain visible.
+    -->
+    <IconField icon-position="left" class="block w-full">
       <InputIcon class="pi pi-search" />
       <InputText
         :id="inputId"
@@ -98,6 +102,16 @@ const inputPt = {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+:deep(.p-iconfield) {
+  width: 100%;
+  min-width: 0; /* Allows the input to shrink properly inside flex rows. */
+}
+
+:deep(.p-iconfield .p-inputtext) {
+  width: 100%;
+  min-width: 0;
 }
 
 :deep(.p-iconfield .p-inputicon) {

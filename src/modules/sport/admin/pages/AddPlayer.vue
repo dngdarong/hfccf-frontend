@@ -6,7 +6,6 @@ import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Form from '@/components/forms/Form.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import AlertError from '@/components/alerts/AlertError.vue'
-import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import teamsManagementData from '@/mocks/sport/teams-management-data.json'
 import playersManagementData from '@/mocks/sport/players-management-data.json'
@@ -14,6 +13,7 @@ import AddPlayerFormFields from '@/modules/sport/admin/components/add-player/Add
 import AddPlayerFormActions from '@/modules/sport/admin/components/add-player/AddPlayerFormActions.vue'
 import ParentGuardianInformation from '@/modules/sport/admin/components/add-player/ParentGuardianInformation.vue'
 import DocumentsContractsUpload from '@/modules/sport/admin/components/add-player/DocumentsContractsUpload.vue'
+import PlayerChecklist from '@/modules/sport/admin/components/add-player/PlayerChecklist.vue'
 
 defineOptions({
   name: 'SportAdminAddPlayerPage',
@@ -68,9 +68,6 @@ const isKh = computed(() => language.value === 'KH')
 const profileImagePreview = ref('')
 const profileImageObjectUrl = ref('')
 
-const isDeleteOpen = ref(false)
-const isDeleting = ref(false)
-
 const mode = computed(() => {
   if (route.query.mode === 'view') return 'view'
   if (route.query.mode === 'edit' || Boolean(route.query.id)) return 'edit'
@@ -78,7 +75,6 @@ const mode = computed(() => {
 })
 const isViewMode = computed(() => mode.value === 'view')
 const isEditMode = computed(() => mode.value === 'edit')
-const isAddMode = computed(() => mode.value === 'add')
 const isFormLocked = computed(() => isSubmitting.value || isViewMode.value)
 
 // Build select options from sport team data first; fall back to player mock data if needed.
@@ -131,6 +127,43 @@ const pageSubtitle = computed(() => {
   if (isEditMode.value) return t('sportAddPlayer.updateSubtitle')
   return t('sportAddPlayer.summary')
 })
+
+const selectedTeamLabel = computed(() => form.team || t('sportAddPlayer.teamPlaceholder'))
+const selectedDivisionLabel = computed(() => form.division || t('sportAddPlayer.divisionPlaceholder'))
+const selectedStatusLabel = computed(() => playerStatusLabel(form.status))
+const selectedRegistrationStatusLabel = computed(() =>
+  playerStatusLabel(form.registrationStatus),
+)
+
+const checklistItems = computed(() => [
+  {
+    title: t('sportAddPlayer.sidebarItems.identity'),
+    text: `${selectedTeamLabel.value} • ${selectedDivisionLabel.value}`,
+  },
+  {
+    title: t('sportAddPlayer.sidebarItems.personal'),
+    text:
+      form.currentSchool.trim() || form.gradeYear.trim()
+        ? `${form.currentSchool || t('sportAddPlayer.sidebarItems.personalDetail')} • ${form.gradeYear || t('sportAddPlayer.sidebarItems.personalDetail')}`
+        : t('sportAddPlayer.sidebarItems.personalDetail'),
+  },
+  {
+    title: t('sportAddPlayer.sidebarItems.sports'),
+    text:
+      form.primaryPosition || form.registrationStatus
+        ? `${form.primaryPosition || t('sportAddPlayer.sidebarItems.sportsDetail')} • ${selectedRegistrationStatusLabel.value}`
+        : t('sportAddPlayer.sidebarItems.sportsDetail'),
+  },
+  {
+    title: t('sportAddPlayer.sidebarItems.record'),
+    text: selectedStatusLabel.value,
+  },
+])
+
+const checklistHighlightLabel = computed(() => t('sportAddPlayer.sidebarHighlightLabel'))
+const checklistHighlightValue = computed(() =>
+  isEditMode.value ? t('sportAddPlayer.sidebarHighlightEdit') : t('sportAddPlayer.sidebarHighlightAdd'),
+)
 
 function resetFeedback() {
   errorMessage.value = ''
@@ -196,13 +229,6 @@ function goToEditMode() {
   router.replace({ query: { ...route.query, mode: 'edit' } })
 }
 
-function onDelete() {
-  const id = String(route.query.id || '').trim()
-  if (!id) return
-  // Confirm destructive actions before handing off the delete to the list page.
-  isDeleteOpen.value = true
-}
-
 async function onSubmit() {
   resetFeedback()
   const message = validate()
@@ -234,23 +260,6 @@ function onSuccessClose() {
 
 function onErrorClose() {
   showError.value = false
-}
-
-function onCancelDelete() {
-  isDeleteOpen.value = false
-}
-
-function onConfirmDelete() {
-  if (isDeleting.value) return
-  isDeleting.value = true
-
-  const id = String(route.query.id || '').trim()
-  if (!id) {
-    isDeleting.value = false
-    return onCancelDelete()
-  }
-  // No persistence yet: deletion is applied by the list page via query handoff.
-  router.push({ path: playersDirectoryPath, query: { delete: id } })
 }
 
 onMounted(() => {
@@ -388,13 +397,21 @@ onBeforeUnmount(() => {
               :is-submitting="isSubmitting"
               :is-view-mode="isViewMode"
               :is-edit-mode="isEditMode"
-              :can-delete="!isAddMode && Boolean(route.query.id)"
-              @back="goBackToPlayers"
               @edit="goToEditMode"
-              @delete="onDelete"
+              @cancel="goBackToPlayers"
             />
           </template>
         </Form>
+
+        <div class="add-player-page__rail">
+          <PlayerChecklist
+            :title="t('sportAddPlayer.sidebarTitle')"
+            :description="t('sportAddPlayer.sidebarText')"
+            :items="checklistItems"
+            :highlight-label="checklistHighlightLabel"
+            :highlight-value="checklistHighlightValue"
+          />
+        </div>
       </div>
     </section>
 
@@ -414,19 +431,6 @@ onBeforeUnmount(() => {
       @close="onSuccessClose"
     />
 
-    <AlertQuestion
-      :show="isDeleteOpen"
-      :loading="isDeleting"
-      :title="t('sportAddPlayer.confirm.deleteTitle')"
-      :message="t('sportAddPlayer.confirm.deleteMessage', {
-        name: form.name?.trim() || t('sportAddPlayer.confirm.defaultName'),
-      })"
-      :confirm-text="t('common.delete')"
-      :cancel-text="t('common.cancel')"
-      type="danger"
-      @confirm="onConfirmDelete"
-      @cancel="onCancelDelete"
-    />
   </MainLayout>
 </template>
 
@@ -439,8 +443,17 @@ onBeforeUnmount(() => {
 
 .add-player-page__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.95fr);
   gap: 1rem;
+  align-items: start;
+}
+
+.add-player-page__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 1rem;
 }
 
 .add-player-page--kh :deep(form header h3),
@@ -455,5 +468,15 @@ onBeforeUnmount(() => {
 .add-player-page--kh :deep(form header p),
 .add-player-page--kh :deep(.p-dialog-content p) {
   line-height: 1.7;
+}
+
+@media (max-width: 1024px) {
+  .add-player-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .add-player-page__rail {
+    position: static;
+  }
 }
 </style>

@@ -124,6 +124,17 @@
             "scopes": ["admin"],
             "domains": ["sport"]
           }
+        },
+        {
+          "id": "sport-matches",
+          "routeName": "dashboard-sport-admin-matches",
+          "labelKey": "nav.items.matches",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff",
+          "access": {
+            "scopes": ["admin"],
+            "domains": ["sport"]
+          }
         }
       ]
     },
@@ -281,6 +292,13 @@
           "routeName": "dashboard-sport-admin-players",
           "labelKey": "nav.items.players",
           "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-matches",
+          "routeName": "dashboard-sport-admin-matches",
+          "labelKey": "nav.items.matches",
+          "icon": "reports",
           "badgeKey": "nav.badges.staff"
         }
       ]

@@ -5,6 +5,7 @@ import sportTeamsManagement from './admin/sport-teams-management'
 import sportPlayerInformation from './admin/sport-player-information'
 import sportAddPlayer from './admin/sport-add-player'
 import sportAddTeam from './admin/sport-add-team'
+import sportMatchesManagement from './admin/sport-matches-management'
 
 export default {
   ...sportAdminDashboard,
@@ -14,4 +15,5 @@ export default {
   ...sportPlayerInformation,
   ...sportAddPlayer,
   ...sportAddTeam,
+  ...sportMatchesManagement,
 }

@@ -20,18 +20,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  canDelete: {
-    type: Boolean,
-    default: false,
-  },
 })
 
-defineEmits(['back', 'edit', 'delete'])
+defineEmits(['edit', 'cancel'])
 
 const { t } = useI18n()
-const backLabel = computed(() => t('sportAddPlayer.backToPlayers'))
 const editLabel = computed(() => t('sportAddPlayer.editAction'))
-const deleteLabel = computed(() => t('sportAddPlayer.deleteAction'))
+const cancelLabel = computed(() => t('common.cancel'))
 const submitLabel = computed(() =>
   t(props.isEditMode ? 'sportAddPlayer.updateAction' : 'sportAddPlayer.createAction'),
 )
@@ -40,26 +35,15 @@ const submitLabel = computed(() =>
 <template>
   <div class="add-player-form-actions">
     <Button
+      v-if="isEditMode"
       type="button"
       variant="outline"
       size="md"
       rounded="xl"
       :disabled="isSubmitting"
-      @click="$emit('back')"
+      @click="$emit('cancel')"
     >
-      {{ backLabel }}
-    </Button>
-
-    <Button
-      v-if="canDelete"
-      type="button"
-      variant="outline"
-      size="md"
-      rounded="xl"
-      :disabled="isSubmitting"
-      @click="$emit('delete')"
-    >
-      {{ deleteLabel }}
+      {{ cancelLabel }}
     </Button>
 
     <Button
@@ -92,4 +76,3 @@ const submitLabel = computed(() =>
   display: contents;
 }
 </style>
-

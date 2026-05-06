@@ -49,6 +49,7 @@ export default {
     students: 'Students',
     teams: 'Teams',
     players: 'Players',
+    matches: 'Matches',
     classes: 'Classes',
     applications: 'Applications',
   },

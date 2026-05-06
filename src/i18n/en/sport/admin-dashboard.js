@@ -5,6 +5,7 @@ import teamsManagement from './admin/teams-management'
 import playerInformation from './admin/player-information'
 import addPlayer from './admin/add-player'
 import addTeam from './admin/add-team'
+import matchesManagement from './admin/matches-management'
 
 export default {
   ...dashboard,
@@ -14,4 +15,5 @@ export default {
   ...playerInformation,
   ...addPlayer,
   ...addTeam,
+  ...matchesManagement,
 }

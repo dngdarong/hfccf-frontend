@@ -49,6 +49,7 @@ export default {
     students: 'សិស្ស',
     teams: 'ក្រុម',
     players: 'កីឡាករ',
+    matches: 'ការប្រកួត',
     classes: 'ថ្នាក់រៀន',
     applications: 'ពាក្យស្នើសុំ',
   },
