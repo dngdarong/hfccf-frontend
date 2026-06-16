@@ -1,7 +1,11 @@
 <script setup>
+import { useLanguage } from '@/composables/useLanguage'
+
 defineOptions({
   name: 'AddTeacherIntro',
 })
+
+const { t } = useLanguage()
 
 defineProps({
   roleLabel: {
@@ -18,10 +22,8 @@ defineProps({
 <template>
   <div class="add-teacher-intro">
     <div>
-      <p class="add-teacher-intro__eyebrow">Preschool Teacher</p>
-      <p class="add-teacher-intro__summary">
-        Assign the teacher to the Preschool program and configure classroom access.
-      </p>
+      <p class="add-teacher-intro__eyebrow">{{ t('preschoolAddTeacher.introEyebrow') }}</p>
+      <p class="add-teacher-intro__summary">{{ t('preschoolAddTeacher.introText') }}</p>
     </div>
 
     <div class="add-teacher-intro__tags">

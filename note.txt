@@ -8,8 +8,8 @@ Email    : sport.admin01@hfccf.org
 Password : sportAdmin@123
 
 Role     : Coach
-Email    : coach03@hfccf.org
-Password : Coach@123"
+Email    : coach13@hfccf.org
+Password : Coach@123
 _______________________________________
 Role     : Scholarship Admin
 Email    : scholarship.admin02@hfccf.org
@@ -39,4 +39,7 @@ Password : teacherenglish@123
 
 Prompt Note: 
 
-codex resume 019de64a-ce5a-71a0-bd32-2000d5e14f02
+codex resume 019e82a2-dfd7-77d2-b5b8-110b6f27b188
+
+
+claude --resume 77ac123e-fab8-473e-b922-9543ceb867c6

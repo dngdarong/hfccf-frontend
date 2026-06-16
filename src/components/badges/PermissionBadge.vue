@@ -3,6 +3,10 @@ import { computed } from 'vue'
 import Tag from 'primevue/tag'
 import { useLanguage } from '@/composables/useLanguage'
 
+defineOptions({
+  name: 'PermissionBadge',
+})
+
 const props = defineProps({
   permission: {
     type: String,
@@ -12,19 +16,34 @@ const props = defineProps({
 
 const { t } = useLanguage()
 
-function toPermissionKey(value) {
-  return String(value ?? '')
+function normalizePermission(value) {
+  return String(value || '')
     .trim()
     .toLowerCase()
-    .replace(/[\s-]+/g, '_')
 }
 
+function toPermissionKey(value) {
+  return normalizePermission(value).replace(/[\s-]+/g, '_')
+}
+
+const normalizedPermission = computed(() =>
+  normalizePermission(props.permission),
+)
+
 const permissionLabel = computed(() => {
-  const value = String(props.permission ?? '').trim()
-  if (!value) return '-'
-  const key = `common.permission.${toPermissionKey(value)}`
+  if (!normalizedPermission.value) {
+    return '-'
+  }
+
+  const key = `common.permission.${toPermissionKey(
+    normalizedPermission.value,
+  )}`
+
   const translated = t(key)
-  return translated !== key ? translated : value
+
+  return translated && translated !== key
+    ? translated
+    : normalizedPermission.value
 })
 
 const permissionPt = {
@@ -53,5 +72,10 @@ const permissionPt = {
 </script>
 
 <template>
-  <Tag :value="permissionLabel" rounded :pt="permissionPt" />
+  <Tag
+    :value="permissionLabel"
+    :pt="permissionPt"
+    role="status"
+    aria-live="polite"
+  />
 </template>

@@ -1,0 +1,140 @@
+export const FORM_MANAGEMENT_PAGE_CARDS = [
+  {
+    key: 'dashboard',
+    icon: 'pi pi-chart-bar',
+    titleKey: 'preschoolScaffold.formManagement.cards.dashboard.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.dashboard.description',
+    fallbackDescription: 'View the module overview and jump into the most important areas.',
+    // Forms is the compatibility launcher; the canonical overview is the
+    // Preschool assessment dashboard.
+    to: { name: 'preschool-assessment-dashboard' },
+  },
+  {
+    key: 'manage',
+    icon: 'pi pi-folder-open',
+    titleKey: 'preschoolScaffold.formManagement.pages.manage.title',
+    descriptionKey: 'preschoolScaffold.formManagement.pages.manage.description',
+    fallbackDescription: 'Open the form catalog and related records.',
+    to: { name: 'dashboard-preschool-admin-forms-manage' },
+  },
+  {
+    key: 'build',
+    icon: 'pi pi-wrench',
+    titleKey: 'preschoolScaffold.formManagement.pages.build.title',
+    descriptionKey: 'preschoolScaffold.formManagement.pages.build.description',
+    fallbackDescription: 'Work on the tools used to create and refine forms.',
+    // Forms should jump straight to the canonical assessment builder. The
+    // legacy build route stays available only as a backward-compatible alias.
+    to: { name: 'preschool-assessment-form-builder' },
+  },
+  {
+    key: 'review',
+    icon: 'pi pi-chart-pie',
+    titleKey: 'preschoolScaffold.formManagement.pages.review.title',
+    descriptionKey: 'preschoolScaffold.formManagement.pages.review.description',
+    fallbackDescription: 'Review submission and reporting outputs.',
+    to: { name: 'dashboard-preschool-admin-forms-review' },
+  },
+]
+
+export const FORM_MANAGEMENT_ACTION_CARDS = [
+  {
+    key: 'dashboard',
+    group: 'overview',
+    icon: 'pi pi-chart-bar',
+    titleFallback: 'Dashboard',
+    titleKey: 'preschoolScaffold.formManagement.cards.dashboard.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.dashboard.description',
+    fallbackDescription: 'View the module overview and jump into the most important areas.',
+    to: { name: 'preschool-assessment-dashboard' },
+  },
+  {
+    key: 'forms',
+    group: 'manage',
+    icon: 'pi pi-folder-open',
+    titleFallback: 'Forms',
+    titleKey: 'preschoolScaffold.formManagement.cards.forms.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.forms.description',
+    fallbackDescription: 'Review and organize the current assessment form catalog.',
+    to: { name: 'dashboard-preschool-admin-forms-manage' },
+  },
+  {
+    key: 'new-form',
+    group: 'build',
+    icon: 'pi pi-plus-circle',
+    titleFallback: 'New Form',
+    titleKey: 'preschoolScaffold.formManagement.cards.newForm.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.newForm.description',
+    fallbackDescription: 'Create a new form for a workflow or data collection flow.',
+    to: { name: 'preschool-assessment-form-builder' },
+  },
+  {
+    key: 'submissions',
+    group: 'review',
+    icon: 'pi pi-inbox',
+    titleFallback: 'Submissions',
+    titleKey: 'preschoolScaffold.formManagement.cards.submissions.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.submissions.description',
+    fallbackDescription: 'Track submissions and monitor their processing status.',
+    to: { name: 'dashboard-preschool-admin-forms-review' },
+  },
+  {
+    key: 'wizard',
+    group: 'build',
+    icon: 'pi pi-sparkles',
+    titleFallback: 'Wizard',
+    titleKey: 'preschoolScaffold.formManagement.cards.wizard.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.wizard.description',
+    fallbackDescription: 'Build forms step by step with guided assistance.',
+    to: { name: 'preschool-assessment-form-builder' },
+  },
+  {
+    key: 'scoring',
+    group: 'build',
+    icon: 'pi pi-sliders-h',
+    titleFallback: 'Scoring',
+    titleKey: 'preschoolScaffold.formManagement.cards.scoring.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.scoring.description',
+    fallbackDescription: 'Define and manage scoring rules for the active form.',
+    to: { name: 'preschool-assessment-form-builder' },
+  },
+  {
+    key: 'print-designer',
+    group: 'build',
+    icon: 'pi pi-print',
+    titleFallback: 'Print Designer',
+    titleKey: 'preschoolScaffold.formManagement.cards.printDesigner.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.printDesigner.description',
+    fallbackDescription: 'Arrange print layouts and present forms cleanly.',
+    to: { name: 'preschool-assessment-form-builder' },
+  },
+  {
+    key: 'reports',
+    group: 'review',
+    icon: 'pi pi-chart-pie',
+    titleFallback: 'Reports',
+    titleKey: 'preschoolScaffold.formManagement.cards.reports.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.reports.description',
+    fallbackDescription: 'View summary data and reports for forms.',
+    to: { name: 'preschool-assessment-reports' },
+  },
+  {
+    key: 'audit-logs',
+    group: 'manage',
+    icon: 'pi pi-history',
+    titleFallback: 'Audit Logs',
+    titleKey: 'preschoolScaffold.formManagement.cards.auditLogs.title',
+    descriptionKey: 'preschoolScaffold.formManagement.cards.auditLogs.description',
+    fallbackDescription: 'Review activity and the history of changes.',
+    to: { name: 'dashboard-preschool-admin-lifecycle-audit' },
+  },
+]
+
+export function groupFormManagementActionCards(cards = FORM_MANAGEMENT_ACTION_CARDS) {
+  return {
+    manage: cards.filter((card) => card.group === 'manage'),
+    build: cards.filter((card) => card.group === 'build'),
+    review: cards.filter((card) => card.group === 'review'),
+    overview: cards.filter((card) => card.group === 'overview'),
+  }
+}

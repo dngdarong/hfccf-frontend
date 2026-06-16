@@ -3,10 +3,9 @@
  * GoalEventRow
  * Single editable goal event row. It never mutates the event prop directly.
  */
-import { ref } from 'vue'
+import { computed } from 'vue'
 import InputText from 'primevue/inputtext'
-import Checkbox from 'primevue/checkbox'
-import AutoComplete from 'primevue/autocomplete'
+import Select from 'primevue/select'
 import Button from '@/components/buttons/Button.vue'
 
 defineOptions({
@@ -34,14 +33,15 @@ const props = defineProps({
 
 const emit = defineEmits(['update', 'remove'])
 
-const items = ref([])
-
-function search(event) {
-  // Simulated search logic from example: generates 10 dummy items based on query
-  const query = String(event.query || '')
-  const base = [...Array(10).keys()]
-  items.value = query ? base.map((i) => `${query} ${i + 1}`) : base.map((i) => `Player ${i + 1}`)
-}
+const eventTypeOptions = computed(() => [
+  { value: 'goal', label: 'Goal' },
+  { value: 'own_goal', label: 'Own Goal' },
+  { value: 'yellow_card', label: 'Yellow Card' },
+  { value: 'red_card', label: 'Red Card' },
+  { value: 'substitution', label: 'Substitution' },
+  { value: 'penalty_goal', label: 'Penalty Goal' },
+  { value: 'penalty_missed', label: 'Penalty Missed' },
+])
 
 function updateField(field, value) {
   emit('update', {
@@ -62,15 +62,11 @@ function onMinuteUpdate(val) {
   <div class="goal-event-row">
     <div class="goal-event-row__field">
       <span class="goal-event-row__label">{{ labels.playerName }}</span>
-      <AutoComplete
+      <InputText
         :model-value="event.playerName"
-        dropdown
-        :suggestions="items"
         :placeholder="placeholders.playerName"
         class="w-full"
-        input-class="w-full"
         :disabled="readonly"
-        @complete="search"
         @update:model-value="updateField('playerName', $event)"
       />
     </div>
@@ -88,17 +84,15 @@ function onMinuteUpdate(val) {
 
     <div class="goal-event-row__field">
       <span class="goal-event-row__label">{{ labels.goalTypes }}</span>
-      <div class="flex h-11 flex-wrap items-center gap-4">
-        <div v-for="type in ['Red', 'Yellow', 'Green']" :key="type" class="flex items-center gap-2">
-          <Checkbox
-            :model-value="event.goalTypes"
-            :value="type"
-            :disabled="readonly"
-            @update:model-value="updateField('goalTypes', $event)"
-          />
-          <span class="text-[0.68rem] font-bold uppercase tracking-wider text-slate-500">{{ type }}</span>
-        </div>
-      </div>
+      <Select
+        :model-value="event.eventType"
+        :options="eventTypeOptions"
+        option-label="label"
+        option-value="value"
+        :disabled="readonly"
+        class="w-full"
+        @update:model-value="updateField('eventType', $event)"
+      />
     </div>
 
     <Button

@@ -1,0 +1,33 @@
+export default {
+  pageTitle: 'User directory',
+  summary: 'Filter, search, and manage system accounts with clarity.',
+  addUser: 'Add User',
+  searchPlaceholder: 'Search users by name, email, role, or permission',
+  table: {
+    empty: 'No users match your current filters.',
+  },
+  loadingUsers: 'Loading users...',
+  manageAdmins: {
+    title: 'Manage Users',
+    summary: 'Review all system users, filter access, and manage accounts.',
+    addButton: 'Add User',
+    searchPlaceholder: 'Search by name, email, role, status, or permission',
+    tableEmpty: 'No user accounts match your current filters.',
+    loading: 'Loading user accounts...',
+    toolbarNote: 'Focused on all system users.',
+    accountsInView: '{count} user accounts in view',
+    removeSuccess: 'User account removed successfully.',
+    metrics: {
+      total: 'Total users',
+      active: 'Active now',
+      pending: 'Pending approvals',
+      alerts: 'Security flags',
+      activeLabel: 'Across user accounts',
+      pendingLabel: 'Awaiting review',
+      alertsLabel: 'Needs attention',
+    },
+  },
+  deleteConfirmTitle: 'Delete user?',
+  deleteConfirmText: 'Delete',
+  deleteConfirmMessage: 'Are you sure you want to delete {name}?',
+}

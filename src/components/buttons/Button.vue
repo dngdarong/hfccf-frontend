@@ -1,4 +1,20 @@
 <script setup>
+/**
+ * UiButton
+ * --------------------------------------------------------------------------
+ * Shared button wrapper around PrimeVue Button.
+ *
+ * Features:
+ * - Project button variants
+ * - Standardized sizes
+ * - Loading state
+ * - Disabled state
+ * - Optional full-width block mode
+ * - Left/right icon slots
+ * - PrimeVue pass-through styling
+ * --------------------------------------------------------------------------
+ */
+
 import { computed, useAttrs, useSlots } from 'vue'
 import PrimeButton from 'primevue/button'
 import { useLanguage } from '@/composables/useLanguage'
@@ -9,67 +25,117 @@ defineOptions({
 })
 
 const props = defineProps({
+  /**
+   * Visual button style.
+   */
   variant: {
     type: String,
     default: 'primary',
     validator: (value) =>
       ['primary', 'secondary', 'outline', 'ghost', 'danger', 'success'].includes(value),
   },
+
+  /**
+   * Button size.
+   */
   size: {
     type: String,
     default: 'md',
     validator: (value) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(value),
   },
+
+  /**
+   * Native button type.
+   */
   type: {
     type: String,
     default: 'button',
+    validator: (value) => ['button', 'submit', 'reset'].includes(value),
   },
+
+  /**
+   * Shows PrimeVue loading spinner.
+   */
   loading: {
     type: Boolean,
     default: false,
   },
+
+  /**
+   * Disables button interaction.
+   */
   disabled: {
     type: Boolean,
     default: false,
   },
+
+  /**
+   * Makes button full width.
+   */
   block: {
     type: Boolean,
     default: false,
   },
+
+  /**
+   * Border radius size.
+   */
   rounded: {
     type: String,
     default: 'xl',
+    validator: (value) => ['md', 'lg', 'xl', 'full'].includes(value),
   },
 })
 
-defineEmits(['click'])
+const emit = defineEmits(['click'])
 
 const attrs = useAttrs()
 const slots = useSlots()
 const { t } = useLanguage()
 
+/**
+ * PrimeVue severity fallback.
+ * Most colors are controlled by custom Tailwind classes below.
+ */
 const severity = computed(() => {
-  if (props.variant === 'secondary') return 'success'
   if (props.variant === 'danger') return 'danger'
-  if (props.variant === 'success') return 'success'
+  if (props.variant === 'secondary' || props.variant === 'success') return 'success'
+
   return 'info'
 })
 
+/**
+ * Radius classes.
+ */
 const roundedClass = computed(() => {
-  if (props.rounded === 'full') return 'rounded-full'
-  if (props.rounded === 'md') return 'rounded-md'
-  if (props.rounded === 'lg') return 'rounded-lg'
-  return 'rounded-xl'
+  const classes = {
+    md: 'rounded-md',
+    lg: 'rounded-lg',
+    xl: 'rounded-xl',
+    full: 'rounded-full',
+  }
+
+  return classes[props.rounded] || classes.xl
 })
 
+/**
+ * Size classes.
+ */
 const sizeClass = computed(() => {
-  if (props.size === 'xs') return '!min-h-8 !px-3 !py-1.5 !text-xs !gap-1.5'
-  if (props.size === 'sm') return '!min-h-9.5 !px-3.5 !py-2 !text-sm !gap-2'
-  if (props.size === 'lg') return '!min-h-12 !px-5.5 !py-3.5 !text-base !gap-2.5'
-  if (props.size === 'xl') return '!min-h-13.5 !px-6.5 !py-4 !text-[1.06rem] !gap-3'
-  return '!min-h-11 !px-4.5 !py-2.5 !text-sm !gap-2'
+  const classes = {
+    xs: '!min-h-8 !px-3 !py-1.5 !text-xs !gap-1.5',
+    sm: '!min-h-9.5 !px-3.5 !py-2 !text-sm !gap-2',
+    md: '!min-h-11 !px-4.5 !py-2.5 !text-sm !gap-2',
+    lg: '!min-h-12 !px-5.5 !py-3.5 !text-base !gap-2.5',
+    xl: '!min-h-13.5 !px-6.5 !py-4 !text-[1.06rem] !gap-3',
+  }
+
+  return classes[props.size] || classes.md
 })
 
+/**
+ * Variant color classes.
+ */
 const variantClass = computed(() => {
   if (props.variant === 'secondary' || props.variant === 'success') {
     return [
@@ -132,6 +198,9 @@ const variantClass = computed(() => {
   ]
 })
 
+/**
+ * Final root button classes.
+ */
 const buttonClass = computed(() => {
   const classes = [
     'ui-button',
@@ -154,18 +223,46 @@ const buttonClass = computed(() => {
     ...variantClass.value,
   ]
 
-  if (props.block) classes.push('w-full')
+  if (props.block) {
+    classes.push('w-full')
+  }
+
   return classes
 })
 
-const loadingLabel = computed(() => t('common.loading'))
+/**
+ * Text shown when button is loading and no slot content is passed.
+ */
+const loadingLabel = computed(() => t('common.states.loading'))
+
+/**
+ * PrimeVue pass-through style config.
+ */
 const passthrough = computed(() => ({
-  root: { class: buttonClass.value },
-  loadingIcon: { class: 'ui-button__spinner !text-current' },
+  root: {
+    class: buttonClass.value,
+  },
+  loadingIcon: {
+    class: 'ui-button__spinner !text-current',
+  },
   label: {
-    class: props.loading && !slots.default ? '' : 'ui-button__label inline-flex items-center justify-center whitespace-nowrap',
+    class:
+      props.loading && !slots.default
+        ? ''
+        : 'ui-button__label inline-flex items-center justify-center whitespace-nowrap',
   },
 }))
+
+/**
+ * Emit click only when the button is interactive.
+ */
+function handleClick(event) {
+  if (props.disabled || props.loading) {
+    return
+  }
+
+  emit('click', event)
+}
 </script>
 
 <template>
@@ -178,22 +275,34 @@ const passthrough = computed(() => ({
     :loading="loading"
     :disabled="disabled || loading"
     :pt="passthrough"
-    @click="$emit('click', $event)"
+    @click="handleClick"
   >
+    <!-- Left icon slot -->
     <template v-if="$slots.iconLeft && !loading" #icon>
       <slot name="iconLeft" />
     </template>
 
+    <!-- Button label/content -->
     <template v-if="$slots.default">
       <slot />
     </template>
+
+    <!-- Fallback loading text when no default content exists -->
     <template v-else-if="loading">
       {{ loadingLabel }}
+    </template>
+
+    <!-- Right icon slot -->
+    <template v-if="$slots.iconRight && !loading">
+      <slot name="iconRight" />
     </template>
   </PrimeButton>
 </template>
 
 <style scoped>
+/**
+ * Keep PrimeVue icon size aligned with custom button text.
+ */
 :deep(.ui-button.p-button .p-button-icon) {
   font-size: 0.95em;
 }

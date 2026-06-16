@@ -39,6 +39,8 @@ export default {
       badge: 'Tournament Banner',
       title: 'No Tournament Selected',
       subtitle: 'Load data from JSON to see active tournament context.',
+      location: 'Location',
+      status: 'Status',
       action: 'View Tournament',
     },
   },

@@ -1,0 +1,88 @@
+export default {
+  sportPlayerLifecycle: {
+    coachRoster: {
+      title: 'Team Roster',
+      subtitle: 'Manage assigned players, availability, and membership history for your team.',
+      panelTitle: 'Current roster',
+      summary: '{players} players • {memberships} membership records',
+    },
+    adminLifecycle: {
+      title: 'Player Lifecycle Management',
+      subtitle: 'Review player status, discipline, injury, and history across the Sport module.',
+      panelTitle: 'Lifecycle review',
+    },
+    common: {
+      selectTeam: 'Select team',
+      selectPlayer: 'Select player',
+      player: 'Player',
+      team: 'Team',
+      jersey: 'Jersey',
+      position: 'Position',
+      approval: 'Approval',
+      rosterStatus: 'Roster status',
+      membershipStatus: 'Membership status',
+      notes: 'Notes',
+      actions: 'Actions',
+    },
+    statuses: {
+      active: 'Active',
+      injured: 'Injured',
+      suspended: 'Suspended',
+      inactive: 'Inactive',
+      released: 'Released',
+      graduated: 'Graduated',
+      archived: 'Archived',
+    },
+    approvals: {
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+    },
+    filters: {
+      status: 'Filter by status',
+      approval: 'Filter by approval',
+      allStatuses: 'All statuses',
+      allApprovals: 'All approvals',
+    },
+    actions: {
+      addToRoster: 'Add to roster',
+      history: 'History',
+      active: 'Activate',
+      injured: 'Mark injured',
+      suspended: 'Suspend',
+      released: 'Release',
+      archive: 'Archive',
+    },
+    history: {
+      title: 'Membership history',
+      player: 'Player',
+      joinedAt: 'Joined at',
+      leftAt: 'Left at',
+    },
+    membership: {
+      active: 'Active membership',
+      inactive: 'Inactive membership',
+    },
+    eligibility: {
+      title: 'Eligibility',
+      rosterLocked: 'This player cannot be changed while archived or released.',
+      activeMembership: 'This player already has an active team membership.',
+      approvalRequired: 'Player approval is required before roster assignment.',
+    },
+    confirmations: {
+      archive: 'Archive this player?',
+      release: 'Release this player?',
+      injured: 'Mark this player as injured?',
+      suspended: 'Suspend this player?',
+    },
+    feedback: {
+      updated: 'Player lifecycle updated successfully.',
+      rosterUpdated: 'Roster membership updated successfully.',
+      historyLoaded: 'Player history loaded successfully.',
+    },
+    statusNotes: {
+      coachChange: 'Coach roster update.',
+      adminChange: 'Admin lifecycle update.',
+    },
+  },
+}

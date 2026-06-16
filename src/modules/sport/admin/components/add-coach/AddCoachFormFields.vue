@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AddAdminProfileImageField from '@/modules/super-admin/components/admin-management/AddAdminProfileImageField.vue'
 import AddAdminIdentityFields from '@/modules/super-admin/components/admin-management/AddAdminIdentityFields.vue'
-import AddAdminPermissionsField from '@/modules/super-admin/components/admin-management/AddAdminPermissionsField.vue'
+import RolePermissionsPreview from '@/modules/super-admin/components/add-admin/RolePermissionsPreview.vue'
 import AddAdminPasswordFields from '@/modules/super-admin/components/admin-management/AddAdminPasswordFields.vue'
 
 defineOptions({
@@ -20,10 +20,6 @@ defineProps({
     default: () => [],
   },
   statusOptions: {
-    type: Array,
-    default: () => [],
-  },
-  permissionOptions: {
     type: Array,
     default: () => [],
   },
@@ -95,7 +91,6 @@ const emit = defineEmits([
   'update:confirmPassword',
   'profile-image-change',
   'profile-image-remove',
-  'toggle-permission',
   'toggle-password',
   'toggle-confirm-password',
 ])
@@ -163,14 +158,10 @@ const placeholders = computed(() => ({
       @update:status="emit('update:status', $event)"
     />
 
-    <AddAdminPermissionsField
+    <RolePermissionsPreview
       class="add-coach-form-fields__field add-coach-form-fields__field--full"
-      :title="labels.permissions"
+      :role="role"
       :permissions="permissions"
-      :options="permissionOptions"
-      :disabled="isLocked"
-      :permission-label="permissionLabel"
-      @toggle="emit('toggle-permission', $event)"
     />
 
     <AddAdminPasswordFields

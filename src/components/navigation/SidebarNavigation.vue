@@ -3,12 +3,25 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SidebarLink from '@/components/navigation/SidebarLink.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import sidebarNavData from '@/data/sidebar-nav.json'
+import sidebarNavData from '@/data/sidebar'
 import HomeIcon from '@/assets/icons/Home.vue'
+import CalendarIcon from '@/assets/icons/Calendar.vue'
+import AttendanceIcon from '@/assets/icons/Attendance.vue'
+import ClassIcon from '@/assets/icons/Class.vue'
+import EnrollmentsIcon from '@/assets/icons/Enrollments.vue'
+import FormsIcon from '@/assets/icons/Forms.vue'
+import GovernanceIcon from '@/assets/icons/Governance.vue'
+import HealthIcon from '@/assets/icons/Health.vue'
+import InventoryIcon from '@/assets/icons/Inventory.vue'
+import PaymentsIcon from '@/assets/icons/Payments.vue'
+import PerformanceIcon from '@/assets/icons/Performance.vue'
+import NotificationIcon from '@/assets/icons/Notification.vue'
 import UsersIcon from '@/assets/icons/Users.vue'
 import ReportsIcon from '@/assets/icons/Reports.vue'
-import { getCurrentUser } from '@/services/auth'
+import SettingsIcon from '@/assets/icons/Settings.vue'
+import TournamentsIcon from '@/assets/icons/Tournaments.vue'
 import { buildSidebarSections } from '@/components/navigation/sidebarNavigation'
+import { useUserStore } from '@/store/userStore'
 
 defineOptions({
   name: 'SidebarNavigation',
@@ -24,17 +37,31 @@ defineProps({
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
+const userStore = useUserStore()
 // Map icon keys from JSON config to concrete Vue components.
 const iconByName = {
   home: HomeIcon,
+  calendar: CalendarIcon,
+  attendance: AttendanceIcon,
+  class: ClassIcon,
+  enrollments: EnrollmentsIcon,
+  forms: FormsIcon,
+  governance: GovernanceIcon,
+  health: HealthIcon,
+  inventory: InventoryIcon,
+  payments: PaymentsIcon,
+  performance: PerformanceIcon,
+  notification: NotificationIcon,
   info: UsersIcon,
   users: UsersIcon,
   reports: ReportsIcon,
+  settings: SettingsIcon,
+  tournaments: TournamentsIcon,
 }
 
 const currentPath = computed(() => route.path)
 const currentRouteName = computed(() => String(route.name || ''))
-const currentUser = computed(() => getCurrentUser() || null)
+const currentUser = computed(() => userStore.currentUser || null)
 const SECTION_STATE_STORAGE_KEY = 'sidebar-navigation-section-state'
 const sectionStateById = ref({})
 const navigationSections = computed(() => {

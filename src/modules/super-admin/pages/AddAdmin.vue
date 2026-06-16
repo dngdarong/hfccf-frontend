@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, toRef } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
@@ -8,284 +8,166 @@ import Form from '@/components/forms/Form.vue'
 import Button from '@/components/buttons/Button.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import AlertError from '@/components/alerts/AlertError.vue'
-import { ROLES } from '@/constants/roles'
-import { mapUser } from '@/services/mappers/userMapper'
-import usersMock from '@/mocks/users.json'
 import AdminSummaryCards from '@/modules/super-admin/components/admin-management/AdminSummaryCards.vue'
 import AdminChecklistPanel from '@/modules/super-admin/components/admin-management/AdminChecklistPanel.vue'
 import AddAdminProfileImageField from '@/modules/super-admin/components/admin-management/AddAdminProfileImageField.vue'
 import AddAdminIdentityFields from '@/modules/super-admin/components/admin-management/AddAdminIdentityFields.vue'
-import AddAdminPermissionsField from '@/modules/super-admin/components/admin-management/AddAdminPermissionsField.vue'
+import AddAdminBioField from '@/modules/super-admin/components/admin-management/AddAdminBioField.vue'
 import AddAdminPasswordFields from '@/modules/super-admin/components/admin-management/AddAdminPasswordFields.vue'
+import RolePermissionsPreview from '@/modules/super-admin/components/add-admin/RolePermissionsPreview.vue'
+import { findAdminUserById } from '@/modules/super-admin/services/adminUsersApi'
+import { useAddAdminForm } from '@/modules/super-admin/composables/useAddAdminForm'
+import { useAddAdminAvatar } from '@/modules/super-admin/composables/useAddAdminAvatar'
+import { roleOptions, statusOptions, useAddAdminOptions } from '@/modules/super-admin/composables/useAddAdminOptions'
 
 defineOptions({
-  name: 'AddAdminPage',
+  name: 'AddUserPage',
 })
 
-const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 
-const roleOptions = [
-  ROLES.ADMIN_ENGLISH,
-  ROLES.ADMIN_PRESCHOOL,
-  ROLES.ADMIN_SCHOLARSHIP,
-  ROLES.ADMIN_SPORT,
-  ROLES.SUPER_ADMIN,
-]
-const statusOptions = ['active', 'pending', 'inactive', 'suspended']
-const permissionOptions = ['manage_users', 'view_reports', 'manage_programs', 'approve_requests']
-const allowedProfileImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const maxProfileImageSizeBytes = 2 * 1024 * 1024
+// ─── composables ──────────────────────────────────────────────────────────────
 
-const form = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  role: roleOptions[0],
-  permissions: [],
-  status: statusOptions[0],
-  password: '',
-  confirmPassword: '',
-  profileImage: null,
+const {
+  form,
+  isSubmitting,
+  errorMessage,
+  showSuccess,
+  showError,
+  isPasswordVisible,
+  isConfirmPasswordVisible,
+  isEditMode,
+  editingUserId,
+  resolvedText,
+  togglePasswordVisibility,
+  toggleConfirmPasswordVisibility,
+  onSubmit,
+  onCancel,
+  onSuccessClose,
+  onErrorClose,
+  populateFromUser,
+} = useAddAdminForm()
+
+const {
+  profileImagePreview,
+  profileImageFallbackLabel,
+  initFromUser,
+  changeProfileImage,
+  removeProfileImage,
+} = useAddAdminAvatar({ form })
+
+const {
+  rolePermissions,
+  rolePermissionsLoading,
+  statusLabel,
+  roleLabel,
+} = useAddAdminOptions({ roleRef: toRef(form, 'role') })
+
+// ─── initialization ───────────────────────────────────────────────────────────
+
+onMounted(async () => {
+  if (!isEditMode.value) {
+    const requestedRole = String(route.query.role || '').trim()
+    if (roleOptions.includes(requestedRole)) {
+      form.role = requestedRole
+    }
+    return
+  }
+
+  const found = await findAdminUserById(editingUserId.value)
+  if (!found) return
+  populateFromUser(found)
+  initFromUser(found.avatar)
 })
 
-const isSubmitting = ref(false)
-const errorMessage = ref('')
-const showSuccess = ref(false)
-const showError = ref(false)
-const isPasswordVisible = ref(false)
-const isConfirmPasswordVisible = ref(false)
-const profileImagePreview = ref('')
+// ─── avatar handler (bridges avatar composable with page error state) ─────────
 
-const isEditMode = computed(() => route.query.mode === 'edit' || Boolean(route.query.id))
-
-function resolvedText(key, fallback) {
-  const translated = t(key)
-  return translated !== key ? translated : fallback
+async function onProfileImageChange(event) {
+  const error = await changeProfileImage(event)
+  if (error) {
+    errorMessage.value = error
+    showError.value = true
+  }
 }
 
+// ─── page text ────────────────────────────────────────────────────────────────
+
 const pageTitle = computed(() =>
-  isEditMode.value ? resolvedText('users.addAdmin.updateTitle', 'Update Admin') : t('users.addAdmin.title'),
+  isEditMode.value
+    ? resolvedText('users.addAdmin.updateTitle', 'Update User')
+    : resolvedText('users.addAdmin.title', 'Add User'),
 )
 
 const pageSubtitle = computed(() =>
   isEditMode.value
     ? resolvedText(
         'users.addAdmin.updateSubtitle',
-        'Update the admin profile, permissions, and account security details.',
+        'Update the user profile, role-driven permissions, and account security details.',
       )
-    : t('users.addAdmin.summary'),
+    : resolvedText(
+        'users.addAdmin.summary',
+        'Create a new system account, choose a role, and review the automatically assigned permissions before saving.',
+      ),
 )
 
-const resolvedFormDescription = computed(() => t('users.addAdmin.formDescription'))
+const resolvedFormDescription = computed(() =>
+  resolvedText(
+    'users.addAdmin.formDescription',
+    'Use the profile details, role selection, and permission preview below to create the account.',
+  ),
+)
 
-function statusLabel(status) {
-  const key = `common.status.${String(status || '').replace(/[\s-]+/g, '_').toLowerCase()}`
-  const translated = t(key)
-  return translated !== key ? translated : String(status || '')
-}
+const selectedRoleDescription = computed(() => roleLabel(form.role))
 
-function roleLabel(value) {
-  const key = `common.role.${String(value || '').replace(/[\s-]+/g, '_').toLowerCase()}`
-  const translated = t(key)
-  return translated !== key ? translated : String(value || '')
-}
-
-function resetFeedback() {
-  errorMessage.value = ''
-  showError.value = false
-}
-
-function togglePasswordVisibility() {
-  isPasswordVisible.value = !isPasswordVisible.value
-}
-
-function toggleConfirmPasswordVisibility() {
-  isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value
-}
-
-function validateForm() {
-  if (!form.name.trim()) return t('users.addAdmin.validation.fullNameRequired')
-  if (!form.email.trim()) return t('users.addAdmin.validation.emailRequired')
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return t('users.addAdmin.validation.emailInvalid')
-  if (!form.role) return t('users.addAdmin.validation.roleRequired')
-  if (!form.permissions.length) return t('users.addAdmin.validation.permissionsRequired')
-  if (!form.status) return t('users.addAdmin.validation.statusRequired')
-  if (form.password.length < 6) return t('users.addAdmin.validation.passwordLength')
-  if (form.password !== form.confirmPassword) return t('users.addAdmin.validation.passwordMismatch')
-  return ''
-}
-
-function hasPermission(permission) {
-  return form.permissions.includes(permission)
-}
-
-function togglePermission(permission) {
-  if (hasPermission(permission)) {
-    form.permissions = form.permissions.filter((value) => value !== permission)
-    return
-  }
-  form.permissions = [...form.permissions, permission]
-}
-
-function permissionLabel(value) {
-  const normalized = String(value ?? '').trim().toLowerCase()
-  const permissionKeyMap = {
-    manage_users: 'users:write',
-    view_reports: 'reports:read',
-    manage_programs: 'programs:write',
-  }
-
-  if (normalized === 'approve_requests') {
-    return t('users.addAdmin.permissionLabels.approveRequests')
-  }
-
-  const mappedPermissionKey = permissionKeyMap[normalized] || normalized
-  const key = `common.permission.${mappedPermissionKey}`
-  const translated = t(key)
-  if (translated !== key) return translated
-
-  return String(value ?? '')
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-}
-
-function onProfileImageChange(event) {
-  const [file] = event?.target?.files || []
-  if (!file) return
-
-  if (!allowedProfileImageTypes.includes(file.type)) {
-    errorMessage.value = t('users.addAdmin.validation.imageType')
-    showError.value = true
-    return
-  }
-
-  if (file.size > maxProfileImageSizeBytes) {
-    errorMessage.value = t('users.addAdmin.validation.imageSize')
-    showError.value = true
-    return
-  }
-
-  if (profileImagePreview.value) {
-    URL.revokeObjectURL(profileImagePreview.value)
-  }
-  form.profileImage = file
-  profileImagePreview.value = URL.createObjectURL(file)
-}
-
-function removeProfileImage() {
-  if (profileImagePreview.value) {
-    URL.revokeObjectURL(profileImagePreview.value)
-  }
-  profileImagePreview.value = ''
-  form.profileImage = null
-}
-
-async function onSubmit() {
-  resetFeedback()
-  const validationError = validateForm()
-
-  if (validationError) {
-    errorMessage.value = validationError
-    showError.value = true
-    return
-  }
-
-  isSubmitting.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 700))
-    showSuccess.value = true
-  } catch {
-    errorMessage.value = isEditMode.value
-      ? t('users.addAdmin.validation.updateFailed')
-      : t('users.addAdmin.validation.createFailed')
-    showError.value = true
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-async function onCancel() {
-  await router.push('/module/super-admin/users/manage')
-}
-
-async function onSuccessClose() {
-  showSuccess.value = false
-  await router.push('/module/super-admin/users/manage')
-}
-
-function onErrorClose() {
-  showError.value = false
-}
-
-onMounted(() => {
-  if (!isEditMode.value) return
-  const id = String(route.query.id || '')
-  const found = mapUser(usersMock.find((item) => String(item.id) === id) || usersMock[0])
-  if (!found) return
-  form.name = found.name || found.username || ''
-  form.email = found.email || ''
-  form.phone = found.phone || ''
-  form.role = found.role || roleOptions[0]
-  form.permissions = Array.isArray(found.permissions) ? [...found.permissions] : []
-  const normalizedStatus = String(found.status || '')
-  const matchedStatus = statusOptions.find(
-    (status) => status.toLowerCase() === normalizedStatus.toLowerCase(),
-  )
-  form.status = matchedStatus || statusOptions[0]
-})
-
-onBeforeUnmount(() => {
-  if (profileImagePreview.value) {
-    URL.revokeObjectURL(profileImagePreview.value)
-  }
-})
+// ─── summary cards & checklist ────────────────────────────────────────────────
 
 const formSummaryCards = computed(() => {
-  const selectedRole = roleLabel(form.role)
-  const permissionCount = form.permissions.length
+  const permissionCount = rolePermissions.value.length
   const securityStatus =
-    form.password.length >= 6 && form.confirmPassword === form.password ? 'success' : 'warning'
+    isEditMode.value || (form.password.length >= 6 && form.confirmPassword === form.password)
+      ? 'success'
+      : 'warning'
 
   return [
     {
       id: 'role-scope',
-      title: t('users.addAdmin.roleScope'),
-      value: selectedRole,
-      label: t('users.addAdmin.programAccess'),
+      title: resolvedText('users.addAdmin.roleScope', 'Role scope'),
+      value: selectedRoleDescription.value,
+      label: resolvedText('users.addAdmin.programAccess', 'Account access'),
       status: 'info',
       statusLabel: statusLabel('info'),
       surfaceClass: 'bg-cyan-50/80 border-cyan-200',
     },
     {
       id: 'permissions',
-      title: t('users.addAdmin.permissions'),
+      title: resolvedText('users.addAdmin.permissions', 'Permissions'),
       value: permissionCount,
       label: permissionCount
-        ? t('users.addAdmin.configuredPermissions')
-        : t('users.addAdmin.noPermissionsSelected'),
+        ? resolvedText('users.addAdmin.configuredPermissions', 'Role-based permissions loaded')
+        : resolvedText('users.addAdmin.noPermissionsSelected', 'No permissions available'),
       status: permissionCount ? 'success' : 'warning',
       statusLabel: statusLabel(permissionCount ? 'success' : 'warning'),
       surfaceClass: 'bg-lime-50/80 border-lime-200',
     },
     {
       id: 'account-state',
-      title: t('users.addAdmin.accountState'),
+      title: resolvedText('users.addAdmin.accountState', 'Account state'),
       value: statusLabel(form.status),
-      label: t('users.addAdmin.initialAccountState'),
+      label: resolvedText('users.addAdmin.initialAccountState', 'Initial account state'),
       status: form.status,
       statusLabel: statusLabel(form.status),
       surfaceClass: 'bg-amber-50/80 border-amber-200',
     },
     {
       id: 'security-review',
-      title: t('users.addAdmin.securityReview'),
-      value: profileImagePreview.value ? t('users.addAdmin.ready') : t('users.addAdmin.pending'),
+      title: resolvedText('users.addAdmin.securityReview', 'Security review'),
+      value: profileImagePreview.value
+        ? resolvedText('users.addAdmin.ready', 'Ready')
+        : resolvedText('users.addAdmin.pending', 'Pending'),
       label: profileImagePreview.value
-        ? t('users.addAdmin.profileImageSet')
-        : t('users.addAdmin.profileImagePending'),
+        ? resolvedText('users.addAdmin.profileImageSet', 'Profile image set')
+        : resolvedText('users.addAdmin.profileImagePending', 'Profile image pending'),
       status: securityStatus,
       statusLabel: statusLabel(securityStatus),
       surfaceClass: 'bg-rose-50/80 border-rose-200',
@@ -293,24 +175,31 @@ const formSummaryCards = computed(() => {
   ]
 })
 
-const selectedRoleDescription = computed(() => roleLabel(form.role))
-
 const checklistItems = computed(() => [
   {
-    title: t('users.addAdmin.sidebarItems.role'),
+    title: resolvedText('users.addAdmin.sidebarItems.role', 'Choose a role'),
     text: selectedRoleDescription.value,
   },
   {
-    title: t('users.addAdmin.sidebarItems.permissions'),
-    text: t('users.addAdmin.sidebarItems.permissionsDetail'),
+    title: resolvedText('users.addAdmin.sidebarItems.permissions', 'Review permissions'),
+    text: resolvedText(
+      'users.addAdmin.sidebarItems.permissionsDetail',
+      'The permission list is locked to the selected role and cannot be edited manually.',
+    ),
   },
   {
-    title: t('users.addAdmin.sidebarItems.security'),
-    text: t('users.addAdmin.sidebarItems.securityDetail'),
+    title: resolvedText('users.addAdmin.sidebarItems.security', 'Check security'),
+    text: resolvedText(
+      'users.addAdmin.sidebarItems.securityDetail',
+      'Password strength and image upload are part of the final review.',
+    ),
   },
   {
-    title: t('users.addAdmin.sidebarItems.review'),
-    text: t('users.addAdmin.sidebarItems.reviewDetail'),
+    title: resolvedText('users.addAdmin.sidebarItems.review', 'Review summary'),
+    text: resolvedText(
+      'users.addAdmin.sidebarItems.reviewDetail',
+      'Use the summary cards to confirm the account is ready.',
+    ),
   },
 ])
 </script>
@@ -323,11 +212,11 @@ const checklistItems = computed(() => [
       <AdminSummaryCards :cards="formSummaryCards" />
 
       <div class="add-admin-page__layout">
-        <Form
-          class="add-admin-page__form"
-          :title="pageTitle"
-          :description="resolvedFormDescription"
-          :submit-text="pageTitle"
+      <Form
+        class="add-admin-page__form"
+        :title="pageTitle"
+        :description="resolvedFormDescription"
+        :submit-text="pageTitle"
           :cancel-text="t('common.cancel')"
           :loading="isSubmitting"
           :show-cancel="true"
@@ -337,10 +226,10 @@ const checklistItems = computed(() => [
           <div class="add-admin-page__intro">
             <div>
               <p class="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-surface-500">
-                {{ t('users.addAdmin.title') }}
+                {{ pageTitle }}
               </p>
               <p class="mt-1 text-[0.92rem] leading-6 text-slate-600">
-                {{ t('users.addAdmin.summary') }}
+                {{ pageSubtitle }}
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -362,6 +251,7 @@ const checklistItems = computed(() => [
               class="add-admin-page__field add-admin-page__field--full"
               :title="t('users.addAdmin.profileImage')"
               :preview="profileImagePreview"
+              :fallback-label="profileImageFallbackLabel"
               :remove-label="t('users.addAdmin.removeImage')"
               :disabled="isSubmitting"
               @change="onProfileImageChange"
@@ -390,14 +280,20 @@ const checklistItems = computed(() => [
               :status-label="statusLabel"
             />
 
-            <AddAdminPermissionsField
+            <AddAdminBioField
               class="add-admin-page__field add-admin-page__field--full"
-              :title="t('users.addAdmin.permissions')"
-              :permissions="form.permissions"
-              :options="permissionOptions"
+              v-model:bio="form.bio"
+              :label="t('users.addAdmin.bio')"
+              :placeholder="t('users.addAdmin.bioPlaceholder')"
+              :help-text="t('users.addAdmin.bioHelp')"
               :disabled="isSubmitting"
-              :permission-label="permissionLabel"
-              @toggle="togglePermission"
+            />
+
+            <RolePermissionsPreview
+              class="add-admin-page__field add-admin-page__field--full"
+              :role="form.role"
+              :permissions="rolePermissions"
+              :loading="rolePermissionsLoading"
             />
 
             <AddAdminPasswordFields
@@ -456,7 +352,7 @@ const checklistItems = computed(() => [
 
     <AlertError
       :show="showError"
-      :title="t('users.addAdmin.validationError')"
+      :title="resolvedText('users.addAdmin.validationError', 'Validation error')"
       :message="errorMessage"
       :button-text="t('common.close')"
       @close="onErrorClose"
@@ -464,13 +360,13 @@ const checklistItems = computed(() => [
 
     <AlertSuccess
       :show="showSuccess"
-      :title="isEditMode ? t('users.addAdmin.adminUpdated') : t('users.addAdmin.adminCreated')"
+      :title="isEditMode ? resolvedText('users.addAdmin.adminUpdated', 'User updated') : resolvedText('users.addAdmin.adminCreated', 'User created')"
       :message="
         isEditMode
-          ? t('users.addAdmin.updatedMessage')
-          : t('users.addAdmin.createdMessage')
+          ? resolvedText('users.addAdmin.updatedMessage', 'The user account was updated successfully.')
+          : resolvedText('users.addAdmin.createdMessage', 'The user account was created successfully.')
       "
-      :button-text="t('users.addAdmin.backToAdmins')"
+      :button-text="resolvedText('users.addAdmin.backToAdmins', 'Back to users')"
       @close="onSuccessClose"
     />
   </MainLayout>
@@ -526,7 +422,7 @@ const checklistItems = computed(() => [
   gap: 0.42rem;
 }
 
-.add-admin-page__field--full {
+  .add-admin-page__field--full {
   grid-column: 1 / -1;
 }
 
@@ -590,52 +486,6 @@ const checklistItems = computed(() => [
   border-color: var(--hope-o-cyan-blue);
   box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.15);
   background: #ffffff;
-}
-
-.add-admin-page__permissions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.55rem;
-}
-
-.add-admin-page__permission-item {
-  display: flex;
-  align-items: center;
-  gap: 0.52rem;
-  min-height: 2.35rem;
-  padding: 0.52rem 0.72rem;
-  border: 1px solid #d6e2ee;
-  border-radius: 0.72rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-  transition: all 0.16s ease;
-}
-
-.add-admin-page__permission-item:hover {
-  border-color: #8fc3de;
-  background: #f0f8fe;
-  transform: translateY(-1px);
-}
-
-.add-admin-page__permission-item--active {
-  border-color: #67b7df;
-  background: linear-gradient(180deg, #e8f6fe 0%, #dff1fc 100%);
-  color: #075985;
-  box-shadow: 0 6px 14px -12px rgba(0, 87, 138, 0.8);
-}
-
-.add-admin-page__permission-checkbox {
-  accent-color: var(--hope-o-cyan-blue);
-  width: 0.95rem;
-  height: 0.95rem;
-  flex-shrink: 0;
-}
-
-.add-admin-page__permission-item span {
-  line-height: 1.2;
 }
 
 .add-admin-page__profile {
@@ -702,10 +552,6 @@ const checklistItems = computed(() => [
 
 @media (max-width: 768px) {
   .add-admin-page__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .add-admin-page__permissions {
     grid-template-columns: 1fr;
   }
 }

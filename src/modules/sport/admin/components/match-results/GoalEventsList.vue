@@ -12,6 +12,7 @@ import Button from '@/components/buttons/Button.vue'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
 import Loading from '@/components/feedback/Loading.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { compareMatchEvents } from '@/modules/sport/services/sportApi'
 
 defineOptions({
   name: 'GoalEventsList',
@@ -55,17 +56,16 @@ const combinedEvents = computed(() => {
   const away = props.awayEvents.map((e) => ({ ...e, team: props.awayTeam, teamType: 'away' }))
 
   // Keep the incident timeline readable by ordering all team events by match minute.
-  return [...home, ...away].sort((a, b) => {
-    const minA = Number.parseInt(a.minute, 10) || 0
-    const minB = Number.parseInt(b.minute, 10) || 0
-    return minA - minB
-  })
+  return [...home, ...away].sort(compareMatchEvents)
 })
 
 function getTagSeverity(type) {
-  if (type === 'Red') return 'danger'
-  if (type === 'Yellow') return 'warn'
-  if (type === 'Green') return 'success'
+  const value = String(type || '').toLowerCase()
+  if (value === 'red_card') return 'danger'
+  if (value === 'yellow_card') return 'warn'
+  if (value === 'goal' || value === 'penalty_goal') return 'success'
+  if (value === 'own_goal') return 'warning'
+  if (value === 'substitution') return 'info'
   return 'info'
 }
 
@@ -141,16 +141,11 @@ function cancelDelete() {
 
       <Column :header="t('common.type')">
         <template #body="{ data }">
-          <div class="flex flex-wrap gap-1.5">
-            <Tag
-              v-for="type in data.goalTypes"
-              :key="type"
-              :value="type"
-              :severity="getTagSeverity(type)"
-              class="!text-[0.6rem] !font-black uppercase"
-            />
-            <span v-if="!data.goalTypes?.length" class="text-slate-300">-</span>
-          </div>
+          <Tag
+            :value="data.eventType"
+            :severity="getTagSeverity(data.eventType)"
+            class="!text-[0.6rem] !font-black uppercase"
+          />
         </template>
       </Column>
 

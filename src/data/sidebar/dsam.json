@@ -1,0 +1,53 @@
+{
+  "sections": [
+    {
+      "id": "dsam",
+      "labelKey": "nav.sections.dsam",
+      "captionKey": "nav.sectionCaptions.dsam",
+      "className": "sidebar-section--dsam",
+      "collapsible": true,
+      "access": {
+        "scopes": ["super_admin", "admin", "staff"]
+      },
+      "items": [
+        {
+          "id": "dsam-dashboard",
+          "routeName": "dsam-dashboard",
+          "labelKey": "nav.items.dsamDashboard",
+          "icon": "home",
+          "access": {
+            "scopes": ["super_admin", "admin", "staff"]
+          }
+        },
+        {
+          "id": "dsam-forms",
+          "routeName": "dsam-form-list",
+          "labelKey": "nav.items.dsamForms",
+          "icon": "reports",
+          "badgeKey": "nav.badges.admin",
+          "access": {
+            "scopes": ["super_admin", "admin"]
+          }
+        },
+        {
+          "id": "dsam-submissions",
+          "routeName": "dsam-submission-list",
+          "labelKey": "nav.items.dsamSubmissions",
+          "icon": "reports",
+          "access": {
+            "scopes": ["super_admin", "admin", "staff"]
+          }
+        },
+        {
+          "id": "dsam-wizard",
+          "routeName": "dsam-wizard",
+          "labelKey": "nav.items.dsamWizard",
+          "icon": "reports",
+          "access": {
+            "scopes": ["super_admin", "admin", "staff"]
+          }
+        }
+      ]
+    }
+  ]
+}

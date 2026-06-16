@@ -1,7 +1,11 @@
 <script setup>
+import { useLanguage } from '@/composables/useLanguage'
+
 defineOptions({
   name: 'PreschoolDashboardActivity',
 })
+
+const { t } = useLanguage()
 
 defineProps({
   items: {
@@ -13,7 +17,7 @@ defineProps({
 
 <template>
   <section class="preschool-dashboard-activity">
-    <h3 class="preschool-dashboard-activity__title">Operational Notes</h3>
+    <h3 class="preschool-dashboard-activity__title">{{ t('preschoolDashboardActivity.title') }}</h3>
     <div class="preschool-dashboard-activity__list">
       <article
         v-for="item in items"

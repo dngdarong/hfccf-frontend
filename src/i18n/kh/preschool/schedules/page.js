@@ -1,0 +1,75 @@
+// Keep Khmer schedule copy separate from shared labels so timetable screens
+// stay searchable and future scheduling features can grow safely.
+export default {
+  preschoolSchedulesPage: {
+    title: 'កាលវិភាគមត្តេយ្យ',
+    subtitle: 'គ្រប់គ្រងធាតុកាលវិភាគប្រចាំសប្ដាហ៍ ការបែងចែកថ្នាក់ និងលទ្ធភាពរបស់គ្រូ។',
+    management: {
+      title: 'គ្រប់គ្រងកាលវិភាគ',
+      subtitle: 'បង្កើតធាតុប្រចាំសប្ដាហ៍ ពិនិត្យការជាន់គ្នា និងទុកស្ពានកាលវិភាគចាស់ៗជាអត្តសញ្ញាណ។',
+    },
+    classView: {
+      title: 'កាលវិភាគថ្នាក់',
+      subtitle: 'ពិនិត្យកាលវិភាគសកម្ម និងអសកម្មសម្រាប់ថ្នាក់ជាក់លាក់មួយ។',
+    },
+    teacherView: {
+      title: 'កាលវិភាគគ្រូ',
+      subtitle: 'ពិនិត្យកាលវិភាគប្រចាំសប្ដាហ៍ដែលបានផ្ដល់ឱ្យគ្រូមត្តេយ្យ។',
+    },
+    myView: {
+      title: 'កាលវិភាគរបស់ខ្ញុំ',
+      subtitle: 'ពិនិត្យកាលវិភាគមត្តេយ្យរបស់អ្នកសម្រាប់សប្ដាហ៍បច្ចុប្បន្ន។',
+    },
+    loading: 'កំពុងផ្ទុកកាលវិភាគមត្តេយ្យ...',
+    empty: 'មិនមានធាតុកាលវិភាគទេ។',
+    emptyDescription: 'បង្កើតធាតុកាលវិភាគប្រចាំសប្ដាហ៍ ដើម្បីរៀបចំការគ្របដណ្តប់ថ្នាក់។',
+    actions: {
+      create: 'បង្កើតកាលវិភាគ',
+      update: 'ធ្វើបច្ចុប្បន្នភាពកាលវិភាគ',
+      archive: 'ទុកជាកាលវិភាគចាស់',
+      cancel: 'បោះបង់',
+      refresh: 'ផ្ទុកឡើងវិញ',
+      back: 'ត្រឡប់ក្រោយ',
+      manageSchedules: 'គ្រប់គ្រងកាលវិភាគ',
+      mySchedule: 'កាលវិភាគរបស់ខ្ញុំ',
+      viewClassSchedule: 'មើលកាលវិភាគថ្នាក់',
+      viewTeacherSchedule: 'មើលកាលវិភាគគ្រូ',
+    },
+    filters: {
+      search: 'ស្វែងរក',
+      class: 'ថ្នាក់',
+      teacher: 'គ្រូ',
+      day: 'ថ្ងៃ',
+      status: 'ស្ថានភាព',
+      room: 'បន្ទប់',
+      activity: 'សកម្មភាព',
+      apply: 'អនុវត្តតម្រង',
+      reset: 'ស្ដារតម្រងឡើងវិញ',
+    },
+    form: {
+      title: 'ធាតុកាលវិភាគ',
+      subtitle: 'រក្សាធាតុប្រចាំសប្ដាហ៍ឱ្យខ្លី ដើម្បីឱ្យការត្រួតពិនិត្យការជាន់គ្នាបានងាយ។',
+      labels: {
+        class: 'ថ្នាក់',
+        teacher: 'គ្រូ',
+        day: 'ថ្ងៃ',
+        status: 'ស្ថានភាព',
+        startTime: 'ម៉ោងចាប់ផ្តើម',
+        endTime: 'ម៉ោងបញ្ចប់',
+        room: 'បន្ទប់',
+        activity: 'សកម្មភាព',
+        notes: 'កំណត់ចំណាំ',
+        effectiveFrom: 'ចាប់ផ្តើមពី',
+        effectiveUntil: 'បញ្ចប់នៅ',
+      },
+      placeholders: {
+        class: 'ជ្រើសរើសថ្នាក់',
+        teacher: 'ជ្រើសរើសគ្រូ',
+        day: 'ជ្រើសរើសថ្ងៃ',
+        status: 'ជ្រើសរើសស្ថានភាព',
+        room: 'បន្ទប់ / ទីតាំង',
+        activity: 'ស្លាកសកម្មភាព',
+      },
+    },
+  },
+}

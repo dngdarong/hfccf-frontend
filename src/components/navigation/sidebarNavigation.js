@@ -2,7 +2,9 @@ import { canAccess, getAccessProfile } from '@/services/accessControl'
 
 function resolveText(t, key, fallback = '') {
   if (!key) return fallback
-  const value = t(key)
+
+  const value = typeof t === 'function' ? t(key) : ''
+
   return value && value !== key ? value : fallback || key
 }
 
@@ -13,6 +15,7 @@ function resolveItemTarget(item, profile) {
 
   const routeNameByDomain = item.routeNameByDomain || {}
   const routeName = routeNameByDomain[profile.domain] || routeNameByDomain.default
+
   if (routeName) {
     return { name: routeName }
   }
@@ -25,22 +28,28 @@ function resolveItemTarget(item, profile) {
 }
 
 function resolveRouteRecord(router, target) {
-  if (!target) return null
+  if (!router || !target) return null
 
   if (target.name && !router.hasRoute(target.name)) {
     return null
   }
 
-  const resolved = router.resolve(target)
-  const record = resolved.matched.at(-1)
-  if (!record) return null
-  if (!target.name && record.path === '/:pathMatch(.*)*') return null
+  try {
+    const resolved = router.resolve(target)
+    const record = resolved.matched[resolved.matched.length - 1]
 
-  return {
-    target,
-    path: resolved.path,
-    name: resolved.name ? String(resolved.name) : '',
-    meta: record.meta || {},
+    if (!record) return null
+    if (!target.name && record.path === '/:pathMatch(.*)*') return null
+
+    return {
+      target,
+      path: resolved.path,
+      name: resolved.name ? String(resolved.name) : '',
+      meta: record.meta || {},
+    }
+  } catch (error) {
+    console.warn('Invalid sidebar route target:', target, error)
+    return null
   }
 }
 
@@ -56,9 +65,11 @@ function resolveItem(item, context) {
     resolveItemTarget(item, context.profile),
   )
 
-  if (!routeInfo && !children.length) return null
-  if (routeInfo && !canAccess(context.user, routeInfo.meta?.access)) return null
   if (!routeInfo) return null
+
+  if (!canAccess(context.user, routeInfo.meta?.access)) {
+    return null
+  }
 
   return {
     ...item,
@@ -87,4 +98,3 @@ export function buildSidebarSections({ config, router, user, t }) {
     }))
     .filter((section) => section.items.length)
 }
-

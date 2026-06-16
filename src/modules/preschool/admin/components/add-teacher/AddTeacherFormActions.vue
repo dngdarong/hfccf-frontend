@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+import { useLanguage } from '@/composables/useLanguage'
 import Button from '@/components/buttons/Button.vue'
 
 defineOptions({
@@ -21,6 +23,14 @@ defineProps({
 })
 
 defineEmits(['back', 'edit'])
+
+const { t } = useLanguage()
+
+const backLabel = computed(() => t('preschoolAddTeacher.buttons.backToTeachers'))
+const editLabel = computed(() => t('preschoolAddTeacher.buttons.editTeacher'))
+const submitLabel = computed(() => t('preschoolAddTeacher.buttons.addTeacher'))
+const updateLabel = computed(() => t('preschoolAddTeacher.buttons.updateTeacher'))
+const cancelLabel = computed(() => t('common.cancel'))
 </script>
 
 <template>
@@ -33,7 +43,7 @@ defineEmits(['back', 'edit'])
       :disabled="isSubmitting"
       @click="$emit('back')"
     >
-      {{ isViewMode ? 'Back to Teachers' : 'Cancel' }}
+      {{ isViewMode ? backLabel : cancelLabel }}
     </Button>
 
     <Button
@@ -44,7 +54,7 @@ defineEmits(['back', 'edit'])
       rounded="xl"
       @click="$emit('edit')"
     >
-      Edit Teacher
+      {{ editLabel }}
     </Button>
 
     <Button
@@ -56,7 +66,7 @@ defineEmits(['back', 'edit'])
       :loading="isSubmitting"
       :disabled="isSubmitting"
     >
-      {{ isEditMode ? 'Update Teacher' : 'Add Teacher' }}
+      {{ isEditMode ? updateLabel : submitLabel }}
     </Button>
   </div>
 </template>

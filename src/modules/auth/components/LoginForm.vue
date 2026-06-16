@@ -1,6 +1,4 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -11,11 +9,9 @@ import Button from '@/components/buttons/Button.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import Loading from '@/components/feedback/Loading.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { login, logout } from '@/modules/auth/services/authService'
+import { useLoginForm } from '@/modules/auth/composables/useLoginForm'
 import { ROLES } from '@/constants/roles'
 
-const router = useRouter()
-const route = useRoute()
 const { language } = useLanguage()
 
 const props = defineProps({
@@ -30,182 +26,27 @@ const props = defineProps({
   },
 })
 
-const isKhmer = computed(() => language.value === 'KH')
-
-const form = reactive({
-  email: '',
-  password: '',
-  userType: '',
-  remember: false,
+const {
+  t,
+  isKhmer,
+  form,
+  isSubmitting,
+  errorMessage,
+  showLoginSuccess,
+  canUsePasswordRecovery,
+  localizedUserTypeOptions,
+  emailError,
+  passwordError,
+  userTypeError,
+  isFormValid,
+  localizedSubmitLabel,
+  touchField,
+  onSubmit,
+  onLoginSuccessClose,
+} = useLoginForm({
+  accessPolicy: props.accessPolicy,
+  language,
 })
-
-const isSubmitting = ref(false)
-const errorMessage = ref('')
-const showLoginSuccess = ref(false)
-const shouldRedirectAfterSuccess = ref(false)
-const touched = reactive({
-  email: false,
-  password: false,
-  userType: false,
-})
-
-const userTypeOptions = [
-  { label: 'Super Admin', khLabel: 'អ្នកគ្រប់គ្រងធំ', value: ROLES.SUPER_ADMIN },
-  { label: 'English Admin', khLabel: 'អ្នកគ្រប់គ្រងអង់គ្លេស', value: ROLES.ADMIN_ENGLISH },
-  { label: 'Preschool Admin', khLabel: 'អ្នកគ្រប់គ្រងមត្តេយ្យ', value: ROLES.ADMIN_PRESCHOOL },
-  {
-    label: 'Scholarship Admin',
-    khLabel: 'អ្នកគ្រប់គ្រងអាហារូបករណ៍',
-    value: ROLES.ADMIN_SCHOLARSHIP,
-  },
-  { label: 'Sport Admin', khLabel: 'អ្នកគ្រប់គ្រងកីឡា', value: ROLES.ADMIN_SPORT },
-  { label: 'English Teacher', khLabel: 'គ្រូអង់គ្លេស', value: ROLES.TEACHER_ENGLISH },
-  { label: 'Preschool Teacher', khLabel: 'គ្រូមត្តេយ្យ', value: ROLES.TEACHER_PRESCHOOL },
-  {
-    label: 'Scholarship Teacher',
-    khLabel: 'គ្រូអាហារូបករណ៍',
-    value: ROLES.TEACHER_SCHOLARSHIP,
-  },
-  { label: 'Coach', khLabel: 'គ្រូបង្វឹក', value: ROLES.COACH },
-]
-
-const allowedRoleValues = computed(() =>
-  Array.isArray(props.accessPolicy.allowedRoles)
-    ? props.accessPolicy.allowedRoles.map((role) => String(role || '').trim().toLowerCase()).filter(Boolean)
-    : [],
-)
-
-const normalizedUserType = computed(() =>
-  String(form.userType || '')
-    .trim()
-    .toLowerCase(),
-)
-
-const isRoleAllowed = computed(
-  () => !allowedRoleValues.value.length || allowedRoleValues.value.includes(normalizedUserType.value),
-)
-
-const recoveryRole = computed(() =>
-  String(props.accessPolicy.recoveryRole || ROLES.SUPER_ADMIN)
-    .trim()
-    .toLowerCase(),
-)
-
-const localizedUserTypeOptions = computed(() =>
-  userTypeOptions
-    .filter((option) => !allowedRoleValues.value.length || allowedRoleValues.value.includes(option.value))
-    .map((option) => ({
-      ...option,
-      displayLabel: isKhmer.value ? option.khLabel : option.label,
-    })),
-)
-
-const emailError = computed(() => {
-  if (!touched.email) return ''
-  if (!form.email.trim()) return isKhmer.value ? 'សូមបញ្ចូលអ៊ីមែល។' : 'Email is required.'
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-    return isKhmer.value ? 'សូមបញ្ចូលអ៊ីមែលឱ្យបានត្រឹមត្រូវ។' : 'Enter a valid email address.'
-  }
-  return ''
-})
-
-const passwordError = computed(() => {
-  if (!touched.password) return ''
-  if (!form.password) return isKhmer.value ? 'សូមបញ្ចូលពាក្យសម្ងាត់។' : 'Password is required.'
-  return ''
-})
-
-const userTypeError = computed(() => {
-  if (!touched.userType) return ''
-  if (!form.userType) return isKhmer.value ? 'សូមជ្រើសរើសប្រភេទអ្នកប្រើ។' : 'Please choose your user type.'
-  if (!isRoleAllowed.value) return isKhmer.value ? 'អ្នកប្រើនេះមិនមានសិទ្ធិចូលប្រើទេ។' : 'This user type is not allowed.'
-  return ''
-})
-
-const isFormValid = computed(
-  () =>
-    Boolean(form.email.trim()) &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
-    Boolean(form.password) &&
-    Boolean(form.userType) &&
-    isRoleAllowed.value,
-)
-
-const localizedSubmitLabel = computed(() => {
-  if (isSubmitting.value) return isKhmer.value ? 'កំពុងចូល...' : 'Signing in...'
-  return isKhmer.value ? 'ចូលប្រើ' : 'Sign in'
-})
-
-function touchField(field) {
-  touched[field] = true
-}
-
-function hasRequiredPermissionsForRole(user) {
-  const role = String(user?.role || '')
-    .trim()
-    .toLowerCase()
-  const requiredPermissions = Array.isArray(props.accessPolicy.requiredPermissionsByRole?.[role])
-    ? props.accessPolicy.requiredPermissionsByRole[role]
-    : []
-  const userPermissions = Array.isArray(user?.role_permission) ? user.role_permission : []
-
-  if (!requiredPermissions.length) return true
-  if (userPermissions.includes('all:*')) return true
-
-  return requiredPermissions.every((permission) => userPermissions.includes(permission))
-}
-
-async function onSubmit() {
-  touched.email = true
-  touched.password = true
-  touched.userType = true
-  errorMessage.value = ''
-
-  if (!isFormValid.value) return
-
-  isSubmitting.value = true
-
-  try {
-    const authenticatedUser = await login({
-      email: form.email.trim().toLowerCase(),
-      password: form.password,
-      role: normalizedUserType.value,
-      remember: form.remember,
-    })
-
-    if (!hasRequiredPermissionsForRole(authenticatedUser)) {
-      logout()
-      throw new Error('Your account does not have the required permissions for this access type.')
-    }
-
-    shouldRedirectAfterSuccess.value = true
-    showLoginSuccess.value = true
-  } catch (error) {
-    errorMessage.value = isKhmer.value
-      ? 'ព័ត៌មានចូលប្រើមិនត្រឹមត្រូវ។'
-      : error?.message || 'Unable to login right now.'
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-function getSafeRedirectTarget(value) {
-  const redirect = String(value || '').trim()
-
-  if (!redirect.startsWith('/') || redirect.startsWith('//')) {
-    return props.accessPolicy.defaultRedirect || '/module/dashboard'
-  }
-
-  return redirect
-}
-
-async function onLoginSuccessClose() {
-  showLoginSuccess.value = false
-
-  if (!shouldRedirectAfterSuccess.value) return
-  shouldRedirectAfterSuccess.value = false
-  await router.push(getSafeRedirectTarget(route.query.redirect))
-}
 </script>
 
 <template>
@@ -215,7 +56,7 @@ async function onLoginSuccessClose() {
         <form class="login-form-fields" :class="{ 'login-form-khmer': isKhmer }" @submit.prevent="onSubmit">
           <div class="login-form-field">
             <div class="login-form-label-row">
-              <label for="email">{{ isKhmer ? 'អ៊ីមែល' : 'Email' }}</label>
+              <label for="email">{{ t('auth.loginForm.emailLabel') }}</label>
             </div>
             <div class="login-form-control">
               <i class="pi pi-envelope login-form-control-icon" aria-hidden="true"></i>
@@ -228,7 +69,7 @@ async function onLoginSuccessClose() {
                 :class="{ 'login-form-input--invalid': emailError }"
                 :aria-invalid="Boolean(emailError)"
                 :aria-describedby="emailError ? 'email-error' : undefined"
-                :placeholder="isKhmer ? 'name@hfccf.org' : 'name@hfccf.org'"
+                :placeholder="t('auth.loginForm.emailPlaceholder')"
                 @blur="touchField('email')"
               />
             </div>
@@ -240,7 +81,7 @@ async function onLoginSuccessClose() {
 
           <div class="login-form-field">
             <div class="login-form-label-row">
-              <label for="password">{{ isKhmer ? 'ពាក្យសម្ងាត់' : 'Password' }}</label>
+              <label for="password">{{ t('auth.loginForm.passwordLabel') }}</label>
             </div>
             <div class="login-form-control">
               <i class="pi pi-key login-form-control-icon" aria-hidden="true"></i>
@@ -249,7 +90,7 @@ async function onLoginSuccessClose() {
                 v-model="form.password"
                 class="w-full login-form-password"
                 autocomplete="current-password"
-                :placeholder="isKhmer ? 'បញ្ចូលពាក្យសម្ងាត់' : 'Enter your password'"
+                :placeholder="t('auth.loginForm.passwordPlaceholder')"
                 :feedback="false"
                 toggle-mask
                 fluid
@@ -267,7 +108,7 @@ async function onLoginSuccessClose() {
 
           <div class="login-form-field">
             <div class="login-form-label-row">
-              <label for="userType">{{ isKhmer ? 'ប្រភេទអ្នកប្រើ' : 'User type' }}</label>
+              <label for="userType">{{ t('auth.loginForm.userTypeLabel') }}</label>
             </div>
             <div class="login-form-control">
               <i class="pi pi-id-card login-form-control-icon" aria-hidden="true"></i>
@@ -282,7 +123,7 @@ async function onLoginSuccessClose() {
                 :class="{ 'login-form-input--invalid': userTypeError }"
                 :aria-invalid="Boolean(userTypeError)"
                 :aria-describedby="userTypeError ? 'user-type-error' : undefined"
-                :placeholder="isKhmer ? 'ជ្រើសរើសប្រភេទ' : 'Select user type'"
+                :placeholder="t('auth.loginForm.userTypePlaceholder')"
                 @blur="touchField('userType')"
               />
             </div>
@@ -293,17 +134,29 @@ async function onLoginSuccessClose() {
           </div>
 
           <div class="login-form-actions">
-            <label class="login-form-remember">
-              <Checkbox v-model="form.remember" binary input-id="rememberMe" />
-              <span>{{ isKhmer ? 'ចងចាំខ្ញុំ' : 'Remember me' }}</span>
-            </label>
+              <label
+                for="rememberMe"
+                class="login-form-remember"
+              >
+                <Checkbox
+                  v-model="form.remember"
+                  binary
+                  input-id="rememberMe"
+                  name="rememberMe"
+                  :aria-label="t('auth.loginForm.rememberMe')"
+                />
+
+                <span>
+                  {{ t('auth.loginForm.rememberMe') }}
+                </span>
+              </label>
 
             <RouterLink
-              v-if="normalizedUserType === recoveryRole"
+              v-if="canUsePasswordRecovery"
               :to="{ name: 'forgot-password' }"
               class="font-semibold text-sky-700 transition hover:text-sky-800 max-sm:self-start"
             >
-              {{ isKhmer ? 'ភ្លេច?' : 'Forgot?' }}
+              {{ t('auth.loginForm.forgot') }}
             </RouterLink>
           </div>
 
@@ -314,7 +167,7 @@ async function onLoginSuccessClose() {
           <Loading
             v-if="isSubmitting"
             class="login-form-loading"
-            :label="isKhmer ? 'កំពុងចូល...' : 'Signing in...'"
+            :label="t('auth.loginForm.loading')"
             size="sm"
           />
 
@@ -333,16 +186,15 @@ async function onLoginSuccessClose() {
             </template>
             {{ localizedSubmitLabel }}
           </Button>
-
         </form>
       </template>
     </Card>
 
     <AlertSuccess
       :show="showLoginSuccess"
-      :title="isKhmer ? 'បានចូលប្រើ' : 'Signed in'"
-      :message="isKhmer ? 'កំពុងបញ្ជូន...' : 'Redirecting...'"
-      :button-text="isKhmer ? 'បន្ត' : 'Continue'"
+      :title="t('auth.loginForm.signedInTitle')"
+      :message="t('auth.loginForm.redirecting')"
+      :button-text="t('auth.loginForm.continue')"
       :auto-close="900"
       @close="onLoginSuccessClose"
     />
@@ -482,10 +334,35 @@ async function onLoginSuccessClose() {
   width: 100%;
 }
 
-:deep(.login-form-card .p-checkbox .p-checkbox-box) {
+/* PrimeVue Checkbox */
+:deep(.login-form-card .p-checkbox) {
+  display: inline-flex;
+  width: 1.2rem;
+  height: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+:deep(.login-form-card .p-checkbox-input) {
+  cursor: pointer;
+}
+
+:deep(.login-form-card .p-checkbox-box) {
+  display: flex;
+  width: 1.2rem;
+  height: 1.2rem;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #cbd5e1;
+  border-radius: 0.35rem;
   background: #ffffff;
   box-shadow: none;
+  color: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 :deep(.login-form-card .p-checkbox:not(.p-disabled) .p-checkbox-box:hover) {
@@ -493,18 +370,34 @@ async function onLoginSuccessClose() {
   background: #ffffff;
 }
 
-:deep(.login-form-card .p-checkbox.p-focus .p-checkbox-box) {
+:deep(.login-form-card .p-checkbox.p-focus .p-checkbox-box),
+:deep(.login-form-card .p-checkbox:has(.p-checkbox-input:focus-visible) .p-checkbox-box) {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.18);
 }
 
-:deep(.login-form-card .p-checkbox.p-highlight .p-checkbox-box) {
+:deep(.login-form-card .p-checkbox.p-highlight .p-checkbox-box),
+:deep(.login-form-card .p-checkbox.p-checkbox-checked .p-checkbox-box),
+:deep(.login-form-card .p-checkbox:has(.p-checkbox-input:checked) .p-checkbox-box) {
   border-color: #0ea5e9;
   background: #0ea5e9;
 }
 
-:deep(.login-form-card .p-checkbox.p-highlight .p-checkbox-icon) {
+:deep(.login-form-card .p-checkbox-icon) {
+  display: inline-flex;
   color: #ffffff;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+:deep(.login-form-card .p-checkbox:not(.p-checkbox-checked):not(.p-highlight) .p-checkbox-icon) {
+  opacity: 0;
+}
+
+:deep(.login-form-card .p-checkbox.p-checkbox-checked .p-checkbox-icon),
+:deep(.login-form-card .p-checkbox.p-highlight .p-checkbox-icon),
+:deep(.login-form-card .p-checkbox:has(.p-checkbox-input:checked) .p-checkbox-icon) {
+  opacity: 1;
 }
 
 :deep(.login-form-card .login-form-input.p-select .p-select-overlay) {
@@ -557,6 +450,17 @@ async function onLoginSuccessClose() {
   gap: 0.55rem;
   color: #475569;
   font-weight: 700;
+}
+
+.login-form-remember,
+.login-form-remember span {
+  cursor: pointer;
+}
+
+.login-form-remember:focus-visible {
+  border-radius: 0.6rem;
+  outline: 2px solid rgba(14, 165, 233, 0.45);
+  outline-offset: 0.25rem;
 }
 
 .login-form-actions a {

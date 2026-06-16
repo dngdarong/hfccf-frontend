@@ -1,13 +1,18 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import LoginForm from '@/modules/auth/components/LoginForm.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { ROLES } from '@/constants/roles'
 
+const { t } = useI18n()
+const { language, setLanguage } = useLanguage()
+
 const loginAccessPolicy = Object.freeze({
   guestOnly: true,
   defaultRedirect: '/module/dashboard',
   recoveryRole: ROLES.SUPER_ADMIN,
+  // Keep exact backend roles here; LoginForm groups them into Admin and Staff for the UI.
   allowedRoles: [
     ROLES.SUPER_ADMIN,
     ROLES.ADMIN_ENGLISH,
@@ -28,11 +33,9 @@ const loginAccessPolicy = Object.freeze({
     [ROLES.TEACHER_ENGLISH]: ['dashboard:read', 'tasks:read'],
     [ROLES.TEACHER_PRESCHOOL]: ['dashboard:read', 'tasks:read'],
     [ROLES.TEACHER_SCHOLARSHIP]: ['dashboard:read', 'tasks:read'],
-    [ROLES.COACH]: ['dashboard:read', 'tasks:read'],
+    [ROLES.COACH]: ['dashboard:read', 'training:write'],
   },
 })
-
-const { language } = useLanguage()
 </script>
 
 <template>
@@ -40,27 +43,31 @@ const { language } = useLanguage()
     <main
       class="login-page relative flex min-h-screen items-center overflow-hidden px-4 py-5 sm:px-6 sm:py-8 lg:px-8"
     >
-      <section class="login-page-shell relative z-10 mx-auto grid w-full max-w-4xl overflow-hidden lg:grid-cols-[0.88fr_1.12fr]">
+      <section
+        class="login-page-shell relative z-10 mx-auto grid w-full max-w-4xl overflow-hidden lg:grid-cols-[0.88fr_1.12fr]"
+      >
         <div class="login-page-brand hidden min-h-[540px] flex-col justify-between lg:flex">
           <div class="login-page-language" aria-label="Language">
             <i class="pi pi-globe" aria-hidden="true"></i>
+
             <button
               type="button"
               :class="{ 'login-page-language__option--active': language === 'EN' }"
               class="login-page-language__option"
               aria-label="English"
-              @click="language = 'EN'"
+              @click="setLanguage('EN')"
             >
               EN
             </button>
+
             <button
               type="button"
               :class="{ 'login-page-language__option--active': language === 'KH' }"
               class="login-page-language__option"
               aria-label="Khmer"
-              @click="language = 'KH'"
+              @click="setLanguage('KH')"
             >
-              ខ្មែរ
+              {{ t('common.navigation.languages.khmer') }}
             </button>
           </div>
 
@@ -68,19 +75,18 @@ const { language } = useLanguage()
             <div class="login-page-logo login-page-logo--hero">
               <img src="@/assets/images/logo.jpg" alt="HFCCF" class="h-20 w-auto" />
             </div>
+
             <div class="login-page-welcome" :class="{ 'login-page-khmer': language === 'KH' }">
               <p class="login-page-eyebrow">
-                {{ language === 'KH' ? 'ច្រកបុគ្គលិក' : 'Staff Portal' }}
+                {{ t('auth.login.staffPortal') }}
               </p>
+
               <p>
-                {{ language === 'KH' ? 'សូមស្វាគមន៍មកកាន់ប្រព័ន្ធ HFCCF។' : 'Welcome back to your HFCCF workspace.' }}
+                {{ t('auth.login.welcome') }}
               </p>
+
               <span>
-                {{
-                  language === 'KH'
-                    ? 'ចូលប្រើដើម្បីបន្តការងារប្រចាំថ្ងៃតាមតួនាទីរបស់អ្នក។'
-                    : 'Sign in to continue your daily work with the right access for your role.'
-                }}
+                {{ t('auth.login.subtitle') }}
               </span>
             </div>
           </div>
@@ -91,14 +97,19 @@ const { language } = useLanguage()
                 <span class="pi pi-clock text-sky-600" aria-hidden="true"></span>
                 <div>
                   <p class="text-xl font-black text-slate-950">24/7</p>
-                  <p class="text-xs font-bold uppercase text-slate-500">Access</p>
+                  <p class="text-xs font-bold uppercase text-slate-500">
+                    {{ t('auth.login.accessMetric') }}
+                  </p>
                 </div>
               </div>
+
               <div class="login-page-metric">
                 <span class="pi pi-check-circle text-lime-600" aria-hidden="true"></span>
                 <div>
                   <p class="text-xl font-black text-slate-950">5+</p>
-                  <p class="text-xs font-bold uppercase text-slate-500">Areas</p>
+                  <p class="text-xs font-bold uppercase text-slate-500">
+                    {{ t('auth.login.areasMetric') }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -112,12 +123,13 @@ const { language } = useLanguage()
                 <div class="login-page-logo login-page-logo--compact">
                   <img src="@/assets/images/logo.jpg" alt="HFCCF" class="h-9 w-auto" />
                 </div>
+
                 <div class="min-w-0">
                   <p
                     class="text-xs font-black uppercase text-sky-800"
                     :class="{ 'login-page-khmer': language === 'KH' }"
                   >
-                    {{ language === 'KH' ? 'ច្រកបុគ្គលិក' : 'HFCCF Portal' }}
+                    {{ t('auth.login.portal') }}
                   </p>
                 </div>
               </div>
@@ -125,13 +137,14 @@ const { language } = useLanguage()
 
             <div class="mb-4 px-1">
               <p class="login-page-eyebrow" :class="{ 'login-page-khmer': language === 'KH' }">
-                {{ language === 'KH' ? 'បុគ្គលិក' : 'Staff' }}
+                {{ t('auth.login.staffPortal') }}
               </p>
+
               <h1
                 class="mt-2 text-[1.55rem] leading-tight font-black text-slate-950 sm:text-[1.85rem] lg:text-[1.95rem]"
                 :class="{ 'login-page-khmer': language === 'KH' }"
               >
-                {{ language === 'KH' ? 'ចូលប្រើ' : 'Sign in' }}
+                {{ t('auth.login.signIn') }}
               </h1>
             </div>
 
@@ -177,7 +190,12 @@ const { language } = useLanguage()
   inset: 0 auto 0 0;
   width: 0.35rem;
   content: '';
-  background: linear-gradient(180deg, var(--hope-o-cyan-blue), var(--hope-h-lime-green), var(--hope-e-golden-yellow));
+  background: linear-gradient(
+    180deg,
+    var(--hope-o-cyan-blue),
+    var(--hope-h-lime-green),
+    var(--hope-e-golden-yellow)
+  );
 }
 
 .login-page-brand {
@@ -229,11 +247,7 @@ const { language } = useLanguage()
 
 .login-page-khmer {
   font-family:
-    'Noto Sans Khmer',
-    'Khmer OS Siemreap',
-    'Khmer OS Battambang',
-    'Leelawadee UI',
-    sans-serif;
+    'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
   line-height: 1.6;
 }
 
@@ -398,3 +412,4 @@ const { language } = useLanguage()
   }
 }
 </style>
+

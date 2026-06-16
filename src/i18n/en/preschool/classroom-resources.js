@@ -1,0 +1,72 @@
+// Classroom Resources page copy — all labels, placeholders, and messages kept
+// locale-driven so EN/KH parity is testable without hardcoded English strings.
+export default {
+  preschoolClassroomResources: {
+    title: 'Classroom Resources',
+    subtitle: 'Track books, toys, equipment, and supplies assigned to preschool classrooms.',
+    addButton: 'Add Resource',
+    searchPlaceholder: 'Search by name or notes...',
+    filters: {
+      allCategories: 'All categories',
+      allConditions: 'All conditions',
+    },
+    columns: {
+      no: 'No.',
+      name: 'Resource',
+      category: 'Category',
+      quantity: 'Qty',
+      condition: 'Condition',
+      notes: 'Notes',
+      actions: 'Actions',
+    },
+    categories: {
+      books: 'Books',
+      toys: 'Toys',
+      equipment: 'Equipment',
+      supplies: 'Supplies',
+      digital: 'Digital',
+    },
+    conditions: {
+      good: 'Good',
+      fair: 'Fair',
+      poor: 'Poor',
+    },
+    dialog: {
+      createTitle: 'Add Resource',
+      editTitle: 'Edit Resource',
+      name: 'Resource Name',
+      namePlaceholder: 'e.g. Story Books Set',
+      category: 'Category',
+      quantity: 'Quantity',
+      condition: 'Condition',
+      notes: 'Notes',
+      notesPlaceholder: 'Optional notes about the resource...',
+      cancel: 'Cancel',
+      save: 'Save',
+    },
+    alerts: {
+      deleteTitle: 'Remove resource?',
+      deleteMessage: 'Are you sure you want to remove {name}?',
+      deleteFallback: 'this resource',
+      successTitle: 'Done',
+      close: 'Close',
+    },
+    messages: {
+      empty: 'No classroom resources have been added yet.',
+      noResults: 'No resources match the current filters.',
+      createSuccess: 'Resource added successfully.',
+      updateSuccess: 'Resource updated successfully.',
+      deleteSuccess: 'Resource removed successfully.',
+      nameMissing: 'Please enter a resource name.',
+      quantityInvalid: 'Quantity must be 0 or more.',
+      loadFailed: 'Failed to load classroom resources.',
+      saveFailed: 'Failed to save resource.',
+      deleteFailed: 'Failed to delete resource.',
+    },
+    summary: {
+      total: 'Total resources',
+      goodCondition: 'Good condition',
+      needsAttention: 'Needs attention',
+    },
+  },
+}

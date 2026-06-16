@@ -6,6 +6,7 @@ import playerInformation from './admin/player-information'
 import addPlayer from './admin/add-player'
 import addTeam from './admin/add-team'
 import matchesManagement from './admin/matches-management'
+import coachTrainingSchedule from './coach-training-schedule'
 
 export default {
   ...dashboard,
@@ -16,4 +17,5 @@ export default {
   ...addPlayer,
   ...addTeam,
   ...matchesManagement,
+  ...coachTrainingSchedule,
 }

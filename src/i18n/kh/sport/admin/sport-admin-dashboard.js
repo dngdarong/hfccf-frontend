@@ -1,45 +1,47 @@
 export default {
-    sportAdminDashboard: {
-      title: 'ផ្ទាំងគ្រប់គ្រងកម្មវិធីកីឡា',
-      subtitle: 'គ្រប់គ្រងការត្រៀមសម័យហាត់ និងប្រើប្រាស់ខ្សែសង្វាក់',
-      cards: {
-        totalTeams: {
-          title: 'ក្រុមសរុប',
-          label: 'ក្រុមបើកដំណើរការ',
-        },
-        totalPlayers: {
-          title: 'កីឡាករប្រមាណ',
-          label: 'នៅក្នុងការត្រួតពិនិត្យ',
-        },
-        upcomingMatches: {
-          title: 'ការប្រកួតខាងមុខ',
-          label: 'កាលវិភាគបានបញ្ជាក់',
-        },
-        lowStockItems: {
-          title: 'ទំនិញខ្សោយស្តុក',
-          label: 'ត្រូវបញ្ជាទិញឆាប់ៗ',
-        },
-        totalCoaches: {
-          title: 'អ្នកបង្រៀនសរុប',
-          label: 'គោលដៅការគ្រប់គ្រង',
-        },
-        coachesRequests: {
-          title: 'សំណើអ្នកបង្រៀន',
-          label: 'កំពុងរង់ចាំអនុម័ត',
-        },
+  sportAdminDashboard: {
+    title: 'ផ្ទាំងគ្រប់គ្រងកម្មវិធីកីឡា',
+    subtitle: 'ទិដ្ឋភាពគ្របដណ្តប់វគ្គ ការត្រៀមខ្លួនកីឡាករ និងការប្រើប្រាស់ទីលាន។',
+    cards: {
+      totalTeams: {
+        title: 'ក្រុមសរុប',
+        label: 'បញ្ជីក្រុមសកម្ម',
       },
-      tournamentBanner: {
-        badge: 'ផ្សាយពាណិជ្ជកម្មព្រឹត្ដិការណ៍',
-        title: 'មិនមានព្រឹត្ដិការណ៍ណាមួយទេ',
-        subtitle: 'ផ្ទុកទិន្នន័យពី JSON ដើម្បីមើលព័ត៌មានពីព្រឹត្ដិការណ៍បច្ចុប្បន្ន។',
-        action: 'មើលព្រឹត្ដិការណ៍',
+      totalPlayers: {
+        title: 'កីឡាករសរុប',
+        label: 'កំពុងតាមដាន',
       },
-      quickPanels: {
-        liveMatches: 'ការប្រកួតផ្ទាល់',
-        todayMatches: 'ការប្រកួតថ្ងៃនេះ',
-        topScorers: 'អ្នកគ្រាប់បាល់ចំនួនច្រើន',
-        standings: 'មើលស្ថានភាព',
-        liveLabel: 'កំពុងប្រកួត',
+      upcomingMatches: {
+        title: 'ការប្រកួតខាងមុខ',
+        label: 'ការប្រកួតបានបញ្ជាក់',
+      },
+      lowStockItems: {
+        title: 'របស់នៅស្តុកទាប',
+        label: 'ត្រូវបញ្ជាទិញឡើងវិញឆាប់ៗ',
+      },
+      totalCoaches: {
+        title: 'គ្រូបង្វឹកសរុប',
+        label: 'គោលដៅគ្របដណ្តប់',
+      },
+      coachesRequests: {
+        title: 'សំណើគ្រូបង្វឹក',
+        label: 'សំណើរង់ចាំអនុម័ត',
       },
     },
+    tournamentBanner: {
+      badge: 'បដាព្រឹត្តិការណ៍ប្រកួត',
+      title: 'មិនទាន់បានជ្រើសរើសការប្រកួត',
+      subtitle: 'ទាញយកទិន្នន័យពី JSON ដើម្បីមើលបរិបទការប្រកួតសកម្ម។',
+      location: 'ទីតាំង',
+      status: 'ស្ថានភាព',
+      action: 'មើលការប្រកួត',
+    },
+    quickPanels: {
+      liveMatches: 'ការប្រកួតកំពុងបន្ត',
+      todayMatches: 'ការប្រកួតថ្ងៃនេះ',
+      topScorers: 'អ្នកស៊ុតបញ្ចូលទីច្រើនបំផុត',
+      standings: 'ការមើលជាមុនតារាងចំណាត់ថ្នាក់',
+      liveLabel: 'កំពុងប្រកួត',
+    },
+  },
 }

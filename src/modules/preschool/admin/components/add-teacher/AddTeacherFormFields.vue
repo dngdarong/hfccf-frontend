@@ -1,8 +1,9 @@
 <script setup>
+import { useLanguage } from '@/composables/useLanguage'
 import AddAdminProfileImageField from '@/modules/super-admin/components/admin-management/AddAdminProfileImageField.vue'
 import AddAdminIdentityFields from '@/modules/super-admin/components/admin-management/AddAdminIdentityFields.vue'
-import AddAdminPermissionsField from '@/modules/super-admin/components/admin-management/AddAdminPermissionsField.vue'
 import AddAdminPasswordFields from '@/modules/super-admin/components/admin-management/AddAdminPasswordFields.vue'
+import RolePermissionsPreview from '@/modules/super-admin/components/add-admin/RolePermissionsPreview.vue'
 
 defineOptions({
   name: 'AddTeacherFormFields',
@@ -21,11 +22,7 @@ defineProps({
     type: Array,
     default: () => [],
   },
-  permissionOptions: {
-    type: Array,
-    default: () => [],
-  },
-  permissions: {
+  rolePermissions: {
     type: Array,
     default: () => [],
   },
@@ -69,15 +66,15 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  rolePermissionsLoading: {
+    type: Boolean,
+    default: false,
+  },
   roleLabel: {
     type: Function,
     required: true,
   },
   statusLabel: {
-    type: Function,
-    required: true,
-  },
-  permissionLabel: {
     type: Function,
     required: true,
   },
@@ -93,19 +90,20 @@ const emit = defineEmits([
   'update:confirmPassword',
   'profile-image-change',
   'profile-image-remove',
-  'toggle-permission',
   'toggle-password',
   'toggle-confirm-password',
 ])
+
+const { t } = useLanguage()
 </script>
 
 <template>
   <div class="add-teacher-form-fields">
     <AddAdminProfileImageField
       class="add-teacher-form-fields__field add-teacher-form-fields__field--full"
-      title="Profile Image"
+      :title="t('preschoolAddTeacher.form.profileImageTitle')"
       :preview="profileImagePreview"
-      remove-label="Remove image"
+      :remove-label="t('preschoolAddTeacher.form.removeImage')"
       :disabled="isLocked"
       @change="emit('profile-image-change', $event)"
       @remove="emit('profile-image-remove')"
@@ -121,14 +119,14 @@ const emit = defineEmits([
       :role-options="roleOptions"
       :status-options="statusOptions"
       :disabled="isLocked"
-      name-label="Full Name"
-      email-label="Email"
-      phone-label="Phone"
-      role-label-text="Role"
-      status-label-text="Status"
-      name-placeholder="Enter full name"
-      email-placeholder="teacher@example.com"
-      phone-placeholder="Enter phone number"
+      :name-label="t('preschoolAddTeacher.form.fullName')"
+      :email-label="t('preschoolAddTeacher.form.email')"
+      :phone-label="t('preschoolAddTeacher.form.phone')"
+      :role-label-text="t('preschoolAddTeacher.form.role')"
+      :status-label-text="t('preschoolAddTeacher.form.status')"
+      :name-placeholder="t('preschoolAddTeacher.form.fullNamePlaceholder')"
+      :email-placeholder="t('preschoolAddTeacher.form.emailPlaceholder')"
+      :phone-placeholder="t('preschoolAddTeacher.form.phonePlaceholder')"
       :role-label="roleLabel"
       :status-label="statusLabel"
       @update:name="emit('update:name', $event)"
@@ -138,14 +136,11 @@ const emit = defineEmits([
       @update:status="emit('update:status', $event)"
     />
 
-    <AddAdminPermissionsField
+    <RolePermissionsPreview
       class="add-teacher-form-fields__field add-teacher-form-fields__field--full"
-      title="Permissions"
-      :permissions="permissions"
-      :options="permissionOptions"
-      :disabled="isLocked"
-      :permission-label="permissionLabel"
-      @toggle="emit('toggle-permission', $event)"
+      :role="role"
+      :permissions="rolePermissions"
+      :loading="rolePermissionsLoading"
     />
 
     <AddAdminPasswordFields
@@ -155,12 +150,12 @@ const emit = defineEmits([
       :disabled="isLocked"
       :password-visible="isPasswordVisible"
       :confirm-password-visible="isConfirmPasswordVisible"
-      password-label="Password"
-      confirm-password-label="Confirm Password"
-      password-placeholder="Minimum 6 characters"
-      confirm-password-placeholder="Re-enter password"
-      show-password-label="Show password"
-      hide-password-label="Hide password"
+      :password-label="t('preschoolAddTeacher.form.password')"
+      :confirm-password-label="t('preschoolAddTeacher.form.confirmPassword')"
+      :password-placeholder="t('preschoolAddTeacher.form.passwordPlaceholder')"
+      :confirm-password-placeholder="t('preschoolAddTeacher.form.confirmPasswordPlaceholder')"
+      :show-password-label="t('preschoolAddTeacher.form.showPassword')"
+      :hide-password-label="t('preschoolAddTeacher.form.hidePassword')"
       @update:password="emit('update:password', $event)"
       @update:confirm-password="emit('update:confirmPassword', $event)"
       @toggle-password="emit('toggle-password')"

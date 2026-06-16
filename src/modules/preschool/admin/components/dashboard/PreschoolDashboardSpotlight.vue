@@ -1,7 +1,11 @@
 <script setup>
+import { useLanguage } from '@/composables/useLanguage'
+
 defineOptions({
   name: 'PreschoolDashboardSpotlight',
 })
+
+const { t } = useLanguage()
 
 defineProps({
   title: {
@@ -17,7 +21,7 @@ defineProps({
 
 <template>
   <section class="preschool-dashboard-spotlight">
-    <p class="preschool-dashboard-spotlight__eyebrow">Priority Focus</p>
+    <p class="preschool-dashboard-spotlight__eyebrow">{{ t('preschoolDashboardSpotlight.eyebrow') }}</p>
     <h2 class="preschool-dashboard-spotlight__title">{{ title }}</h2>
     <p class="preschool-dashboard-spotlight__text">{{ text }}</p>
   </section>

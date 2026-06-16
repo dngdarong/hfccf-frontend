@@ -1,15 +1,40 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+/**
+ * UsersTable
+ * --------------------------------------------------------------------------
+ * Shared data table for user-style records.
+ *
+ * Features:
+ * - PrimeVue DataTable wrapper
+ * - Loading / empty states
+ * - Dynamic columns
+ * - User avatar fallback
+ * - Role / permission / status badges
+ * - Menu row actions
+ * --------------------------------------------------------------------------
+ */
+
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Avatar from 'primevue/avatar'
-import Loading from '@/components/feedback/Loading.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import RolesBadge from '@/components/badges/RolesBadge.vue'
 import PermissionBadge from '@/components/badges/PermissionBadge.vue'
-import ActionsButton from '@/components/buttons/ActionsButton.vue'
-import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import TableEmptyState from '@/components/data-display/components/TableEmptyState.vue'
+import TableLoadingState from '@/components/data-display/components/TableLoadingState.vue'
+import TableActions from '@/components/data-display/components/TableActions.vue'
+import { useTableAvatar } from './composables/useTableAvatar'
+import {
+  formatDateTime,
+  hiddenPermissionCount,
+  hiddenPermissionLabel,
+  permissionList,
+  plainValue,
+  statusType,
+  useTableDisplay,
+  usernameLabel,
+  visiblePermissions,
+} from './composables/useTableDisplay'
 
 defineOptions({
   name: 'UsersTable',
@@ -40,127 +65,89 @@ const props = defineProps({
     type: String,
     default: 'id',
   },
-  actionStyle: {
+  showViewAction: {
+    type: Boolean,
+    default: true,
+  },
+  showEditAction: {
+    type: Boolean,
+    default: true,
+  },
+  showDeleteAction: {
+    type: Boolean,
+    default: true,
+  },
+  sortField: {
     type: String,
-    default: 'menu',
-    validator: (value) => ['menu', 'buttons'].includes(value),
+    default: '',
+  },
+  sortOrder: {
+    type: Number,
+    default: 0,
+  },
+  serverSide: {
+    type: Boolean,
+    default: false,
   },
 })
 
-const emit = defineEmits(['view', 'edit', 'delete'])
+const emit = defineEmits(['view', 'edit', 'delete', 'sort'])
+
 const { t } = useLanguage()
-const hasImageError = ref({})
 
-const resolvedRows = computed(() => (Array.isArray(props.rows) ? props.rows : props.users))
-const resolvedEmptyText = computed(() => props.emptyText || t('users.table.empty') || 'No rows found.')
-const loadingLabel = computed(() => t('users.loadingUsers') || 'Loading data')
-const tablePt = computed(() => ({
-  root: {
-    class: '!overflow-hidden !rounded-2xl !border !border-surface-200 !bg-white',
-  },
-  tableContainer: {
-    class: '!bg-white',
-  },
-  table: {
-    class: '!bg-white',
-  },
-  headerRow: {
-    class: '!bg-slate-50',
-  },
-  headerCell: {
-    class:
-      '!border-b !border-surface-200 !bg-slate-50 !px-4 !py-3.5 !text-[0.75rem] !font-bold !tracking-[0.06em] !text-surface-600 uppercase md:!px-4',
-  },
-  bodyRow: ({ context }) => ({
-    class: context?.stripedRows
-      ? 'odd:!bg-white even:!bg-sky-50/30 hover:!bg-brand-50/60 transition-colors'
-      : 'hover:!bg-brand-50/60 transition-colors',
-  }),
-  bodyCell: {
-    class: '!border-b !border-slate-100 !bg-transparent !px-4 !py-3.5 !text-surface-700 md:!px-4',
-  },
-  loadingOverlay: {
-    class: '!bg-white/80 backdrop-blur-[1px]',
-  },
-  emptyMessage: {
-    class: '!bg-white',
-  },
-}))
-const defaultColumns = computed(() => [
-  { key: 'number', label: t('common.table.number'), align: 'left' },
-  { key: 'user', label: t('common.table.user'), align: 'left' },
-  { key: 'email', label: t('common.table.email'), align: 'left' },
-  { key: 'role', label: t('common.table.role'), align: 'left' },
-  { key: 'permission', label: t('common.table.permission'), align: 'left' },
-  { key: 'status', label: t('common.table.status'), align: 'left' },
-  { key: 'phone', label: t('common.table.phone'), align: 'left' },
-  { key: 'actions', label: t('common.table.actions'), align: 'right' },
-])
-const resolvedColumns = computed(() => (props.columns.length ? props.columns : defaultColumns.value))
-const useButtonActions = computed(() => props.actionStyle === 'buttons')
+const {
+  resolvedRows,
+  resolvedEmptyText,
+  loadingLabel,
+  resolvedColumns,
+  resolvedSortField,
+  resolvedSortOrder,
+  tablePt,
+} = useTableDisplay(props, t)
 
-function statusType(row) {
-  const value = String(row?.status ?? '').toLowerCase()
-  if (value === 'active') return 'success'
-  if (value === 'pending') return 'pending'
-  if (value === 'inactive') return 'warning'
-  if (value === 'suspended') return 'error'
-  return 'info'
+const { avatarSrc, shouldShowImage, userInitials, onAvatarError, onAvatarLoad } =
+  useTableAvatar(resolvedRows)
+
+function onSort(event) {
+  if (!props.serverSide) return
+
+  emit('sort', event)
 }
 
-function permissionList(row) {
-  const explicit = Array.isArray(row?.permissions) ? row.permissions : []
-  if (explicit.length) return explicit
-  return String(row?.permission ?? '')
-    .split(',')
-    .map((value) => value.trim())
+function humanizePaymentValue(value) {
+  const key = String(value || '').trim().toLowerCase()
+  const map = {
+    cash: 'Cash',
+    mobile_payment: 'Mobile Payment',
+    bank_transfer: 'Bank Transfer',
+    card: 'Card',
+    other: 'Other',
+    paid: 'Paid',
+    pending: 'Pending',
+    overdue: 'Overdue',
+    cancelled: 'Cancelled',
+  }
+
+  if (!key) return '-'
+  if (map[key]) return map[key]
+
+  return key
+    .split(/[_\s-]+/)
     .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
-function usernameLabel(username) {
-  const value = String(username ?? '').trim()
-  if (!value) return '-'
-  return value.startsWith('@') ? value : `@${value}`
-}
+function paymentTone(value) {
+  const key = String(value || '').trim().toLowerCase()
 
-function avatarSrc(row) {
-  const key = row?.id || row?.email || row?.username || row?.name
-  if (hasImageError.value[key]) return ''
-  return String(row?.avatar || row?.avatarUrl || row?.profileImage || row?.photo || '').trim()
-}
+  if (['paid', 'cash'].includes(key)) return 'success'
+  if (['pending', 'mobile_payment'].includes(key)) return 'info'
+  if (['overdue', 'bank_transfer'].includes(key)) return 'warning'
+  if (['cancelled', 'card'].includes(key)) return 'neutral'
 
-function userInitials(row) {
-  const name = String(row?.name ?? '').trim()
-  if (!name) return '?'
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part.charAt(0).toUpperCase())
-      .join('') || '?'
-  )
+  return 'neutral'
 }
-
-function plainValue(row, column) {
-  const field = column?.field || column?.key
-  const value = row?.[field]
-  const normalized = String(value ?? '').trim()
-  return normalized || '-'
-}
-
-function onAvatarError(row) {
-  const key = row?.id || row?.email || row?.username || row?.name
-  hasImageError.value = { ...hasImageError.value, [key]: true }
-}
-
-watch(
-  () => resolvedRows.value,
-  () => {
-    hasImageError.value = {}
-  },
-  { deep: true },
-)
 </script>
 
 <template>
@@ -168,23 +155,23 @@ watch(
     :value="resolvedRows"
     :data-key="rowKey"
     :loading="loading"
+    :lazy="serverSide"
+    :sort-field="resolvedSortField || undefined"
+    :sort-order="resolvedSortOrder"
     striped-rows
     removable-sort
     class="ui-data-table"
     :pt="tablePt"
+    @sort="onSort"
   >
+    <!-- Empty state -->
     <template #empty>
-      <div class="px-4 py-7 text-center text-sm text-surface-500">
-        {{ resolvedEmptyText }}
-      </div>
+      <TableEmptyState :text="resolvedEmptyText" />
     </template>
 
+    <!-- Loading state -->
     <template #loading>
-      <div class="px-4 py-8">
-        <div class="flex justify-center">
-          <Loading :label="loadingLabel" size="md" />
-        </div>
-      </div>
+      <TableLoadingState :label="loadingLabel" />
     </template>
 
     <Column
@@ -192,101 +179,169 @@ watch(
       :key="column.key"
       :field="column.field || column.key"
       :header="column.label"
+      :sortable="Boolean(column.sortable)"
+      :sort-field="column.sortField || column.field || column.key"
       :pt="{
-        headerCell: { class: column.align === 'right' ? 'text-right' : 'text-left' },
-        bodyCell: { class: column.align === 'right' ? 'text-right' : 'text-left' },
+        headerCell: {
+          class: column.align === 'right' ? 'text-right' : 'text-left',
+        },
+        bodyCell: {
+          class: column.align === 'right' ? 'text-right' : 'text-left',
+        },
       }"
     >
       <template #body="{ data, index }">
+        <!-- Row number -->
         <template v-if="column.key === 'number'">
           <span class="text-[12px] font-semibold text-surface-700 sm:text-sm">
             {{ data?.rowNumber || index + 1 }}
           </span>
         </template>
 
-        <template v-else-if="column.key === 'user'">
-          <div class="flex items-center gap-3">
-            <Avatar
-              :label="avatarSrc(data) ? undefined : userInitials(data)"
-              :image="avatarSrc(data) || undefined"
-              shape="circle"
-              class="ui-user-avatar"
-              @image-error="onAvatarError(data)"
-            />
-            <div>
-              <div class="text-[13px] font-semibold leading-5 text-surface-900 sm:text-sm">
-                {{ data.name || '-' }}
-              </div>
-              <div class="text-[11px] text-surface-500 sm:text-xs">
-                ID: {{ data.id || '-' }}
-              </div>
-              <div class="text-[11px] text-surface-600 sm:text-xs">
-                {{ usernameLabel(data.username) }}
+        <!-- Student profile cell -->
+        <template v-else-if="column.key === 'student'">
+          <div class="ui-student-cell">
+            <div class="ui-user-avatar ui-user-avatar--student">
+              <span
+                v-if="!shouldShowImage(data)"
+                class="ui-user-avatar__initials"
+              >
+                {{ userInitials(data) }}
+              </span>
+              <img
+                v-if="avatarSrc(data)"
+                :src="avatarSrc(data)"
+                :alt="`${data.name || 'Student'} avatar`"
+                class="ui-user-avatar__image"
+                :class="{ 'ui-user-avatar__image--visible': shouldShowImage(data) }"
+                @load="onAvatarLoad(data)"
+                @error="onAvatarError(data)"
+              >
+            </div>
+            <div class="min-w-0">
+              <div class="ui-student-cell__name">{{ data.name || '-' }}</div>
+              <div v-if="data.publicId || data.studentCode" class="ui-student-cell__code">
+                {{ data.publicId || data.studentCode }}
               </div>
             </div>
           </div>
         </template>
 
+        <!-- User profile cell -->
+        <template v-else-if="column.key === 'user'">
+          <div class="ui-teacher-cell">
+            <div class="ui-user-avatar">
+              <span
+                v-if="!shouldShowImage(data)"
+                class="ui-user-avatar__initials"
+              >
+                {{ userInitials(data) }}
+              </span>
+
+              <img
+                v-if="avatarSrc(data)"
+                :src="avatarSrc(data)"
+                :alt="`${data.name || 'User'} avatar`"
+                class="ui-user-avatar__image"
+                :class="{ 'ui-user-avatar__image--visible': shouldShowImage(data) }"
+                @load="onAvatarLoad(data)"
+                @error="onAvatarError(data)"
+              >
+            </div>
+
+            <div class="min-w-0">
+              <div class="ui-teacher-cell__name">{{ data.name || '-' }}</div>
+              <div v-if="data.username" class="ui-teacher-cell__username">{{ usernameLabel(data.username) }}</div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Role badge -->
         <template v-else-if="column.key === 'role'">
           <RolesBadge :role="data.role" />
         </template>
 
+        <!-- Permission badges -->
         <template v-else-if="column.key === 'permission'">
           <div class="flex flex-wrap gap-1">
             <PermissionBadge
-              v-for="permission in permissionList(data)"
+              v-for="permission in visiblePermissions(data)"
               :key="permission"
               :permission="permission"
             />
-            <span v-if="!permissionList(data).length" class="text-[11px] text-surface-400">-</span>
+
+            <span
+              v-if="!permissionList(data).length"
+              class="text-[11px] text-surface-400"
+            >
+              -
+            </span>
+
+            <span
+              v-else-if="hiddenPermissionCount(data) > 0"
+              class="inline-flex items-center rounded-full border border-surface-200 bg-surface-100 px-2 py-0.5 text-[0.68rem] font-semibold leading-none tracking-[0.02em] text-surface-600"
+              :title="hiddenPermissionLabel(data)"
+            >
+              +{{ hiddenPermissionCount(data) }} more
+            </span>
           </div>
         </template>
 
+        <!-- Status badge -->
         <template v-else-if="column.key === 'status'">
-          <StatusBadge :status="statusType(data)" :label="String(data.status ?? 'Unknown')" size="sm" />
-        </template>
-
-        <template v-else-if="column.key === 'actions'">
-          <div v-if="useButtonActions" class="ui-data-table__row-actions">
-            <Button
-              type="button"
-              icon="pi pi-eye"
-              rounded="full"
-              variant="ghost"
-              size="sm"
-              class="ui-data-table__row-action"
-              @click="emit('view', data)"
-            />
-            <Button
-              type="button"
-              icon="pi pi-pencil"
-              rounded="full"
-              variant="ghost"
-              size="sm"
-              class="ui-data-table__row-action"
-              @click="emit('edit', data)"
-            />
-            <Button
-              type="button"
-              icon="pi pi-trash"
-              rounded="full"
-              variant="ghost"
-              size="sm"
-              class="ui-data-table__row-action ui-data-table__row-action--danger"
-              @click="emit('delete', data)"
-            />
-          </div>
-          <ActionsButton
-            v-else
-            :item="data"
-            @view="emit('view', data)"
-            @edit="emit('edit', data)"
-            @delete="emit('delete', data)"
+          <StatusBadge
+            :status="statusType(data)"
+            :label="String(data.status ?? 'Unknown')"
+            size="sm"
           />
         </template>
 
+        <!-- Payment method badge -->
+        <template v-else-if="column.key === 'paymentMethod'">
+          <StatusBadge
+            :status="paymentTone(data.paymentMethod)"
+            :label="humanizePaymentValue(data.paymentMethod)"
+            :translate-label="false"
+            :dot="false"
+            size="sm"
+          />
+        </template>
+
+        <!-- Payment status badge -->
+        <template v-else-if="column.key === 'paymentStatus'">
+          <StatusBadge
+            :status="paymentTone(data.paymentStatus)"
+            :label="humanizePaymentValue(data.paymentStatus)"
+            :translate-label="false"
+            size="sm"
+          />
+        </template>
+
+        <!-- Created at -->
+        <template v-else-if="column.key === 'created_at'">
+          <span class="text-[12px] text-surface-700 sm:text-sm">
+            {{ formatDateTime(data.createdAt || data.created_at) }}
+          </span>
+        </template>
+
+        <!-- Row actions -->
+        <template v-else-if="column.key === 'actions'">
+          <TableActions
+            :item="data"
+            :show-view-action="showViewAction"
+            :show-edit-action="showEditAction"
+            :show-delete-action="showDeleteAction"
+            @view="emit('view', $event)"
+            @edit="emit('edit', $event)"
+            @delete="emit('delete', $event)"
+          />
+        </template>
+
+        <!-- Default plain cell -->
         <template v-else>
-          <span class="text-[12px] text-surface-700 sm:text-sm">{{ plainValue(data, column) }}</span>
+          <span class="text-[12px] text-surface-700 sm:text-sm">
+            {{ plainValue(data, column) }}
+          </span>
         </template>
       </template>
     </Column>
@@ -294,14 +349,123 @@ watch(
 </template>
 
 <style scoped>
-:deep(.ui-user-avatar.p-avatar) {
-  width: 2.75rem;
-  height: 2.75rem;
-  background: linear-gradient(135deg, var(--brand-primary-500) 0%, var(--brand-primary-700) 100%);
-  color: #fff;
-  box-shadow: 0 10px 18px -14px rgba(0, 174, 239, 0.55);
+/**
+ * User avatar style.
+ */
+.ui-user-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(
+    135deg,
+    var(--brand-primary-400, #38bdf8) 0%,
+    var(--brand-primary-700, #0369a1) 100%
+  );
+  color: #ffffff;
+  box-shadow:
+    0 0 0 2.5px #fff,
+    0 0 0 4px #e0f2fe,
+    0 10px 20px -14px rgba(0, 174, 239, 0.5);
+  border-radius: 9999px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
+.ui-user-avatar--student {
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, #c4b5fd 0%, #7c3aed 100%);
+  box-shadow:
+    0 0 0 2.5px #fff,
+    0 0 0 4px #ede9fe,
+    0 10px 20px -14px rgba(124, 58, 237, 0.5);
+}
+
+/* teacher cell layout */
+.ui-teacher-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ui-teacher-cell__name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+
+.ui-teacher-cell__username {
+  margin-top: 0.1rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #0369a1;
+  letter-spacing: 0.03em;
+}
+
+/* student cell layout */
+.ui-student-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ui-student-cell__name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+
+.ui-student-cell__code {
+  margin-top: 0.1rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #7c3aed;
+  letter-spacing: 0.03em;
+}
+
+.ui-user-avatar__initials {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.ui-user-avatar__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ui-user-avatar__image--visible {
+  opacity: 1;
+}
+
+/**
+ * Inline action buttons container.
+ */
 .ui-data-table__row-actions {
   display: inline-flex;
   align-items: center;
@@ -309,11 +473,17 @@ watch(
   gap: 0.35rem;
 }
 
+/**
+ * Inline action button sizing.
+ */
 .ui-data-table__row-action {
   width: 2.15rem;
   height: 2.15rem;
 }
 
+/**
+ * Delete action color.
+ */
 .ui-data-table__row-action--danger {
   color: #b42318;
 }

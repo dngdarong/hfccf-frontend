@@ -1,0 +1,32 @@
+{
+  "sections": [
+    {
+      "id": "scholarship",
+      "labelKey": "nav.sections.scholarshipProgram",
+      "captionKey": "nav.sectionCaptions.scholarshipProgram",
+      "className": "sidebar-section--scholarship",
+      "collapsible": true,
+      "access": {
+        "scopes": [
+          "super_admin"
+        ]
+      },
+      "items": [
+        {
+          "id": "scholarship-dashboard",
+          "routeName": "dashboard-scholarship-admin",
+          "labelKey": "nav.items.scholarshipDashboard",
+          "icon": "home",
+          "badgeKey": "nav.badges.admin"
+        },
+        {
+          "id": "scholarship-applications",
+          "routeName": "dashboard-scholarship-admin-users",
+          "labelKey": "nav.items.applications",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff"
+        }
+      ]
+    }
+  ]
+}

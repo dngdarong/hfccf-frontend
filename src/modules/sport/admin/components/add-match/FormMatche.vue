@@ -47,6 +47,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  tournamentId: {
+    type: [String, Number],
+    default: '',
+  },
   tournamentOptions: {
     type: Array,
     default: () => [],
@@ -94,6 +98,7 @@ const emit = defineEmits([
   'cancel',
   'update:competitionType',
   'update:tournament',
+  'update:tournamentId',
   'update:dateTime',
   'update:venue',
   'update:status',
@@ -223,14 +228,14 @@ function onSubmit(event) {
         <span class="form-matche__label">{{ t('sportMatchesManagement.tournamentNameLabel') }}</span>
         <Select
           v-if="isTournamentMode"
-          :model-value="tournament"
+          :model-value="tournamentId"
           :options="tournamentSelectOptions"
           option-label="label"
           option-value="value"
           append-to="self"
           class="w-full"
           :pt="selectPt"
-          @update:model-value="emit('update:tournament', $event)"
+          @update:model-value="emit('update:tournamentId', $event)"
         />
         <InputText
           v-else-if="isFriendlyMode"

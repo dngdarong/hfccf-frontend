@@ -1,25 +1,44 @@
 <script setup>
 import { computed } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
-import adminDashboardData from '@/mocks/sport/admin-dashboard-data.json'
+
+defineOptions({
+  name: 'StandingsPanel',
+})
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: '',
+  },
+  subtitle: {
+    type: String,
+    default: '',
+  },
+  standings: {
+    type: Array,
+    default: () => [],
+  },
+  emptyText: {
+    type: String,
+    default: '',
+  },
+})
 
 const { t, language } = useLanguage()
 
-const standings = adminDashboardData.standings
 const isKh = computed(() => language.value === 'KH')
-const subtitle = computed(() => (isKh.value ? 'តារាងចំណាត់ថ្នាក់បច្ចុប្បន្ន' : 'Current table snapshot'))
-const columns = computed(() => [
-  { key: 'pos', label: isKh.value ? 'ល.រ' : 'Pos', align: 'left' },
-  { key: 'team', label: isKh.value ? 'ក្រុម' : 'Team', align: 'left' },
-  { key: 'p', label: 'P', align: 'center' },
-  { key: 'w', label: 'W', align: 'center' },
-  { key: 'd', label: 'D', align: 'center' },
-  { key: 'l', label: 'L', align: 'center' },
-  { key: 'gf', label: 'GF', align: 'center' },
-  { key: 'ga', label: 'GA', align: 'center' },
-  { key: 'gd', label: 'GD', align: 'center' },
-  { key: 'pts', label: isKh.value ? 'ពិន្ទុ' : 'Pts', align: 'right' },
-])
+const resolvedTitle = computed(() => props.title || t('sportAdminDashboard.quickPanels.standings'))
+const resolvedSubtitle = computed(() => props.subtitle || (isKh.value ? 'តារាងចំណាត់ថ្នាក់ពេលបច្ចុប្បន្ន' : 'Current standings snapshot'))
+const resolvedEmptyText = computed(() => props.emptyText || (isKh.value ? 'មិនទាន់មានតារាងចំណាត់ថ្នាក់ទេ។' : 'No standings available yet.'))
+
+function teamName(standing) {
+  return String(standing?.team?.name || standing?.teamName || standing?.name || '-').trim() || '-'
+}
+
+function teamCode(standing) {
+  return String(standing?.team?.teamCode || standing?.teamCode || '').trim()
+}
 </script>
 
 <template>
@@ -27,8 +46,8 @@ const columns = computed(() => [
     <div class="standings__card">
       <div class="standings__head">
         <div>
-          <h3 class="standings__title">{{ t('sportAdminDashboard.quickPanels.standings') }}</h3>
-          <p class="standings__subtitle">{{ subtitle }}</p>
+          <h3 class="standings__title">{{ resolvedTitle }}</h3>
+          <p class="standings__subtitle">{{ resolvedSubtitle }}</p>
         </div>
         <div class="standings__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -38,39 +57,48 @@ const columns = computed(() => [
         </div>
       </div>
 
-      <div class="standings__table-wrap">
+      <div v-if="standings.length" class="standings__table-wrap">
         <table class="standings__table">
           <thead>
             <tr>
-              <th
-                v-for="column in columns"
-                :key="column.key"
-                :class="[
-                  'standings__th',
-                  `standings__th--${column.align}`,
-                ]"
-              >
-                {{ column.label }}
-              </th>
+              <th class="standings__th standings__th--left">{{ isKh ? 'លំដាប់' : 'Rank' }}</th>
+              <th class="standings__th standings__th--left">{{ isKh ? 'ក្រុម' : 'Team' }}</th>
+              <th class="standings__th standings__th--center">P</th>
+              <th class="standings__th standings__th--center">W</th>
+              <th class="standings__th standings__th--center">D</th>
+              <th class="standings__th standings__th--center">L</th>
+              <th class="standings__th standings__th--center">GF</th>
+              <th class="standings__th standings__th--center">GA</th>
+              <th class="standings__th standings__th--center">GD</th>
+              <th class="standings__th standings__th--right">Pts</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="team in standings" :key="team.team" class="standings__row">
+            <tr v-for="standing in standings" :key="standing.id || `${standing.teamId}-${standing.rankPosition}`" class="standings__row">
               <td class="standings__td standings__td--left standings__td--rank">
-                <span class="standings__rank">{{ team.pos }}</span>
+                <span class="standings__rank">{{ standing.rankPosition ?? '-' }}</span>
               </td>
-              <td class="standings__td standings__td--left standings__td--team">{{ team.team }}</td>
-              <td class="standings__td standings__td--center">{{ team.p }}</td>
-              <td class="standings__td standings__td--center">{{ team.w }}</td>
-              <td class="standings__td standings__td--center">{{ team.d }}</td>
-              <td class="standings__td standings__td--center">{{ team.l }}</td>
-              <td class="standings__td standings__td--center">{{ team.gf }}</td>
-              <td class="standings__td standings__td--center">{{ team.ga }}</td>
-              <td class="standings__td standings__td--center">{{ team.gd }}</td>
-              <td class="standings__td standings__td--right standings__td--points">{{ team.pts }}</td>
+              <td class="standings__td standings__td--left standings__td--team">
+                <div class="standings__team">
+                  <span class="standings__team-name">{{ teamName(standing) }}</span>
+                  <span v-if="teamCode(standing)" class="standings__team-code">{{ teamCode(standing) }}</span>
+                </div>
+              </td>
+              <td class="standings__td standings__td--center">{{ standing.played ?? 0 }}</td>
+              <td class="standings__td standings__td--center">{{ standing.wins ?? 0 }}</td>
+              <td class="standings__td standings__td--center">{{ standing.draws ?? 0 }}</td>
+              <td class="standings__td standings__td--center">{{ standing.losses ?? 0 }}</td>
+              <td class="standings__td standings__td--center">{{ standing.goalsFor ?? 0 }}</td>
+              <td class="standings__td standings__td--center">{{ standing.goalsAgainst ?? 0 }}</td>
+              <td class="standings__td standings__td--center">{{ standing.goalDifference ?? 0 }}</td>
+              <td class="standings__td standings__td--right standings__td--points">{{ standing.points ?? 0 }}</td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div v-else class="standings__empty">
+        {{ resolvedEmptyText }}
       </div>
     </div>
   </section>
@@ -213,9 +241,20 @@ const columns = computed(() => [
   font-weight: 800;
 }
 
-.standings__td--team {
+.standings__team {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.standings__team-name {
   font-weight: 700;
   color: #162f43;
+}
+
+.standings__team-code {
+  font-size: 0.7rem;
+  color: #7b8794;
 }
 
 .standings__td--points {
@@ -223,10 +262,23 @@ const columns = computed(() => [
   color: #4f7e12;
 }
 
+.standings__empty {
+  padding: 1rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.85rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #64748b;
+  background: rgba(248, 250, 252, 0.7);
+}
+
 .standings--kh .standings__title,
 .standings--kh .standings__subtitle,
 .standings--kh .standings__th,
-.standings--kh .standings__td {
+.standings--kh .standings__td,
+.standings--kh .standings__team-name,
+.standings--kh .standings__team-code,
+.standings--kh .standings__empty {
   font-family:
     'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
 }

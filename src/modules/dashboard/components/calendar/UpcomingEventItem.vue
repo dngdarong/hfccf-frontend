@@ -54,7 +54,7 @@ const dayLabel = computed(() => String(dateValue.value.getDate()).padStart(2, '0
       <p class="upcoming-event-item__meta">
         <i class="pi pi-clock" aria-hidden="true" />
         <span>{{ event.time }}</span>
-        <span class="upcoming-event-item__separator">•</span>
+        <span class="upcoming-event-item__separator">&bull;</span>
         <i :class="targetIcon" aria-hidden="true" />
         <span class="upcoming-event-item__meta-label">{{ targetLabel }}:</span>
         <span>{{ event.teamLabel }}</span>

@@ -65,26 +65,16 @@ const emit = defineEmits([
   <div class="match-result-fields">
     <label class="match-result-fields__field">
       <span class="match-result-fields__label">{{ labels.homeTeam }}: {{ homeTeam }}</span>
-      <InputText
-        :model-value="homeScore"
-        type="number"
-        min="0"
-        class="w-full font-mono text-lg font-bold"
-        :disabled="readonly"
-        @update:model-value="emit('update:homeScore', $event)"
-      />
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-lg font-bold text-slate-900">
+        {{ homeScore }}
+      </div>
     </label>
 
     <label class="match-result-fields__field">
       <span class="match-result-fields__label">{{ labels.awayTeam }}: {{ awayTeam }}</span>
-      <InputText
-        :model-value="awayScore"
-        type="number"
-        min="0"
-        class="w-full font-mono text-lg font-bold"
-        :disabled="readonly"
-        @update:model-value="emit('update:awayScore', $event)"
-      />
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-lg font-bold text-slate-900">
+        {{ awayScore }}
+      </div>
     </label>
 
     <label class="match-result-fields__field">

@@ -178,6 +178,7 @@ export default {
       description: 'Update your personal details and contact information.',
       firstName: 'First Name',
       lastName: 'Last Name',
+      username: 'Username',
       email: 'Email address',
       phone: 'Phone number',
       department: 'Department',
@@ -185,6 +186,8 @@ export default {
       bioPlaceholder: 'Brief description about yourself...',
       firstNamePlaceholder: 'Enter first name',
       lastNamePlaceholder: 'Enter last name',
+      usernamePlaceholder: 'Enter username',
+      usernameHelp: 'This is the account handle shown across the platform.',
       emailPlaceholder: 'email{\'@\'}example.com',
       phonePlaceholder: '+855 12 345 678',
       departmentPlaceholder: 'Select department',
@@ -195,12 +198,13 @@ export default {
       currentPassword: 'Current Password',
       newPassword: 'New Password',
       confirmNewPassword: 'Confirm New Password',
-      currentPasswordPlaceholder: 'Enter your current password',
-      newPasswordPlaceholder: 'Enter a new password',
-      confirmNewPasswordPlaceholder: 'Re-enter your new password',
-      approvalNote:
-        'The password change will only succeed after the Super Admin approves it.',
-    },
+        currentPasswordPlaceholder: 'Enter your current password',
+        newPasswordPlaceholder: 'Enter a new password',
+        confirmNewPasswordPlaceholder: 'Re-enter your new password',
+        passwordMismatchHint: 'The new password and confirmation must match.',
+        approvalNote:
+          'The password change will only succeed after the Super Admin approves it.',
+      },
     aboutWebsite: {
       title: 'About Website',
       description:

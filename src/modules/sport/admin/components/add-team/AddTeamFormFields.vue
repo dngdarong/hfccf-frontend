@@ -61,6 +61,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  coachOptions: {
+    type: Array,
+    default: () => [],
+  },
   statusOptions: {
     type: Array,
     default: () => [],
@@ -116,19 +120,35 @@ const placeholders = computed(() => ({
   venue: t('sportAddTeam.venuePlaceholder'),
 }))
 
-const divisionSelectOptions = computed(() =>
-  props.divisionOptions.map((value) => ({
-    label: value,
-    value,
-  })),
-)
+const divisionSelectOptions = computed(() => {
+  if (!Array.isArray(props.divisionOptions)) return []
+  return props.divisionOptions
+    .filter(Boolean)
+    .map((value) => ({
+      label: value || '',
+      value: value || '',
+    }))
+})
 
-const statusSelectOptions = computed(() =>
-  props.statusOptions.map((value) => ({
-    label: props.statusLabel(value),
-    value,
-  })),
-)
+const coachSelectOptions = computed(() => {
+  if (!Array.isArray(props.coachOptions)) return []
+  return props.coachOptions
+    .filter(Boolean)
+    .map((value) => ({
+      label: value || '',
+      value: value || '',
+    }))
+})
+
+const statusSelectOptions = computed(() => {
+  if (!Array.isArray(props.statusOptions)) return []
+  return props.statusOptions
+    .filter(Boolean)
+    .map((value) => ({
+      label: props.statusLabel?.(value) || '',
+      value: value || '',
+    }))
+})
 
 function updateNumber(field, event) {
   const rawValue = event?.target?.value ?? 0
@@ -192,11 +212,16 @@ const selectPt = {
 
     <label class="add-team-form-fields__field">
       <span class="add-team-form-fields__label">{{ labels.coach }}</span>
-      <InputText
+      <Select
         :model-value="coach"
+        :options="coachSelectOptions"
+        option-label="label"
+        option-value="value"
         :disabled="isLocked"
         :placeholder="placeholders.coach"
+        append-to="self"
         class="w-full"
+        :pt="selectPt"
         @update:model-value="emit('update:coach', $event)"
       />
     </label>

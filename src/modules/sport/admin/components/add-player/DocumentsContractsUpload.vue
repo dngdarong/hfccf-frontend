@@ -297,7 +297,7 @@ watchEffect(() => {
                   class="opacity-75"
                 />
               </svg>
-              <span class="text-[0.85rem] font-medium">{{ t('common.loading') }}</span>
+              <span class="text-[0.85rem] font-medium">{{ t('common.states.loading') }}</span>
             </div>
 
             <p v-if="errorMessage" class="mt-3 text-[0.85rem] font-medium text-rose-600">

@@ -88,15 +88,17 @@ The app can run with mock data without a backend API.
 
 Development defaults are committed in [.env.development](/D:/Thesis2026/frontend/hfccf-frontend/.env.development):
 
-```env
-VITE_API_BASE_URL=http://hfccf-backend.test/api
-```
+  ```env
+  VITE_API_BASE_URL=http://hfccf-backend.test/api
+  VITE_IMAGE_PUBLIC_ORIGIN=https://pub-04c60dfb58ea4e43969c54044749b899.r2.dev
+  ```
 
 If you need a different backend host locally, create a local `.env` file:
 
-```env
-VITE_API_BASE_URL=http://hfccf-backend.test/api
-```
+  ```env
+  VITE_API_BASE_URL=http://hfccf-backend.test/api
+  VITE_IMAGE_PUBLIC_ORIGIN=https://pub-04c60dfb58ea4e43969c54044749b899.r2.dev
+  ```
 
 For production, `VITE_API_BASE_URL` must use HTTPS.
 
@@ -197,7 +199,7 @@ Current mock roles include:
 - `superadmin`
 - `adminenglish`
 - `adminpreschool`
-- `adminscholaship`
+- `adminscholarship`
 - `adminsport`
 - `teacher-english`
 - `teacher-preschool`
@@ -220,6 +222,7 @@ The frontend currently includes:
 - HTTPS enforcement outside local development
 - hardened Axios defaults for authenticated requests
 - CSP and browser security headers via Vite config
+- trusted public image origin for R2 avatars via `VITE_IMAGE_PUBLIC_ORIGIN`
 
 This is still frontend-side protection. Real production auth should be enforced by the backend.
 

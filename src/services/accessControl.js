@@ -21,8 +21,8 @@ export function getAccessProfile(user = getCurrentUser()) {
 
   return {
     role,
-    domain: roleAccess?.domain || null,
-    scope: roleAccess?.scope || null,
+    domain: roleAccess?.domain || user?.domain || null,
+    scope: roleAccess?.scope || user?.scope || null,
     isAuthenticated: Boolean(user),
     isSuperAdmin: roleAccess?.scope === ACCESS_SCOPES.SUPER_ADMIN,
   }
@@ -48,10 +48,14 @@ export function canAccess(user, rule = {}) {
   if (!user) return false
 
   const profile = getAccessProfile(user)
+
   if (!profile.scope) return false
 
   if (profile.isSuperAdmin) {
-    return accessRule.allowSuperAdmin && accessRule.permissions.every((permission) => hasPermission(permission, user))
+    return (
+      accessRule.allowSuperAdmin &&
+      accessRule.permissions.every((permission) => hasPermission(permission, user))
+    )
   }
 
   if (accessRule.scopes.length && !accessRule.scopes.includes(profile.scope)) {
@@ -71,16 +75,24 @@ export function canAccess(user, rule = {}) {
 
 export function canAccessRoute(user, route) {
   const matchedRecords = Array.isArray(route?.matched) ? route.matched : []
+
   return matchedRecords.every((record) => {
-    if (!Object.prototype.hasOwnProperty.call(record.meta || {}, 'access')) {
-      return record.meta?.requiresAuth !== true
+    const meta = record.meta || {}
+
+    if (Object.prototype.hasOwnProperty.call(meta, 'access')) {
+      return canAccess(user, meta.access)
     }
 
-    return canAccess(user, record.meta?.access)
+    if (meta.requiresAuth) {
+      return Boolean(user)
+    }
+
+    return true
   })
 }
 
 export function getSidebarToneClass(user) {
   const profile = getAccessProfile(user)
+
   return DOMAIN_SIDEBAR_TONE_CLASS[profile.domain || DOMAINS.ENGLISH] || 'sidebar-shell--english'
 }

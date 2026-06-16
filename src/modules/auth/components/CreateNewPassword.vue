@@ -1,12 +1,12 @@
 <script setup>
-import { computed, reactive } from 'vue'
 import Card from 'primevue/card'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
 import Button from '@/components/buttons/Button.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
+import { useCreateNewPassword } from '@/modules/auth/composables/useCreateNewPassword'
 
-defineProps({
+const props = defineProps({
   loading: {
     type: Boolean,
     default: false,
@@ -19,61 +19,36 @@ defineProps({
     type: String,
     default: '',
   },
+  t: {
+    type: Function,
+    required: true,
+  },
 })
 
 const emit = defineEmits(['submit', 'back', 'success-close'])
 
-const form = reactive({
-  password: '',
-  confirmPassword: '',
-})
-
-const touched = reactive({
-  password: false,
-  confirmPassword: false,
-})
-
-const passwordError = computed(() => {
-  if (!touched.password) return ''
-  if (!form.password) return 'New password is required.'
-  if (form.password.length < 8) return 'Use at least 8 characters.'
-  return ''
-})
-
-const confirmPasswordError = computed(() => {
-  if (!touched.confirmPassword) return ''
-  if (!form.confirmPassword) return 'Confirm your new password.'
-  if (form.confirmPassword !== form.password) return 'Passwords do not match.'
-  return ''
-})
-
-const isFormValid = computed(
-  () => form.password.length >= 8 && form.confirmPassword.length >= 8 && form.password === form.confirmPassword,
-)
-
-function touchField(field) {
-  touched[field] = true
-}
-
-function onSubmit() {
-  touched.password = true
-  touched.confirmPassword = true
-
-  if (!isFormValid.value) return
-
-  emit('submit', {
-    password: form.password,
-  })
-}
+const {
+  form,
+  passwordError,
+  confirmPasswordError,
+  isFormValid,
+  touchField,
+  submitPassword,
+} = useCreateNewPassword(props, emit)
 </script>
 
 <template>
   <div class="create-password mx-auto w-full max-w-md">
     <Card class="create-password-card border-0">
       <template #content>
-        <form class="create-password-fields" @submit.prevent="onSubmit">
+        <form class="create-password-fields" @submit.prevent="submitPassword">
           <div class="create-password-header">
-            <button type="button" class="create-password-back" aria-label="Back" @click="$emit('back')">
+            <button
+              type="button"
+              class="create-password-back"
+              :aria-label="t('auth.forgotPassword.createPassword.back')"
+              @click="$emit('back')"
+            >
               <i class="pi pi-arrow-left" aria-hidden="true"></i>
             </button>
 
@@ -82,13 +57,13 @@ function onSubmit() {
             </div>
 
             <div>
-              <p class="create-password-eyebrow">Reset password</p>
-              <h2>Create new password</h2>
+              <p class="create-password-eyebrow">{{ t('auth.forgotPassword.createPassword.eyebrow') }}</p>
+              <h2>{{ t('auth.forgotPassword.createPassword.title') }}</h2>
             </div>
           </div>
 
           <p class="create-password-copy">
-            Use a new password that is easy for you to remember and hard for others to guess.
+            {{ t('auth.forgotPassword.createPassword.copy') }}
           </p>
 
           <Message v-if="errorMessage" severity="error" :closable="false">
@@ -99,7 +74,7 @@ function onSubmit() {
           </Message>
 
           <div class="create-password-field">
-            <label for="newPassword">New password</label>
+            <label for="newPassword">{{ t('auth.forgotPassword.createPassword.newPassword') }}</label>
             <div class="create-password-control">
               <i class="pi pi-key create-password-control-icon" aria-hidden="true"></i>
               <Password
@@ -107,7 +82,7 @@ function onSubmit() {
                 v-model="form.password"
                 class="create-password-password w-full"
                 autocomplete="new-password"
-                placeholder="Enter new password"
+                :placeholder="t('auth.forgotPassword.createPassword.newPasswordPlaceholder')"
                 :feedback="false"
                 toggle-mask
                 fluid
@@ -124,7 +99,7 @@ function onSubmit() {
           </div>
 
           <div class="create-password-field">
-            <label for="confirmNewPassword">Confirm password</label>
+            <label for="confirmNewPassword">{{ t('auth.forgotPassword.createPassword.confirmPassword') }}</label>
             <div class="create-password-control">
               <i class="pi pi-shield create-password-control-icon" aria-hidden="true"></i>
               <Password
@@ -132,7 +107,7 @@ function onSubmit() {
                 v-model="form.confirmPassword"
                 class="create-password-password w-full"
                 autocomplete="new-password"
-                placeholder="Confirm new password"
+                :placeholder="t('auth.forgotPassword.createPassword.confirmPasswordPlaceholder')"
                 :feedback="false"
                 toggle-mask
                 fluid
@@ -160,7 +135,7 @@ function onSubmit() {
             <template #iconLeft>
               <i class="pi pi-check-circle" aria-hidden="true"></i>
             </template>
-            Save password
+            {{ t('auth.forgotPassword.createPassword.submit') }}
           </Button>
         </form>
       </template>
@@ -168,9 +143,9 @@ function onSubmit() {
 
     <AlertSuccess
       :show="Boolean(successMessage)"
-      title="Password updated"
-      :message="successMessage || 'Your password has been updated successfully.'"
-      button-text="Back to login"
+      :title="t('auth.forgotPassword.createPassword.successTitle')"
+      :message="successMessage || t('auth.forgotPassword.createPassword.successFallback')"
+      :button-text="t('auth.forgotPassword.createPassword.backToLogin')"
       @close="$emit('success-close')"
     />
   </div>

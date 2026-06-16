@@ -8,12 +8,13 @@ import ProfileCard from '@/modules/settings/components/profile-settings/ProfileC
 import GeneralInformation from '@/modules/settings/components/profile-settings/GeneralInformation.vue'
 import SecuritySettings from '@/modules/settings/components/profile-settings/SecuritySettings.vue'
 import AboutWebsite from '@/modules/settings/components/profile-settings/AboutWebsite.vue'
+import ProfileSettingsGrid from '@/modules/settings/components/profile-settings/ProfileSettingsGrid.vue'
 import { useUserStore } from '@/store/userStore'
 
 const { language, t } = useLanguage()
 const isKh = computed(() => language.value === 'KH')
 const userStore = useUserStore()
-const currentUser = computed(() => userStore.currentUser)
+const currentUser = computed(() => userStore.currentUser || {})
 const isSuccessAlertVisible = ref(false)
 const activeAlertMode = ref('profile')
 
@@ -22,14 +23,14 @@ const subtitle = computed(() => t('pages.profile.pageSubtitle'))
 const successAlertTitle = computed(() => t('pages.profile.alerts.profileUpdatedTitle'))
 const successAlertMessage = computed(() => t('pages.profile.alerts.profileUpdatedMessage'))
 
-function handleGeneralInformationSubmit(formData) {
-  console.log('Profile settings submitted:', formData)
+function handleGeneralInformationSubmit() {
+  userStore.refresh()
   activeAlertMode.value = 'profile'
   isSuccessAlertVisible.value = true
 }
 
-function handleSecuritySubmit(formData) {
-  console.log('Security settings submitted:', formData)
+function handleSecuritySubmit() {
+  userStore.refresh()
   activeAlertMode.value = 'security'
   isSuccessAlertVisible.value = true
 }
@@ -49,6 +50,46 @@ const resolvedSuccessAlertMessage = computed(() =>
 function handleSuccessAlertClose() {
   isSuccessAlertVisible.value = false
 }
+
+const overviewSections = computed(() => {
+  const displayName =
+    currentUser.value.fullName ||
+    currentUser.value.name ||
+    [currentUser.value.firstName, currentUser.value.lastName].filter(Boolean).join(' ') ||
+    t('pages.profile.general.title')
+
+  return [
+    {
+      title: t('pages.profile.general.title'),
+      tag: displayName,
+      copy: currentUser.value.email
+        ? `${currentUser.value.email} · ${currentUser.value.department || t('pages.profile.general.departmentPlaceholder')}`
+        : t('pages.profile.general.description'),
+    },
+    {
+      title: t('pages.profile.general.username'),
+      tag: currentUser.value.username || '-',
+      copy: currentUser.value.username
+        ? t('pages.profile.general.usernameHelp')
+        : t('pages.profile.general.usernamePlaceholder'),
+    },
+    {
+      title: t('pages.profile.general.bio'),
+      tag: currentUser.value.bio ? t('common.status.active') : t('common.status.pending'),
+      copy: currentUser.value.bio || t('pages.profile.general.bioPlaceholder'),
+    },
+    {
+      title: t('pages.profile.security.title'),
+      tag: currentUser.value.status || t('common.status.active'),
+      copy: t('pages.profile.security.approvalNote'),
+    },
+    {
+      title: t('pages.profile.aboutWebsite.title'),
+      tag: t('pages.profile.aboutWebsite.statusValue'),
+      copy: t('pages.profile.aboutWebsite.description'),
+    },
+  ]
+})
 </script>
 
 <template>
@@ -56,13 +97,20 @@ function handleSuccessAlertClose() {
     <section :class="isKh ? 'global-page global-page--kh' : 'global-page'">
       <HeaderSection :title="title" :subtitle="subtitle" />
 
+      <ProfileSettingsGrid
+        :sections="overviewSections"
+        :columns="5"
+      />
+
       <div class="profile-settings-layout">
         <aside class="profile-settings-layout__sidebar">
-          <ProfileCard v-if="currentUser" :user="currentUser" />
+          <ProfileCard
+            v-if="currentUser"
+            :user="currentUser"
+          />
         </aside>
 
         <main class="profile-settings-layout__content">
-          <!-- Let settings cards participate in a shared page grid instead of relying on implicit block flow. -->
           <div class="profile-settings-layout__content-grid">
             <div class="profile-settings-layout__content-item profile-settings-layout__content-item--wide">
               <GeneralInformation
@@ -104,6 +152,11 @@ function handleSuccessAlertClose() {
   grid-template-columns: 20rem 1fr;
   align-items: start;
   gap: 1.25rem;
+}
+
+.profile-settings-layout__sidebar {
+  position: sticky;
+  top: 1rem;
 }
 
 .profile-settings-layout__content-grid {

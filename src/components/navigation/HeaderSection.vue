@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
+import Breadcrumb from './Breadcrumb.vue'
 
 const props = defineProps({
   title: {
@@ -21,6 +22,7 @@ const resolvedSubtitle = computed(() => props.subtitle || t('common.dashboardOve
 
 <template>
   <header class="mb-4 max-sm:mb-[0.7rem]">
+    <Breadcrumb />
     <h2 class="m-0 text-[clamp(1.35rem,2.2vw,1.95rem)] leading-tight font-extrabold text-hope-dark max-sm:text-[1.2rem] max-[420px]:text-[1.08rem]">
       {{ resolvedTitle }}
     </h2>

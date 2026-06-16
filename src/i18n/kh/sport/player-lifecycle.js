@@ -1,0 +1,88 @@
+export default {
+  sportPlayerLifecycle: {
+    coachRoster: {
+      title: 'បញ្ជីកីឡាករក្រុម',
+      subtitle: 'គ្រប់គ្រងកីឡាករដែលបានផ្ដល់ក្រុម ការចូលរួម និងប្រវត្តិសមាជិកភាព។',
+      panelTitle: 'បញ្ជីកីឡាករបច្ចុប្បន្ន',
+      summary: '{players} នាក់ • {memberships} កំណត់ត្រាសមាជិកភាព',
+    },
+    adminLifecycle: {
+      title: 'គ្រប់គ្រងស្ថានភាពកីឡាករ',
+      subtitle: 'ពិនិត្យស្ថានភាព ការរងរបួស វិន័យ និងប្រវត្តិទូទាំងម៉ូឌុលកីឡា។',
+      panelTitle: 'ពិនិត្យស្ថានភាព',
+    },
+    common: {
+      selectTeam: 'ជ្រើសរើសក្រុម',
+      selectPlayer: 'ជ្រើសរើសកីឡាករ',
+      player: 'កីឡាករ',
+      team: 'ក្រុម',
+      jersey: 'លេខអាវ',
+      position: 'តួនាទី',
+      approval: 'ការអនុម័ត',
+      rosterStatus: 'ស្ថានភាពក្រុម',
+      membershipStatus: 'ស្ថានភាពសមាជិក',
+      notes: 'កំណត់ចំណាំ',
+      actions: 'សកម្មភាព',
+    },
+    statuses: {
+      active: 'សកម្ម',
+      injured: 'រងរបួស',
+      suspended: 'ផ្អាក',
+      inactive: 'អសកម្ម',
+      released: 'ដោះលែង',
+      graduated: 'បញ្ចប់',
+      archived: 'រក្សាទុក',
+    },
+    approvals: {
+      pending: 'រង់ចាំ',
+      approved: 'បានអនុម័ត',
+      rejected: 'បានបដិសេធ',
+    },
+    filters: {
+      status: 'ត្រងតាមស្ថានភាព',
+      approval: 'ត្រងតាមការអនុម័ត',
+      allStatuses: 'ស្ថានភាពទាំងអស់',
+      allApprovals: 'ការអនុម័តទាំងអស់',
+    },
+    actions: {
+      addToRoster: 'បន្ថែមទៅក្រុម',
+      history: 'ប្រវត្តិ',
+      active: 'បើកសកម្ម',
+      injured: 'កត់ថារងរបួស',
+      suspended: 'ផ្អាក',
+      released: 'ដោះលែង',
+      archive: 'រក្សាទុក',
+    },
+    history: {
+      title: 'ប្រវត្តិសមាជិកភាព',
+      player: 'កីឡាករ',
+      joinedAt: 'ចូលរួមថ្ងៃទី',
+      leftAt: 'ចាកចេញថ្ងៃទី',
+    },
+    membership: {
+      active: 'សមាជិកភាពសកម្ម',
+      inactive: 'សមាជិកភាពអសកម្ម',
+    },
+    eligibility: {
+      title: 'លក្ខខណ្ឌ',
+      rosterLocked: 'កីឡាករនេះមិនអាចផ្លាស់ប្តូរបាន ខណៈកំពុងរក្សាទុក ឬបានដោះលែង។',
+      activeMembership: 'កីឡាករនេះមានសមាជិកភាពសកម្មមួយរួចហើយ។',
+      approvalRequired: 'ត្រូវអនុម័តកីឡាករមុននឹងបន្ថែមទៅក្រុម។',
+    },
+    confirmations: {
+      archive: 'រក្សាទុកកីឡាករនេះ?',
+      release: 'ដោះលែងកីឡាករនេះ?',
+      injured: 'កត់ថាកីឡាករនេះរងរបួស?',
+      suspended: 'ផ្អាកកីឡាករនេះ?',
+    },
+    feedback: {
+      updated: 'បានធ្វើបច្ចុប្បន្នភាពស្ថានភាពកីឡាកររួចរាល់។',
+      rosterUpdated: 'បានធ្វើបច្ចុប្បន្នភាពសមាជិកភាពក្រុមរួចរាល់។',
+      historyLoaded: 'បានផ្ទុកប្រវត្តិកីឡាកររួចរាល់។',
+    },
+    statusNotes: {
+      coachChange: 'ធ្វើបច្ចុប្បន្នភាពដោយគ្រូបង្វឹក។',
+      adminChange: 'ធ្វើបច្ចុប្បន្នភាពដោយអ្នកគ្រប់គ្រង។',
+    },
+  },
+}

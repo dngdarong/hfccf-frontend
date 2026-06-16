@@ -45,7 +45,6 @@ const content = computed(() => ({
     </header>
 
     <div class="grid gap-4 p-4 sm:px-[1.15rem] sm:py-[1.1rem]">
-      <!-- Use a compact stat list so the website details are easy to scan beside editable settings forms. -->
       <div class="grid gap-3">
         <div
           v-for="item in content.items"
@@ -63,7 +62,6 @@ const content = computed(() => ({
       </div>
 
       <div class="flex justify-end">
-        <!-- Use a link here because this action is navigation only. -->
         <RouterLink
           :to="{ name: 'settings-about-website' }"
           class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4.5 py-2.5 text-sm font-bold text-surface-700 shadow-[0_8px_18px_-18px_rgba(15,23,42,0.16)] transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-surface-900 focus-visible:outline-none focus-visible:shadow-focus active:scale-[0.98]"

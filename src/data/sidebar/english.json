@@ -1,0 +1,53 @@
+{
+  "sections": [
+    {
+      "id": "english",
+      "labelKey": "nav.sections.englishProgram",
+      "captionKey": "nav.sectionCaptions.englishProgram",
+      "className": "sidebar-section--english",
+      "collapsible": true,
+      "access": {
+        "scopes": [
+          "super_admin"
+        ]
+      },
+      "items": [
+        {
+          "id": "english-dashboard",
+          "routeName": "dashboard-english-admin",
+          "labelKey": "nav.items.englishDashboard",
+          "icon": "home",
+          "badgeKey": "nav.badges.admin"
+        },
+        {
+          "id": "english-teachers",
+          "routeName": "dashboard-english-admin-users",
+          "labelKey": "nav.items.teachers",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "english-students",
+          "routeName": "dashboard-english-admin-students",
+          "labelKey": "nav.items.students",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "english-classes",
+          "routeName": "dashboard-english-admin-classes",
+          "labelKey": "nav.items.classes",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "english-tasks",
+          "routeName": "dashboard-english-admin-tasks",
+          "label": "Tasks",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff"
+        }
+      ]
+    }
+  ]
+}

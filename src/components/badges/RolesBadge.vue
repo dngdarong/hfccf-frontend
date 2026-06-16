@@ -2,7 +2,11 @@
 import { computed } from 'vue'
 import Tag from 'primevue/tag'
 import { useLanguage } from '@/composables/useLanguage'
-import { ROLES, isTeacherRole } from '@/constants/roles'
+import { ROLES, normalizeRole } from '@/constants/roles'
+
+defineOptions({
+  name: 'RolesBadge',
+})
 
 const props = defineProps({
   role: {
@@ -12,20 +16,18 @@ const props = defineProps({
   size: {
     type: String,
     default: 'sm',
+    validator: (value) => ['xs', 'sm', 'md', 'lg'].includes(value),
   },
 })
 
 const { t } = useLanguage()
 
 function toRoleKey(value) {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, '_')
+  return normalizeRole(value).replace(/[\s-]+/g, '_')
 }
 
 function humanizeRole(value) {
-  return String(value ?? '')
+  return String(value || '')
     .trim()
     .split(/[\s-]+/g)
     .filter(Boolean)
@@ -33,23 +35,34 @@ function humanizeRole(value) {
     .join(' ')
 }
 
-const normalizedRole = computed(() => String(props.role || '').trim().toLowerCase())
+const normalizedRole = computed(() => normalizeRole(props.role))
+
 const roleLabel = computed(() => {
   if (!normalizedRole.value) return '-'
+
   const key = `common.role.${toRoleKey(normalizedRole.value)}`
   const translated = t(key)
-  return translated !== key ? translated : humanizeRole(normalizedRole.value)
+
+  return translated && translated !== key
+    ? translated
+    : humanizeRole(normalizedRole.value)
 })
 
 const sizeClass = computed(() => {
-  if (props.size === 'xs') return '!px-2 !py-0.5 !text-[0.62rem]'
-  if (props.size === 'md') return '!px-3 !py-1.5 !text-[0.75rem]'
-  if (props.size === 'lg') return '!px-3.5 !py-1.5 !text-[0.8rem]'
-  return '!px-2.5 !py-1 !text-[0.7rem]'
+  const classes = {
+    xs: '!px-2 !py-0.5 !text-[0.62rem]',
+    sm: '!px-2.5 !py-1 !text-[0.7rem]',
+    md: '!px-3 !py-1.5 !text-[0.75rem]',
+    lg: '!px-3.5 !py-1.5 !text-[0.8rem]',
+  }
+
+  return classes[props.size] || classes.sm
 })
 
 const toneClass = computed(() => {
-  if (normalizedRole.value === ROLES.SUPER_ADMIN) {
+  const role = normalizedRole.value
+
+  if (role === ROLES.SUPER_ADMIN) {
     return [
       '!border-indigo-200',
       '!bg-indigo-50',
@@ -58,7 +71,7 @@ const toneClass = computed(() => {
     ]
   }
 
-  if (normalizedRole.value.includes('sport') || normalizedRole.value === ROLES.COACH) {
+  if (role === ROLES.ADMIN_SPORT || role === ROLES.COACH) {
     return [
       '!border-rose-200',
       '!bg-rose-50',
@@ -68,8 +81,8 @@ const toneClass = computed(() => {
   }
 
   if (
-    normalizedRole.value.includes('scholarship') ||
-    normalizedRole.value === ROLES.ADMIN_SCHOLARSHIP
+    role === ROLES.ADMIN_SCHOLARSHIP ||
+    role === ROLES.TEACHER_SCHOLARSHIP
   ) {
     return [
       '!border-amber-200',
@@ -79,7 +92,7 @@ const toneClass = computed(() => {
     ]
   }
 
-  if (normalizedRole.value.includes('english')) {
+  if (role === ROLES.ADMIN_ENGLISH || role === ROLES.TEACHER_ENGLISH) {
     return [
       '!border-brand-200',
       '!bg-brand-50',
@@ -88,7 +101,7 @@ const toneClass = computed(() => {
     ]
   }
 
-  if (normalizedRole.value.includes('preschool') || isTeacherRole(normalizedRole.value)) {
+  if (role === ROLES.ADMIN_PRESCHOOL || role === ROLES.TEACHER_PRESCHOOL) {
     return [
       '!border-lime-200',
       '!bg-lime-50',
@@ -126,5 +139,11 @@ const rolePt = computed(() => ({
 </script>
 
 <template>
-  <Tag :value="roleLabel" rounded class="ui-role-tag" :pt="rolePt" />
+  <Tag
+    :value="roleLabel"
+    class="ui-role-tag"
+    :pt="rolePt"
+    role="status"
+    aria-live="polite"
+  />
 </template>

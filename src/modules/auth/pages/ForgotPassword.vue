@@ -6,42 +6,66 @@ import AuthLayout from '@/layouts/AuthLayout.vue'
 import CreateNewPassword from '@/modules/auth/components/CreateNewPassword.vue'
 import VerifyCode from '@/modules/auth/components/VerifyCode.vue'
 import VerifyEmail from '@/modules/auth/components/VerifyEmail.vue'
-import users from '@/mocks/users.json'
-import { ROLES } from '@/constants/roles'
+import { useLanguage } from '@/composables/useLanguage'
+import { requestPasswordReset, resetPassword, verifyPasswordResetOtp } from '@/services/auth'
 
 const router = useRouter()
+const { t, language } = useLanguage()
 
 const recoveryPolicy = Object.freeze({
-  role: ROLES.SUPER_ADMIN,
-  requiredPermission: 'all:*',
-  allowedStatuses: ['active'],
   otpLength: 6,
   minPasswordLength: 8,
 })
 
 const email = ref('')
-const recoveryAccount = ref(null)
 const emailVerified = ref(false)
 const otpVerified = ref(false)
+
 const isOtpStep = ref(false)
 const isPasswordStep = ref(false)
+
 const isVerifying = ref(false)
 const isResending = ref(false)
 const isSavingPassword = ref(false)
+
 const errorMessage = ref('')
 const successMessage = ref('')
 
-const isRecoveryLoading = computed(() => isResending.value || isVerifying.value || isSavingPassword.value)
+const verifiedCode = ref('')
+
+const isRecoveryLoading = computed(
+  () => isResending.value || isVerifying.value || isSavingPassword.value,
+)
+
 const recoveryLoadingLabel = computed(() => {
-  if (isSavingPassword.value) return 'Saving password...'
-  if (isVerifying.value) return 'Verifying OTP...'
-  if (isResending.value) return 'Sending OTP...'
-  return 'Loading...'
+  if (isSavingPassword.value) {
+    return t('auth.forgotPassword.loading.savingPassword')
+  }
+
+  if (isVerifying.value) {
+    return t('auth.forgotPassword.loading.verifyingOtp')
+  }
+
+  if (isResending.value) {
+    return t('auth.forgotPassword.loading.sendingOtp')
+  }
+
+  return t('auth.forgotPassword.loading.default')
 })
 
-function wait(ms = 450) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
+const isKhmer = computed(() => language.value === 'KH')
+
+const stepTitle = computed(() => {
+  if (isPasswordStep.value) {
+    return t('auth.forgotPassword.steps.password')
+  }
+
+  if (isOtpStep.value) {
+    return t('auth.forgotPassword.steps.otp')
+  }
+
+  return t('auth.forgotPassword.steps.email')
+})
 
 function normalizeEmail(value) {
   return String(value || '')
@@ -50,55 +74,64 @@ function normalizeEmail(value) {
 }
 
 function resetRecoveryState({ keepEmail = false } = {}) {
-  if (!keepEmail) email.value = ''
-  recoveryAccount.value = null
+  if (!keepEmail) {
+    email.value = ''
+  }
+
   emailVerified.value = false
   otpVerified.value = false
+
   isOtpStep.value = false
   isPasswordStep.value = false
-}
 
-function hasRequiredPermission(user) {
-  return Array.isArray(user?.role_permission) && user.role_permission.includes(recoveryPolicy.requiredPermission)
-}
-
-function findEligibleRecoveryAccount(value) {
-  const normalizedEmail = normalizeEmail(value)
-
-  return users.find(
-    (user) =>
-      normalizeEmail(user.email) === normalizedEmail &&
-      String(user.role || '').trim().toLowerCase() === recoveryPolicy.role &&
-      recoveryPolicy.allowedStatuses.includes(String(user.status || '').trim().toLowerCase()) &&
-      hasRequiredPermission(user),
-  )
+  verifiedCode.value = ''
 }
 
 function isRecoverySessionReady() {
-  return Boolean(recoveryAccount.value && emailVerified.value && normalizeEmail(email.value))
+  return Boolean(emailVerified.value && normalizeEmail(email.value))
 }
 
 async function onEmailAccepted(payload) {
-  const matchedAccount = findEligibleRecoveryAccount(payload?.email)
+  errorMessage.value = ''
+  successMessage.value = ''
 
-  if (!matchedAccount) {
+  const requestEmail = normalizeEmail(payload?.email)
+
+  isResending.value = true
+
+  try {
+    const result = await requestPasswordReset(requestEmail)
+
+    email.value = normalizeEmail(result.email || requestEmail)
+
+    verifiedCode.value = ''
+
+    emailVerified.value = true
+    otpVerified.value = false
+
+    isOtpStep.value = true
+    isPasswordStep.value = false
+
+    successMessage.value = t(
+      'auth.forgotPassword.success.codeSent',
+      {
+        email: email.value,
+      },
+    )
+  } catch (error) {
     resetRecoveryState({ keepEmail: true })
-    errorMessage.value = 'Only an active Super Admin account can reset a password.'
-    successMessage.value = ''
-    return
-  }
 
-  email.value = normalizeEmail(matchedAccount.email)
-  recoveryAccount.value = matchedAccount
-  emailVerified.value = true
-  otpVerified.value = false
-  isOtpStep.value = true
-  isPasswordStep.value = false
-  await onResend({ email: email.value })
+    errorMessage.value =
+      error.message ||
+      t('auth.forgotPassword.errors.inactiveAccount')
+  } finally {
+    isResending.value = false
+  }
 }
 
 function onBackToEmail() {
   resetRecoveryState({ keepEmail: true })
+
   errorMessage.value = ''
   successMessage.value = ''
 }
@@ -106,7 +139,10 @@ function onBackToEmail() {
 function onBackToOtp() {
   isOtpStep.value = true
   isPasswordStep.value = false
+
   otpVerified.value = false
+  verifiedCode.value = ''
+
   errorMessage.value = ''
   successMessage.value = ''
 }
@@ -117,24 +153,46 @@ async function onVerify(payload) {
 
   if (!isRecoverySessionReady()) {
     resetRecoveryState({ keepEmail: true })
-    errorMessage.value = 'Start with a valid Super Admin email before verifying OTP.'
+
+    errorMessage.value = t(
+      'auth.forgotPassword.errors.startWithEmail',
+    )
+
     return
   }
 
-  const submittedCode = String(payload?.code || '').replace(/\D/g, '')
+  const submittedCode = String(payload?.code || '')
+    .replace(/\D/g, '')
 
-  if (normalizeEmail(payload?.email) !== normalizeEmail(email.value) || submittedCode.length !== recoveryPolicy.otpLength) {
-    errorMessage.value = 'Enter the valid OTP for the verified Super Admin email.'
+  if (
+    normalizeEmail(payload?.email) !== normalizeEmail(email.value) ||
+    submittedCode.length !== recoveryPolicy.otpLength
+  ) {
+    errorMessage.value = t(
+      'auth.forgotPassword.errors.invalidOtp',
+    )
+
     return
   }
 
   isVerifying.value = true
 
   try {
-    await wait()
+    await verifyPasswordResetOtp({
+      email: email.value,
+      code: submittedCode,
+    })
+
     otpVerified.value = true
+    verifiedCode.value = submittedCode
+
     isPasswordStep.value = true
+
     successMessage.value = ''
+  } catch (error) {
+    errorMessage.value =
+      error.message ||
+      t('auth.forgotPassword.errors.invalidOtp')
   } finally {
     isVerifying.value = false
   }
@@ -144,32 +202,63 @@ async function onCreatePassword(payload) {
   errorMessage.value = ''
   successMessage.value = ''
 
-  if (!isRecoverySessionReady() || !otpVerified.value) {
-    errorMessage.value = 'Verify your Super Admin email and OTP before creating a new password.'
+  if (
+    !isRecoverySessionReady() ||
+    !otpVerified.value ||
+    !verifiedCode.value
+  ) {
+    errorMessage.value = t(
+      'auth.forgotPassword.errors.verifyBeforePassword',
+    )
+
     isOtpStep.value = true
     isPasswordStep.value = false
+
     return
   }
 
   const newPassword = String(payload?.password || '')
 
-  if (newPassword.length < recoveryPolicy.minPasswordLength) {
-    errorMessage.value = `Use at least ${recoveryPolicy.minPasswordLength} characters for the new password.`
+  if (
+    newPassword.length <
+    recoveryPolicy.minPasswordLength
+  ) {
+    errorMessage.value = t(
+      'auth.forgotPassword.errors.minPassword',
+      {
+        count: recoveryPolicy.minPasswordLength,
+      },
+    )
+
     return
   }
 
   isSavingPassword.value = true
 
   try {
-    await wait()
-    successMessage.value = 'Your password has been updated. Please sign in with the new password.'
+    await resetPassword({
+      email: email.value,
+      code: verifiedCode.value,
+      password: newPassword,
+      password_confirmation: newPassword,
+    })
+
+    successMessage.value = t(
+      'auth.forgotPassword.success.passwordUpdated',
+    )
+  } catch (error) {
+    errorMessage.value =
+      error.message ||
+      t('auth.forgotPassword.errors.verifyBeforePassword')
   } finally {
     isSavingPassword.value = false
   }
 }
 
 async function onPasswordSuccessClose() {
-  await router.push({ name: 'login' })
+  await router.push({
+    name: 'login',
+  })
 }
 
 async function onResend(payload) {
@@ -178,16 +267,35 @@ async function onResend(payload) {
 
   const requestEmail = normalizeEmail(payload?.email)
 
-  if (!isRecoverySessionReady() || requestEmail !== normalizeEmail(email.value)) {
-    errorMessage.value = 'Use a verified Super Admin email before requesting an OTP.'
+  if (
+    !isRecoverySessionReady() ||
+    requestEmail !== normalizeEmail(email.value)
+  ) {
+    errorMessage.value = t(
+      'auth.forgotPassword.errors.verifiedEmailRequired',
+    )
+
     return
   }
 
   isResending.value = true
 
   try {
-    await wait()
-    successMessage.value = `A new code was sent to ${requestEmail}.`
+    await requestPasswordReset(requestEmail)
+
+    verifiedCode.value = ''
+    otpVerified.value = false
+
+    successMessage.value = t(
+      'auth.forgotPassword.success.codeSent',
+      {
+        email: requestEmail,
+      },
+    )
+  } catch (error) {
+    errorMessage.value =
+      error.message ||
+      t('auth.forgotPassword.errors.verifiedEmailRequired')
   } finally {
     isResending.value = false
   }
@@ -196,7 +304,12 @@ async function onResend(payload) {
 
 <template>
   <AuthLayout>
-    <main class="forgot-page relative flex min-h-screen items-center overflow-hidden px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+    <main
+      :class="[
+        'forgot-page relative flex min-h-screen items-center overflow-hidden px-4 py-5 sm:px-6 sm:py-8 lg:px-8',
+        { 'forgot-page--kh': isKhmer },
+      ]"
+    >
       <section class="forgot-page-shell relative z-10 mx-auto grid w-full max-w-4xl overflow-hidden lg:grid-cols-[0.85fr_1.15fr]">
         <aside class="forgot-page-brand hidden min-h-[520px] flex-col justify-between lg:flex">
           <div aria-hidden="true"></div>
@@ -206,15 +319,15 @@ async function onResend(payload) {
               <img src="@/assets/images/logo.jpg" alt="HFCCF" class="h-20 w-auto" />
             </div>
             <div class="forgot-page-copy">
-              <p class="forgot-page-eyebrow">Super Admin</p>
-              <h1>Email recovery</h1>
-              <p>Verify your email before resetting access.</p>
+              <p class="forgot-page-eyebrow">{{ t('auth.forgotPassword.brand.eyebrow') }}</p>
+              <h1>{{ t('auth.forgotPassword.brand.title') }}</h1>
+              <p>{{ t('auth.forgotPassword.brand.subtitle') }}</p>
             </div>
           </div>
 
           <div class="forgot-page-note">
             <i class="pi pi-shield" aria-hidden="true"></i>
-            <span>Protected recovery flow</span>
+            <span>{{ t('auth.forgotPassword.brand.note') }}</span>
           </div>
         </aside>
 
@@ -227,8 +340,8 @@ async function onResend(payload) {
             </div>
 
             <div class="forgot-page-title">
-              <p class="forgot-page-eyebrow">Recovery</p>
-              <h2>{{ isPasswordStep ? 'New password' : isOtpStep ? 'Verify OTP' : 'Verify email' }}</h2>
+              <p class="forgot-page-eyebrow">{{ t('auth.forgotPassword.titleEyebrow') }}</p>
+              <h2>{{ stepTitle }}</h2>
             </div>
 
             <Loading
@@ -241,29 +354,32 @@ async function onResend(payload) {
             <VerifyEmail
               v-if="!isOtpStep && !isPasswordStep"
               v-model:email="email"
-              :resend-loading="isResending"
+              :loading="isResending"
               :error-message="errorMessage"
               :success-message="successMessage"
-              @resend="onEmailAccepted"
+              :t="t"
+              @submit="onEmailAccepted"
             />
 
             <VerifyCode
-              v-else-if="isOtpStep && !isPasswordStep"
-              :email="email"
-              :loading="isVerifying"
-              :resend-loading="isResending"
-              :error-message="errorMessage"
-              :success-message="successMessage"
-              @verify="onVerify"
-              @resend="onResend"
-              @back="onBackToEmail"
-            />
+                v-else-if="isOtpStep && !isPasswordStep"
+                :email="email"
+                :loading="isVerifying"
+                :resend-loading="isResending"
+                :error-message="errorMessage"
+                :success-message="successMessage"
+                :t="t"
+                @verify="onVerify"
+                @resend="onResend"
+                @back="onBackToEmail"
+              />
 
             <CreateNewPassword
               v-else
               :loading="isSavingPassword"
               :error-message="errorMessage"
               :success-message="successMessage"
+              :t="t"
               @submit="onCreatePassword"
               @back="onBackToOtp"
               @success-close="onPasswordSuccessClose"
@@ -281,6 +397,15 @@ async function onResend(payload) {
     linear-gradient(135deg, rgba(0, 174, 239, 0.08) 0 18%, transparent 18% 100%),
     linear-gradient(315deg, rgba(253, 193, 22, 0.12) 0 14%, transparent 14% 100%),
     linear-gradient(180deg, #f8fcff 0%, #eef6fb 100%);
+}
+
+.forgot-page--kh {
+  font-family:
+    'Noto Sans Khmer',
+    'Khmer OS Siemreap',
+    'Khmer OS Battambang',
+    'Leelawadee UI',
+    sans-serif;
 }
 
 .forgot-page::before {

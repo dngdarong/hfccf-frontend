@@ -1,0 +1,17 @@
+import common from './common'
+import dashboard from './dashboard'
+import teachers from './teachers'
+import students from './students'
+import classes from './classes'
+import tasks from './tasks'
+import submissions from './submissions'
+
+export default {
+  ...common,
+  ...dashboard,
+  ...teachers,
+  ...students,
+  ...classes,
+  ...tasks,
+  ...submissions,
+}

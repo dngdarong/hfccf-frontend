@@ -1,0 +1,72 @@
+// Classroom Resources page copy — Khmer translations aligned key-for-key with
+// the EN file so locale parity tests can assert without English fallbacks.
+export default {
+  preschoolClassroomResources: {
+    title: 'ធនធានថ្នាក់រៀន',
+    subtitle: 'តាមដានសៀវភៅ ស្បែកជើងលេង ឧបករណ៍ និងសម្ភារៈដែលបានចាត់ចែងសម្រាប់ថ្នាក់មត្តេយ្យ។',
+    addButton: 'បន្ថែមធនធាន',
+    searchPlaceholder: 'ស្វែងរកតាមឈ្មោះ ឬកំណត់ចំណាំ...',
+    filters: {
+      allCategories: 'ប្រភេទទាំងអស់',
+      allConditions: 'លក្ខខណ្ឌទាំងអស់',
+    },
+    columns: {
+      no: 'លេខ',
+      name: 'ធនធាន',
+      category: 'ប្រភេទ',
+      quantity: 'ចំនួន',
+      condition: 'លក្ខខណ្ឌ',
+      notes: 'កំណត់ចំណាំ',
+      actions: 'សកម្មភាព',
+    },
+    categories: {
+      books: 'សៀវភៅ',
+      toys: 'ទំនិញលេង',
+      equipment: 'ឧបករណ៍',
+      supplies: 'សម្ភារៈ',
+      digital: 'ឌីជីថល',
+    },
+    conditions: {
+      good: 'ល្អ',
+      fair: 'មធ្យម',
+      poor: 'ខ្សោយ',
+    },
+    dialog: {
+      createTitle: 'បន្ថែមធនធាន',
+      editTitle: 'កែប្រែធនធាន',
+      name: 'ឈ្មោះធនធាន',
+      namePlaceholder: 'ឧ. សៀវភៅរឿង',
+      category: 'ប្រភេទ',
+      quantity: 'ចំនួន',
+      condition: 'លក្ខខណ្ឌ',
+      notes: 'កំណត់ចំណាំ',
+      notesPlaceholder: 'កំណត់ចំណាំស្រេចចិត្តអំពីធនធាននេះ...',
+      cancel: 'បោះបង់',
+      save: 'រក្សាទុក',
+    },
+    alerts: {
+      deleteTitle: 'លុបធនធាន?',
+      deleteMessage: 'តើអ្នកប្រាកដថាចង់លុប {name} មែនទេ?',
+      deleteFallback: 'ធនធាននេះ',
+      successTitle: 'រួចរាល់',
+      close: 'បិទ',
+    },
+    messages: {
+      empty: 'មិនទាន់មានធនធានថ្នាក់រៀនណាមួយត្រូវបានបន្ថែមនៅឡើយទេ។',
+      noResults: 'មិនមានធនធានណាដែលផ្គូផ្គងនឹងតម្រងបច្ចុប្បន្នទេ។',
+      createSuccess: 'ធនធានត្រូវបានបន្ថែមដោយជោគជ័យ។',
+      updateSuccess: 'ធនធានត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ។',
+      deleteSuccess: 'ធនធានត្រូវបានលុបដោយជោគជ័យ។',
+      nameMissing: 'សូមបញ្ចូលឈ្មោះធនធាន។',
+      quantityInvalid: 'ចំនួនត្រូវតែ 0 ឬច្រើនជាងនេះ។',
+      loadFailed: 'មិនអាចផ្ទុកធនធានថ្នាក់រៀនបានទេ។',
+      saveFailed: 'មិនអាចរក្សាទុកធនធានបានទេ។',
+      deleteFailed: 'មិនអាចលុបធនធានបានទេ។',
+    },
+    summary: {
+      total: 'ធនធានសរុប',
+      goodCondition: 'លក្ខខណ្ឌល្អ',
+      needsAttention: 'ត្រូវការយកចិត្តទុកដាក់',
+    },
+  },
+}

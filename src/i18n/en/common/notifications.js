@@ -1,0 +1,17 @@
+export default {
+  title: 'Notifications',
+  empty: 'No notifications',
+  emptyDescription: 'You are all caught up. New updates will appear here.',
+  loading: 'Loading notifications...',
+  error: 'Unable to load notifications',
+  errorDescription: 'Try again in a moment. Your notifications may still load on refresh.',
+  retry: 'Retry',
+  unreadCount: '{count} unread',
+  markRead: 'Mark as read',
+  markAllRead: 'Mark all as read',
+  viewAll: 'View all',
+  dismiss: 'Dismiss',
+  undismiss: 'Undismiss',
+  clearAll: 'Clear all',
+  filters: 'Notification filters',
+}

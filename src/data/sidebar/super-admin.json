@@ -1,0 +1,32 @@
+{
+  "sections": [
+    {
+      "id": "command-center",
+      "labelKey": "nav.sections.commandCenter",
+      "captionKey": "nav.sectionCaptions.commandCenter",
+      "className": "sidebar-section--super-admin",
+      "collapsible": true,
+      "access": {
+        "scopes": [
+          "super_admin"
+        ]
+      },
+      "items": [
+        {
+          "id": "command-center-dashboard",
+          "routeName": "dashboard-super-admin",
+          "labelKey": "nav.dashboard",
+          "icon": "home",
+          "badgeKey": "nav.badges.core"
+        },
+        {
+          "id": "admin-management",
+          "routeName": "dashboard-super-admin-users-manage",
+          "labelKey": "nav.items.manageUsers",
+          "icon": "users",
+          "badgeKey": "nav.badges.admin"
+        }
+      ]
+    }
+  ]
+}

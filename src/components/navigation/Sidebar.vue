@@ -4,14 +4,17 @@ import PrimeButton from 'primevue/button'
 import Avatar from '@/components/navigation/Avatar.vue'
 import LogoutButton from '@/components/buttons/LogoutButton.vue'
 import SidebarNavigation from '@/components/navigation/SidebarNavigation.vue'
-import { getCurrentUser } from '@/services/auth'
+import { useLanguage } from '@/composables/useLanguage'
 import { getSidebarToneClass } from '@/services/accessControl'
+import { useUserStore } from '@/store/userStore'
 
 defineOptions({
   name: 'MainSidebar',
 })
 
 const emit = defineEmits(['toggle-sidebar', 'logout'])
+const userStore = useUserStore()
+const { t } = useLanguage()
 
 defineProps({
   collapsed: {
@@ -21,19 +24,19 @@ defineProps({
 })
 
 const slots = useSlots()
-const currentUser = computed(() => getCurrentUser() || {})
+const currentUser = computed(() => userStore.currentUser || {})
 const currentUserDisplayName = computed(() => {
   const firstName = String(currentUser.value?.firstName || '').trim()
   const lastName = String(currentUser.value?.lastName || '').trim()
   const fullName = `${lastName} ${firstName}`.trim()
-  return fullName || String(currentUser.value?.username || '').trim() || 'Admin User'
+  return fullName || String(currentUser.value?.username || '').trim() || t('common.navigation.defaultUserName')
 })
 const currentUserDisplayUsername = computed(() => {
   const role = String(currentUser.value?.role || '').trim()
   if (role) return role
   const email = String(currentUser.value?.email || '').trim()
   if (email.includes('@')) return email.split('@')[0]
-  return email || 'user'
+  return email || t('common.navigation.defaultUsername')
 })
 const sidebarToneClass = computed(() => getSidebarToneClass(currentUser.value))
 const hasHeaderSlot = computed(() => Boolean(slots.header))
@@ -70,7 +73,7 @@ function onLogout() {
     class="sidebar-shell h-full border-r border-surface-200 px-[0.8rem] pt-[0.95rem] pb-[0.8rem]"
     :class="[sidebarToneClass, { 'sidebar-shell--collapsed': collapsed }]"
   >
-    <nav class="flex h-full min-h-0 flex-col pb-2" aria-label="Main navigation">
+    <nav class="flex h-full min-h-0 flex-col pb-2" :aria-label="t('common.navigation.mainNavigation')">
       <div class="py-2 pb-4 sm:pb-5">
         <div
           class="sidebar-topbar mb-4 flex items-start justify-between"
@@ -103,7 +106,7 @@ function onLogout() {
             rounded
             class="sidebar-toggle-btn hidden h-8 w-8 min-h-0 !p-1.5 min-[769px]:flex"
             :pt="togglePt"
-            aria-label="Toggle sidebar"
+            :aria-label="t('common.navigation.toggleSidebar')"
             @click="onToggleSidebar"
           >
             <template #icon>

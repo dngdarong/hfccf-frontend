@@ -1,18 +1,16 @@
 import { defineAppRoute } from '@/router/defineAppRoute'
-import ProfileSettingsPage from '@/modules/settings/pages/ProfileSettings.vue'
-import AboutWebsitePage from '@/modules/settings/pages/AboutWebsitePage.vue'
 
 export const settingsRoutes = [
   defineAppRoute({
     path: '/module/settings/profile',
     name: 'profile-settings',
-    component: ProfileSettingsPage,
+    component: () => import('@/modules/settings/pages/ProfileSettings.vue'),
     access: {},
   }),
   defineAppRoute({
     path: '/module/settings/about-website',
     name: 'settings-about-website',
-    component: AboutWebsitePage,
+    component: () => import('@/modules/settings/pages/AboutWebsitePage.vue'),
     access: {},
   }),
 ]

@@ -24,17 +24,21 @@
   --hope-yellow: var(--hope-e-golden-yellow);
   --hope-dark: var(--hope-tagline-dark);
   --hope-light: var(--hope-background-light);
-  --font-sans:
+  --font-latin:
     'Space Grotesk',
-    'Noto Sans Khmer',
-    'Khmer OS Siemreap',
-    'Khmer OS Battambang',
     system-ui,
     -apple-system,
     'Segoe UI',
     Roboto,
     'Leelawadee UI',
     sans-serif;
+  --font-khmer:
+    'Noto Sans Khmer',
+    'Khmer OS Siemreap',
+    'Khmer OS Battambang',
+    'Leelawadee UI',
+    sans-serif;
+  --font-sans: var(--font-latin);
 
   /* Shared brand scale for Tailwind and PrimeVue */
   --brand-primary-50: #ecfbff;
@@ -77,16 +81,29 @@ html {
   background: var(--brand-surface-50);
 }
 
+html[lang='kh'],
+html.locale-kh {
+  --font-sans: var(--font-khmer);
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--font-sans);
+  font-feature-settings: 'kern' 1;
+  line-height: 1.5;
   color: var(--color-text);
   background: var(--page-background);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[lang='kh'] body,
+html.locale-kh body {
+  line-height: 1.68;
+  letter-spacing: 0;
 }
 
 html,
@@ -115,6 +132,68 @@ body,
 .p-popover .p-popover-content {
   background: #ffffff;
   color: var(--color-text);
+}
+
+html[lang='kh'] :where(
+  .p-button .p-button-label,
+  .p-select .p-select-label,
+  .p-inputtext,
+  .p-textarea,
+  .p-tag,
+  .p-badge,
+  .p-chip,
+  .p-dialog .p-dialog-title,
+  .p-card .p-card-title,
+  .p-card .p-card-subtitle,
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td,
+  .p-menuitem-text,
+  .sidebar-section__label,
+  .sidebar-section__caption,
+  .sidebar-user-card__name,
+  .sidebar-user-card__username,
+  .sidebar-link-content > span:first-child
+) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+html[lang='kh'] :where(
+  .p-button .p-button-label,
+  .p-select .p-select-label,
+  .p-inputtext,
+  .p-textarea,
+  .p-tag,
+  .p-badge,
+  .p-chip,
+  .p-dialog .p-dialog-title,
+  .p-card .p-card-title,
+  .p-card .p-card-subtitle,
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td,
+  .p-menuitem-text,
+  .sidebar-section__label,
+  .sidebar-section__caption,
+  .sidebar-user-card__name,
+  .sidebar-user-card__username,
+  .sidebar-link-content > span:first-child
+) {
+  line-height: 1.45;
+}
+
+html[lang='kh'] .p-button .p-button-label,
+html[lang='kh'] .p-select .p-select-label,
+html[lang='kh'] .sidebar-section__label,
+html[lang='kh'] .sidebar-section__caption,
+html[lang='kh'] .sidebar-user-card__name,
+html[lang='kh'] .sidebar-user-card__username,
+html[lang='kh'] .sidebar-link-content > span:first-child {
+  white-space: normal;
+  text-transform: none;
+}
+
+html[lang='kh'] .sidebar-link-content {
+  align-items: flex-start;
 }
 
 .p-dialog,

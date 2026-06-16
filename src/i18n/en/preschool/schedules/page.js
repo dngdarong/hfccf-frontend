@@ -1,0 +1,75 @@
+// Keep Preschool schedule page copy separate from shared labels so timetable
+// screens stay searchable and future scheduling features can grow safely.
+export default {
+  preschoolSchedulesPage: {
+    title: 'Preschool Schedules',
+    subtitle: 'Manage weekly timetable entries, class assignments, and teacher availability.',
+    management: {
+      title: 'Schedule management',
+      subtitle: 'Create weekly entries, review overlaps, and archive outdated slots.',
+    },
+    classView: {
+      title: 'Class timetable',
+      subtitle: 'Review the active and inactive timetable for a specific class.',
+    },
+    teacherView: {
+      title: 'Teacher timetable',
+      subtitle: 'Review the weekly timetable assigned to a Preschool teacher.',
+    },
+    myView: {
+      title: 'My schedule',
+      subtitle: 'Review your Preschool timetable for the current week.',
+    },
+    loading: 'Loading Preschool schedules...',
+    empty: 'No schedule entries found.',
+    emptyDescription: 'Create a weekly timetable entry to start organizing class coverage.',
+    actions: {
+      create: 'Create schedule',
+      update: 'Update schedule',
+      archive: 'Archive schedule',
+      cancel: 'Cancel',
+      refresh: 'Refresh',
+      back: 'Back',
+      manageSchedules: 'Manage schedules',
+      mySchedule: 'My schedule',
+      viewClassSchedule: 'View class timetable',
+      viewTeacherSchedule: 'View teacher timetable',
+    },
+    filters: {
+      search: 'Search',
+      class: 'Class',
+      teacher: 'Teacher',
+      day: 'Day',
+      status: 'Status',
+      room: 'Room',
+      activity: 'Activity',
+      apply: 'Apply filters',
+      reset: 'Reset filters',
+    },
+    form: {
+      title: 'Schedule entry',
+      subtitle: 'Keep weekly entries compact so conflict checks stay predictable.',
+      labels: {
+        class: 'Class',
+        teacher: 'Teacher',
+        day: 'Day',
+        status: 'Status',
+        startTime: 'Start time',
+        endTime: 'End time',
+        room: 'Room',
+        activity: 'Activity',
+        notes: 'Notes',
+        effectiveFrom: 'Effective from',
+        effectiveUntil: 'Effective until',
+      },
+      placeholders: {
+        class: 'Select a class',
+        teacher: 'Select a teacher',
+        day: 'Select a day',
+        status: 'Select a status',
+        room: 'Room / location',
+        activity: 'Activity label',
+      },
+    },
+  },
+}

@@ -40,18 +40,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: [
-          'Space Grotesk',
-          'Noto Sans Khmer',
-          'Khmer OS Siemreap',
-          'Khmer OS Battambang',
-          'system-ui',
-          '-apple-system',
-          'Segoe UI',
-          'Roboto',
-          'Leelawadee UI',
-          'sans-serif',
-        ],
+        sans: ['var(--font-sans)'],
       },
       boxShadow: {
         focus: '0 0 0 3px color-mix(in srgb, var(--hope-cyan) 18%, transparent)',

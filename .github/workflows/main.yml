@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - master
   pull_request:
 
 jobs:
@@ -30,4 +31,4 @@ jobs:
         run: git diff --exit-code
 
       - name: Build
-        run: npm run build
+        run: npm run build 

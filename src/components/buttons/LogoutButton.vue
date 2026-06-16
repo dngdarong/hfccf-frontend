@@ -1,4 +1,18 @@
 <script setup>
+/**
+ * UiLogoutButton
+ * --------------------------------------------------------------------------
+ * Reusable logout button for sidebar/navigation areas.
+ *
+ * Features:
+ * - Expanded and collapsed sidebar modes
+ * - Optional confirmation dialog
+ * - i18n fallback labels
+ * - Loading/disabled protection
+ * - Accessible icon-only mode
+ * --------------------------------------------------------------------------
+ */
+
 import { computed, ref } from 'vue'
 import PrimeButton from 'primevue/button'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
@@ -9,96 +23,149 @@ defineOptions({
 })
 
 const props = defineProps({
-  collapsed: { type: Boolean, default: false },
-  block: { type: Boolean, default: true },
+  collapsed: {
+    type: Boolean,
+    default: false,
+  },
+  block: {
+    type: Boolean,
+    default: true,
+  },
   size: {
     type: String,
     default: 'md',
     validator: (value) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(value),
   },
-  variant: { type: String, default: 'ghost' },
-  rounded: { type: String, default: '2xl' },
-  disabled: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false },
-  showConfirm: { type: Boolean, default: true },
-  label: { type: String, default: '' },
+  rounded: {
+    type: String,
+    default: '2xl',
+    validator: (value) => ['md', 'lg', 'xl', '2xl', 'full'].includes(value),
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  showConfirm: {
+    type: Boolean,
+    default: true,
+  },
+  label: {
+    type: String,
+    default: '',
+  },
   confirmType: {
     type: String,
     default: 'warning',
     validator: (value) => ['danger', 'warning', 'info'].includes(value),
   },
-  title: { type: String, default: '' },
-  message: { type: String, default: '' },
-  confirmText: { type: String, default: '' },
-  cancelText: { type: String, default: '' },
+  title: {
+    type: String,
+    default: '',
+  },
+  message: {
+    type: String,
+    default: '',
+  },
+  confirmText: {
+    type: String,
+    default: '',
+  },
+  cancelText: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits(['logout', 'cancel', 'click'])
 
-const { t } = useLanguage()
+const { t, te } = useLanguage()
+
 const isConfirmOpen = ref(false)
 
 /**
- * Helper: safely resolve translation with fallback
+ * Resolve i18n text safely.
  */
 function translate(key, fallback) {
-  const value = t(key)
-  return value && value !== key ? value : fallback
+  const value = te(key) ? t(key) : ''
+
+  return value && value !== key
+    ? value
+    : fallback
 }
 
 /**
- * Labels
+ * Resolved display labels.
  */
 const resolvedLabel = computed(() =>
-  props.label || translate('common.logout', 'Logout')
+  props.label || translate('common.logout', 'Logout'),
 )
 
 const resolvedTitle = computed(() =>
-  props.title || translate('common.logout', 'Logout')
+  props.title || translate('common.logout', 'Logout'),
 )
 
 const resolvedMessage = computed(() =>
-  props.message || translate('common.logoutConfirm', 'Are you sure you want to logout?')
+  props.message || translate('common.logoutConfirm', 'Are you sure you want to logout?'),
 )
 
 const resolvedConfirmText = computed(() =>
-  props.confirmText || translate('common.logout', 'Logout')
+  props.confirmText || translate('common.logout', 'Logout'),
 )
 
 const resolvedCancelText = computed(() =>
-  props.cancelText || translate('common.cancel', 'Cancel')
+  props.cancelText || translate('common.cancel', 'Cancel'),
 )
 
-/**
- * 🔥 FIXED: caption fallback logic
- */
 const resolvedCaption = computed(() => {
   if (props.collapsed) return ''
+
   return translate('dashboard.nav.logoutCaption', 'End current session')
 })
 
 /**
- * Layout
+ * Derived UI state.
  */
+const isLocked = computed(() => props.disabled || props.loading)
 const computedSize = computed(() => (props.collapsed ? 'sm' : props.size))
 const shouldBlock = computed(() => (props.collapsed ? false : props.block))
 
+/**
+ * Radius classes.
+ */
 const roundedClass = computed(() => {
-  if (props.rounded === 'full') return '!rounded-full'
-  if (props.rounded === 'md') return '!rounded-md'
-  if (props.rounded === 'lg') return '!rounded-lg'
-  if (props.rounded === 'xl') return '!rounded-xl'
-  return '!rounded-2xl'
+  const classes = {
+    md: '!rounded-md',
+    lg: '!rounded-lg',
+    xl: '!rounded-xl',
+    '2xl': '!rounded-2xl',
+    full: '!rounded-full',
+  }
+
+  return classes[props.rounded] || classes['2xl']
 })
 
+/**
+ * Size classes.
+ */
 const sizeClass = computed(() => {
-  if (computedSize.value === 'xs') return '!min-h-8 !px-2.5 !py-1.5 !text-xs'
-  if (computedSize.value === 'sm') return '!min-h-9.5 !px-3 !py-2 !text-sm'
-  if (computedSize.value === 'lg') return '!min-h-12 !px-4.5 !py-3 !text-base'
-  if (computedSize.value === 'xl') return '!min-h-13 !px-5 !py-3.5 !text-base'
-  return '!min-h-11 !px-4 !py-2.5 !text-sm'
+  const classes = {
+    xs: '!min-h-8 !px-2.5 !py-1.5 !text-xs',
+    sm: '!min-h-9.5 !px-3 !py-2 !text-sm',
+    md: '!min-h-11 !px-4 !py-2.5 !text-sm',
+    lg: '!min-h-12 !px-4.5 !py-3 !text-base',
+    xl: '!min-h-13 !px-5 !py-3.5 !text-base',
+  }
+
+  return classes[computedSize.value] || classes.md
 })
 
+/**
+ * Root button classes.
+ */
 const rootClass = computed(() => {
   const classes = [
     'logout-button',
@@ -129,7 +196,7 @@ const rootClass = computed(() => {
       '!border-rose-200',
       '!bg-white',
       '!p-0',
-      '!text-rose-700'
+      '!text-rose-700',
     )
   } else {
     classes.push(
@@ -138,14 +205,20 @@ const rootClass = computed(() => {
       '!bg-rose-50',
       '!text-rose-700',
       '!px-3',
-      '!py-2.5'
+      '!py-2.5',
     )
   }
 
-  if (shouldBlock.value) classes.push('w-full')
+  if (shouldBlock.value) {
+    classes.push('w-full')
+  }
+
   return classes
 })
 
+/**
+ * Icon shell classes.
+ */
 const iconShellClass = computed(() => [
   'inline-flex',
   'h-8.5',
@@ -164,8 +237,13 @@ const iconShellClass = computed(() => [
   'group-hover:text-rose-700',
 ])
 
+/**
+ * PrimeVue pass-through config.
+ */
 const buttonPt = computed(() => ({
-  root: { class: rootClass.value },
+  root: {
+    class: rootClass.value,
+  },
   label: {
     class: [
       'inline-flex',
@@ -177,10 +255,11 @@ const buttonPt = computed(() => ({
 }))
 
 /**
- * Actions
+ * Handle primary button click.
  */
 function onClick() {
-  if (props.disabled || props.loading) return
+  if (isLocked.value) return
+
   emit('click')
 
   if (props.showConfirm) {
@@ -191,45 +270,75 @@ function onClick() {
   emit('logout')
 }
 
+/**
+ * Confirm logout from dialog.
+ */
 function onConfirm() {
+  if (isLocked.value) return
+
   isConfirmOpen.value = false
   emit('logout')
 }
 
+/**
+ * Cancel logout confirmation.
+ */
 function onCancel() {
+  if (props.loading) return
+
   isConfirmOpen.value = false
   emit('cancel')
 }
 </script>
 
 <template>
-  <div class="logout-button-wrap" :class="collapsed ? 'inline-flex' : 'w-full px-1'">
+  <div
+    class="logout-button-wrap"
+    :class="collapsed ? 'inline-flex' : 'w-full px-1'"
+  >
     <PrimeButton
       type="button"
-      :disabled="disabled"
+      :disabled="isLocked"
       :loading="loading"
       :pt="buttonPt"
       :aria-label="resolvedLabel"
       @click="onClick"
     >
-      <span :class="iconShellClass" aria-hidden="true">
-        <i class="pi pi-sign-out text-[1rem]"></i>
+      <span
+        :class="iconShellClass"
+        aria-hidden="true"
+      >
+        <i
+          class="pi pi-sign-out text-[1rem]"
+          aria-hidden="true"
+        />
       </span>
 
-      <span v-if="!collapsed" class="ml-2 flex flex-col">
+      <span
+        v-if="!collapsed"
+        class="ml-2 flex flex-col"
+      >
         <span class="font-bold text-rose-700">
           {{ resolvedLabel }}
         </span>
+
         <span class="text-xs text-slate-500">
           {{ resolvedCaption }}
         </span>
       </span>
 
-      <span v-else class="sr-only">{{ resolvedLabel }}</span>
+      <span
+        v-else
+        class="sr-only"
+      >
+        {{ resolvedLabel }}
+      </span>
     </PrimeButton>
 
     <AlertQuestion
       :show="isConfirmOpen"
+      :loading="loading"
+      :disabled="disabled"
       :title="resolvedTitle"
       :message="resolvedMessage"
       :confirm-text="resolvedConfirmText"

@@ -27,6 +27,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showGoalEditors: {
+    type: Boolean,
+    default: true,
+  },
   loading: {
     type: Boolean,
     default: false,
@@ -98,8 +102,29 @@ function normalizeGoalEvent(event = {}) {
     id: event.id || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     playerName: String(event.playerName || ''),
     minute: String(event.minute || ''),
-    goalTypes: Array.isArray(event.goalTypes) ? event.goalTypes : [],
+    eventType: String(event.eventType || 'goal'),
+    teamType: String(event.teamType || 'home'),
   }
+}
+
+function calculateScore(events = []) {
+  return events.reduce(
+    (carry, event) => {
+      const type = String(event.eventType || 'goal').toLowerCase()
+      const isScoring = ['goal', 'own_goal', 'penalty_goal'].includes(type)
+
+      if (!isScoring) return carry
+
+      const teamType = String(event.teamType || 'home').toLowerCase()
+      const creditedTeam = type === 'own_goal' ? (teamType === 'home' ? 'away' : 'home') : teamType
+
+      if (creditedTeam === 'home') carry.home += 1
+      if (creditedTeam === 'away') carry.away += 1
+
+      return carry
+    },
+    { home: 0, away: 0 },
+  )
 }
 
 function snapshot() {
@@ -122,12 +147,12 @@ function commit(field, value) {
 
 function addGoalEvent(team) {
   const field = team === 'home' ? 'homeEvents' : 'awayEvents'
-  const scoreField = team === 'home' ? 'homeScore' : 'awayScore'
-  const event = normalizeGoalEvent()
+  const event = normalizeGoalEvent({ teamType: team })
   const updatedEvents = [...form[field], event]
 
   // Adding/removing goal rows is score-affecting, so commit the events and score together.
-  commitPatch({ [field]: updatedEvents, [scoreField]: updatedEvents.length })
+  const scores = calculateScore([...form.homeEvents, ...form.awayEvents, event])
+  commitPatch({ [field]: updatedEvents, homeScore: scores.home, awayScore: scores.away })
 }
 
 function updateGoalEvent(team, updatedEvent) {
@@ -135,15 +160,20 @@ function updateGoalEvent(team, updatedEvent) {
   const updatedEvents = form[field].map((event) =>
     event.id === updatedEvent.id ? normalizeGoalEvent(updatedEvent) : event,
   )
-  commit(field, updatedEvents)
-  // Note: changing player/minute doesn't change score; only adding/removing does.
+  const nextHomeEvents = team === 'home' ? updatedEvents : form.homeEvents
+  const nextAwayEvents = team === 'away' ? updatedEvents : form.awayEvents
+  const scores = calculateScore([...nextHomeEvents, ...nextAwayEvents])
+  commitPatch({ [field]: updatedEvents, homeScore: scores.home, awayScore: scores.away })
 }
 
 function removeGoalEvent(team, id) {
   const field = team === 'home' ? 'homeEvents' : 'awayEvents'
-  const scoreField = team === 'home' ? 'homeScore' : 'awayScore'
   const updatedEvents = form[field].filter((event) => event.id !== id)
-  commitPatch({ [field]: updatedEvents, [scoreField]: updatedEvents.length })
+  const scores = calculateScore([
+    ...((team === 'home' ? updatedEvents : form.homeEvents) || []),
+    ...((team === 'away' ? updatedEvents : form.awayEvents) || []),
+  ])
+  commitPatch({ [field]: updatedEvents, homeScore: scores.home, awayScore: scores.away })
 }
 
 function onSubmit() {
@@ -170,7 +200,7 @@ function onSubmit() {
       @update:report="commit('report', $event)"
     />
 
-    <div class="grid gap-4 lg:grid-cols-2">
+    <div v-if="showGoalEditors" class="grid gap-4 lg:grid-cols-2">
       <GoalEventsEditor
         :events="form.homeEvents"
         :labels="{ ...goalEventLabels, title: `${goalEventLabels.title} (${form.homeTeam})` }"

@@ -6,11 +6,18 @@ defineProps({
     type: Array,
     default: () => [],
   },
+  columns: {
+    type: Number,
+    default: 3,
+  },
 })
 </script>
 
 <template>
-  <div class="profile-settings-grid">
+  <div
+    class="profile-settings-grid"
+    :style="{ '--profile-settings-columns': `repeat(${columns}, minmax(0, 1fr))` }"
+  >
     <ProfileSettingsCard
       v-for="section in sections"
       :key="section.title"
@@ -23,7 +30,8 @@ defineProps({
 .profile-settings-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  grid-template-columns: var(--profile-settings-columns, repeat(3, minmax(0, 1fr)));
 }
 
 @media (max-width: 1000px) {

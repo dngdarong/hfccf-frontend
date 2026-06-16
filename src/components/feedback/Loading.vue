@@ -1,18 +1,46 @@
 <script setup>
+/**
+ * Loading
+ * --------------------------------------------------------------------------
+ * Shared loading indicator using PrimeVue ProgressSpinner.
+ *
+ * Features:
+ * - Localized loading label
+ * - Configurable size
+ * - Configurable tone
+ * - Accessible status region
+ * --------------------------------------------------------------------------
+ */
+
 import { computed } from 'vue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useLanguage } from '@/composables/useLanguage'
 
+defineOptions({
+  name: 'Loading',
+})
+
 const props = defineProps({
+  /**
+   * Optional loading label.
+   */
   label: {
     type: String,
     default: '',
   },
+
+  /**
+   * Spinner size.
+   */
   size: {
     type: String,
     default: 'md',
     validator: (value) => ['sm', 'md', 'lg'].includes(value),
   },
+
+  /**
+   * Spinner/text color tone.
+   */
   tone: {
     type: String,
     default: 'primary',
@@ -21,23 +49,47 @@ const props = defineProps({
 })
 
 const { t } = useLanguage()
-const resolvedLabel = computed(() => props.label || t('common.loading'))
-const spinnerSize = computed(() => {
-  if (props.size === 'sm') return '1.1rem'
-  if (props.size === 'lg') return '1.6rem'
-  return '1.3rem'
-})
-const toneClass = computed(() =>
-  props.tone === 'neutral' ? 'text-hope-dark' : 'text-brand-500',
+
+/**
+ * Resolve display label.
+ */
+const resolvedLabel = computed(() =>
+  props.label || t('common.states.loading'),
 )
-const spinnerPt = computed(() => ({
+
+/**
+ * Spinner dimensions by size.
+ */
+const spinnerSize = computed(() => {
+  const sizes = {
+    sm: '1.1rem',
+    md: '1.3rem',
+    lg: '1.6rem',
+  }
+
+  return sizes[props.size] || sizes.md
+})
+
+/**
+ * Text and spinner color.
+ */
+const toneClass = computed(() =>
+  props.tone === 'neutral'
+    ? 'text-hope-dark'
+    : 'text-brand-500',
+)
+
+/**
+ * PrimeVue pass-through styling.
+ */
+const spinnerPt = {
   root: {
     class: '!inline-flex',
   },
   spinner: {
     class: '!stroke-current',
   },
-}))
+}
 </script>
 
 <template>
@@ -46,15 +98,23 @@ const spinnerPt = computed(() => ({
     :class="toneClass"
     role="status"
     aria-live="polite"
+    :aria-label="resolvedLabel"
   >
     <ProgressSpinner
       class="loading__spinner"
       stroke-width="6"
       fill="transparent"
       animation-duration=".8s"
-      :style="{ width: spinnerSize, height: spinnerSize }"
+      :style="{
+        width: spinnerSize,
+        height: spinnerSize,
+      }"
       :pt="spinnerPt"
+      aria-hidden="true"
     />
-    <span class="text-[0.74rem] leading-none">{{ resolvedLabel }}</span>
+
+    <span class="text-[0.74rem] leading-none">
+      {{ resolvedLabel }}
+    </span>
   </div>
 </template>

@@ -1,0 +1,95 @@
+{
+  "sections": [
+    {
+      "id": "sport",
+      "labelKey": "nav.sections.sportProgram",
+      "captionKey": "nav.sectionCaptions.sportProgram",
+      "className": "sidebar-section--sport",
+      "collapsible": true,
+      "access": {
+        "scopes": [
+          "super_admin"
+        ]
+      },
+      "items": [
+        {
+          "id": "sport-dashboard",
+          "routeName": "dashboard-sport-admin",
+          "labelKey": "nav.items.sportDashboard",
+          "icon": "home",
+          "badgeKey": "nav.badges.admin"
+        },
+        {
+          "id": "sport-attendance",
+          "routeName": "dashboard-sport-admin-attendance",
+          "labelKey": "nav.items.attendanceManagement",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-coaches",
+          "routeName": "dashboard-sport-admin-users",
+          "labelKey": "nav.items.coaches",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-teams",
+          "routeName": "dashboard-sport-admin-teams",
+          "labelKey": "nav.items.teams",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-players",
+          "routeName": "dashboard-sport-admin-players",
+          "labelKey": "nav.items.players",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-matches",
+          "routeName": "dashboard-sport-admin-matches",
+          "labelKey": "nav.items.matches",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-tournaments",
+          "routeName": "dashboard-sport-admin-tournaments",
+          "labelKey": "nav.items.tournaments",
+          "icon": "tournaments",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-coach-team-assignments",
+          "routeName": "dashboard-sport-admin-coach-team-assignments",
+          "labelKey": "nav.items.coachTeamAssignments",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-pending-player-approvals",
+          "routeName": "dashboard-sport-admin-pending-player-approvals",
+          "labelKey": "nav.items.pendingPlayerApprovals",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-pending-match-approvals",
+          "routeName": "dashboard-sport-admin-pending-match-approvals",
+          "labelKey": "nav.items.pendingMatchApprovals",
+          "icon": "reports",
+          "badgeKey": "nav.badges.staff"
+        },
+        {
+          "id": "sport-player-lifecycle",
+          "routeName": "dashboard-sport-admin-player-lifecycle",
+          "labelKey": "nav.items.playerLifecycle",
+          "icon": "users",
+          "badgeKey": "nav.badges.staff"
+        }
+      ]
+    }
+  ]
+}
