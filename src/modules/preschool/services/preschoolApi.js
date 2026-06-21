@@ -3,6 +3,8 @@ import { buildQueryParams, normalizePerPage, unwrapApiData, unwrapApiItems, unwr
 import { mapUser, mapUsers } from '@/services/mappers/userMapper'
 import { fetchReportPeriods as fetchPreschoolReportPeriods } from '@/modules/preschool/services/api/preschoolReportsApi'
 import {
+  archiveAcademicTerm,
+  archiveAcademicYear,
   activateAcademicTerm,
   activateAcademicYear,
   closeAcademicTerm,
@@ -13,6 +15,15 @@ import {
   updateAcademicTerm,
   updateAcademicYear,
 } from '@/modules/preschool/services/api/preschoolAcademicLifecycleApi'
+import {
+  archiveCalendarEvent,
+  buildSchoolWeekLabel,
+  createCalendarEvent,
+  fetchAttendanceSettings,
+  fetchCalendarEvents,
+  updateAttendanceSettings,
+  updateCalendarEvent,
+} from '@/modules/preschool/services/api/preschoolAttendanceConfigurationApi'
 
 function normalizeText(value) {
   return String(value ?? '').trim()
@@ -171,6 +182,8 @@ function normalizePaymentRow(row = {}) {
     studentName: normalizeText(row.studentName || row.student_name || row.student?.fullName || `${row.student?.first_name || ''} ${row.student?.last_name || ''}`),
     classId: row.classId ?? row.class_id ?? '',
     className: normalizeText(row.className || row.class_name || row.preschoolClass?.name),
+    invoiceId: row.invoiceId ?? row.invoice_id ?? '',
+    invoiceNumber: normalizeText(row.invoiceNumber || row.invoice_number || row.invoice?.invoice_number),
     paymentReference: normalizeText(row.paymentReference || row.payment_reference),
     amount: Number(row.amount || 0),
     currency: normalizeText(row.currency || 'USD'),
@@ -179,6 +192,7 @@ function normalizePaymentRow(row = {}) {
     paidAt: row.paidAt || row.paid_at || '',
     dueDate: row.dueDate || row.due_date || '',
     note: normalizeText(row.note),
+    receiptCount: Number(row.receiptCount ?? row.receipt_count ?? 0),
     createdAt: row.createdAt || row.created_at || '',
     updatedAt: row.updatedAt || row.updated_at || '',
     deletedAt: row.deletedAt || row.deleted_at || '',
@@ -287,6 +301,262 @@ function resolveId(payloadOrId) {
   return String(payloadOrId?.id || '').trim()
 }
 
+function normalizeTextList(values = []) {
+  if (!Array.isArray(values)) return []
+
+  return values
+    .map((value) => normalizeText(value))
+    .filter(Boolean)
+}
+
+function normalizeDashboardSectionFlags(section = {}, keys = []) {
+  return Boolean(
+    section.isConfigured
+    ?? section.is_configured
+    ?? keys.some((key) => normalizeText(section[key]).length > 0),
+  )
+}
+
+function normalizePreschoolSettingsDashboardSection(section = {}, fieldMap = {}) {
+  const normalized = {}
+
+  Object.entries(fieldMap).forEach(([targetKey, sourceKeys]) => {
+    const candidates = Array.isArray(sourceKeys) ? sourceKeys : [sourceKeys]
+    const rawValue = candidates.reduce((carry, key) => (
+      carry !== undefined && carry !== null && carry !== ''
+        ? carry
+        : section?.[key]
+    ), '')
+
+    if (Array.isArray(rawValue)) {
+      normalized[targetKey] = normalizeTextList(rawValue)
+      return
+    }
+
+    normalized[targetKey] = typeof rawValue === 'number'
+      ? rawValue
+      : normalizeText(rawValue)
+  })
+
+  return normalized
+}
+
+function formatBooleanStatus(value) {
+  return value ? 'On' : 'Off'
+}
+
+export function normalizePreschoolSettingsDashboard(payload = {}) {
+  const academic = payload.academic || {}
+  const attendance = payload.attendance || {}
+  const payments = payload.payments || {}
+  const assessments = payload.assessments || {}
+  const health = payload.health || {}
+  const preferences = payload.preferences || {}
+
+  const normalizedAcademic = normalizePreschoolSettingsDashboardSection(academic, {
+    activeAcademicYear: ['activeAcademicYear', 'active_academic_year'],
+    activeAcademicYearDateRange: ['activeAcademicYearDateRange', 'active_academic_year_date_range'],
+    activeTerm: ['activeTerm', 'active_term'],
+    activeTermDateRange: ['activeTermDateRange', 'active_term_date_range'],
+    academicStatus: ['academicStatus', 'academic_status'],
+  })
+  normalizedAcademic.isConfigured = normalizeDashboardSectionFlags(academic, ['activeAcademicYear', 'activeAcademicYearDateRange', 'activeTerm', 'activeTermDateRange', 'academicStatus'])
+
+  const normalizedAttendance = normalizePreschoolSettingsDashboardSection(attendance, {
+    lateThresholdMinutes: ['lateThresholdMinutes', 'late_threshold_minutes'],
+    halfDayThresholdMinutes: ['halfDayThresholdMinutes', 'half_day_threshold_minutes'],
+    absenceAlertDays: ['absenceAlertDays', 'absence_alert_days'],
+    schoolDaysPerWeek: ['schoolDaysPerWeek', 'school_days_per_week'],
+    schoolWeekLabel: ['schoolWeekLabel', 'school_week_label'],
+    calendarEventsCount: ['calendarEventsCount', 'calendar_events_count'],
+  })
+  normalizedAttendance.schoolWeekLabel = normalizeText(normalizedAttendance.schoolWeekLabel) || buildSchoolWeekLabel(normalizedAttendance.schoolDaysPerWeek)
+  normalizedAttendance.isConfigured = normalizeDashboardSectionFlags(attendance, ['lateThresholdMinutes', 'absenceAlertDays', 'schoolDaysPerWeek', 'schoolWeekLabel', 'calendarEventsCount'])
+
+  const normalizedPayments = normalizePreschoolSettingsDashboardSection(payments, {
+    feeTypesCount: ['feeTypesCount', 'fee_types_count'],
+    paymentMethodsCount: ['paymentMethodsCount', 'payment_methods_count'],
+    lateFeeEnabled: ['lateFeeEnabled', 'late_fee_enabled'],
+    gracePeriodDays: ['gracePeriodDays', 'grace_period_days'],
+    invoicePrefix: ['invoicePrefix', 'invoice_prefix'],
+    receiptPrefix: ['receiptPrefix', 'receipt_prefix'],
+    lateFeeType: ['lateFeeType', 'late_fee_type'],
+    lateFeeAmount: ['lateFeeAmount', 'late_fee_amount'],
+    prorationEnabled: ['prorationEnabled', 'proration_enabled'],
+  })
+  normalizedPayments.feeTypesCount = Number(payments.feeTypesCount ?? payments.fee_types_count ?? 0)
+  normalizedPayments.paymentMethodsCount = Number(payments.paymentMethodsCount ?? payments.payment_methods_count ?? 0)
+  normalizedPayments.lateFeeEnabled = Boolean(payments.lateFeeEnabled ?? payments.late_fee_enabled ?? false)
+  normalizedPayments.gracePeriodDays = Number(payments.gracePeriodDays ?? payments.grace_period_days ?? 0)
+  normalizedPayments.lateFeeType = normalizeText(payments.lateFeeType ?? payments.late_fee_type ?? '')
+  normalizedPayments.lateFeeAmount = Number(payments.lateFeeAmount ?? payments.late_fee_amount ?? 0)
+  normalizedPayments.prorationEnabled = Boolean(payments.prorationEnabled ?? payments.proration_enabled ?? false)
+  normalizedPayments.isConfigured = normalizeDashboardSectionFlags(payments, ['feeTypesCount', 'paymentMethodsCount', 'lateFeeEnabled', 'gracePeriodDays', 'invoicePrefix', 'receiptPrefix'])
+
+  const normalizedAssessments = normalizePreschoolSettingsDashboardSection(assessments, {
+    passingScore: ['passingScore', 'passing_score'],
+    weightingEnabled: ['weightingEnabled', 'weighting_enabled'],
+    gradeBandsCount: ['gradeBandsCount', 'grade_bands_count'],
+    assessmentCategoriesCount: ['assessmentCategoriesCount', 'assessment_categories_count'],
+    reportPeriodsCount: ['reportPeriodsCount', 'report_periods_count'],
+    schoolWeek: ['schoolWeek', 'school_week'],
+  })
+  normalizedAssessments.passingScore = Number(
+    assessments.passingScore
+    ?? assessments.passing_score
+    ?? 0,
+  )
+  normalizedAssessments.weightingEnabled = Boolean(
+    assessments.weightingEnabled
+    ?? assessments.weighting_enabled
+    ?? false,
+  )
+  normalizedAssessments.gradeBandsCount = Number(
+    assessments.gradeBandsCount
+    ?? assessments.grade_bands_count
+    ?? 0,
+  )
+  normalizedAssessments.assessmentCategoriesCount = Number(
+    assessments.assessmentCategoriesCount
+    ?? assessments.assessment_categories_count
+    ?? 0,
+  )
+  normalizedAssessments.reportPeriodsCount = Number(
+    assessments.reportPeriodsCount
+    ?? assessments.report_periods_count
+    ?? 0,
+  )
+  normalizedAssessments.schoolWeek = normalizeTextList(assessments.schoolWeek || assessments.school_week || [])
+  normalizedAssessments.isConfigured = normalizeDashboardSectionFlags(assessments, ['passingScore', 'weightingEnabled', 'gradeBandsCount', 'assessmentCategoriesCount', 'reportPeriodsCount'])
+
+  const normalizedHealth = normalizePreschoolSettingsDashboardSection(health, {
+    criticalAlertEnabled: ['criticalAlertEnabled', 'critical_alert_enabled'],
+    severityLevelsCount: ['severityLevelsCount', 'severity_levels_count'],
+    incidentCategoriesCount: ['incidentCategoriesCount', 'incident_categories_count'],
+    vaccinationCategoriesCount: ['vaccinationCategoriesCount', 'vaccination_categories_count'],
+    healthCheckCategoriesCount: ['healthCheckCategoriesCount', 'health_check_categories_count'],
+    medicationReminderEnabled: ['medicationReminderEnabled', 'medication_reminder_enabled'],
+    vaccinationReminderEnabled: ['vaccinationReminderEnabled', 'vaccination_reminder_enabled'],
+  })
+  normalizedHealth.criticalAlertEnabled = Boolean(
+    health.criticalAlertEnabled
+    ?? health.critical_alert_enabled
+    ?? false,
+  )
+  normalizedHealth.severityLevelsCount = Number(
+    health.severityLevelsCount
+    ?? health.severity_levels_count
+    ?? (Array.isArray(health.severityLevels) ? health.severityLevels.length : 0)
+    ?? (Array.isArray(health.severity_levels) ? health.severity_levels.length : 0)
+    ?? 0,
+  )
+  normalizedHealth.incidentCategoriesCount = Number(
+    health.incidentCategoriesCount
+    ?? health.incident_categories_count
+    ?? (Array.isArray(health.incidentCategories) ? health.incidentCategories.length : 0)
+    ?? (Array.isArray(health.incident_categories) ? health.incident_categories.length : 0)
+    ?? 0,
+  )
+  normalizedHealth.vaccinationCategoriesCount = Number(
+    health.vaccinationCategoriesCount
+    ?? health.vaccination_categories_count
+    ?? (Array.isArray(health.vaccinationCategories) ? health.vaccinationCategories.length : 0)
+    ?? (Array.isArray(health.vaccination_categories) ? health.vaccination_categories.length : 0)
+    ?? 0,
+  )
+  normalizedHealth.healthCheckCategoriesCount = Number(
+    health.healthCheckCategoriesCount
+    ?? health.health_check_categories_count
+    ?? (Array.isArray(health.healthCheckCategories) ? health.healthCheckCategories.length : 0)
+    ?? (Array.isArray(health.health_check_categories) ? health.health_check_categories.length : 0)
+    ?? 0,
+  )
+  normalizedHealth.medicationReminderEnabled = Boolean(
+    health.medicationReminderEnabled
+    ?? health.medication_reminder_enabled
+    ?? false,
+  )
+  normalizedHealth.vaccinationReminderEnabled = Boolean(
+    health.vaccinationReminderEnabled
+    ?? health.vaccination_reminder_enabled
+    ?? false,
+  )
+  normalizedHealth.alertSeverityLevels = normalizeTextList(health.alertSeverityLevels || health.alert_severity_levels || health.severityLevels || health.severity_levels || [])
+  normalizedHealth.healthCategories = normalizeTextList(health.healthCategories || health.health_categories || [])
+  normalizedHealth.isConfigured = normalizeDashboardSectionFlags(health, [
+    'criticalAlertEnabled',
+    'severityLevelsCount',
+    'incidentCategoriesCount',
+    'vaccinationCategoriesCount',
+    'healthCheckCategoriesCount',
+    'medicationReminderEnabled',
+    'vaccinationReminderEnabled',
+  ])
+
+  const normalizedPreferences = normalizePreschoolSettingsDashboardSection(preferences, {
+    timezone: ['timezone'],
+    defaultLanguage: ['defaultLanguage', 'default_language'],
+    dateFormat: ['dateFormat', 'date_format'],
+    timeFormat: ['timeFormat', 'time_format'],
+    minimumEnrollmentAgeMonths: ['minimumEnrollmentAgeMonths', 'minimum_enrollment_age_months'],
+    maximumEnrollmentAgeMonths: ['maximumEnrollmentAgeMonths', 'maximum_enrollment_age_months'],
+    autoApproveEnrollment: ['autoApproveEnrollment', 'auto_approve_enrollment'],
+    studentCodePrefix: ['studentCodePrefix', 'student_code_prefix'],
+    studentCodeYearFormat: ['studentCodeYearFormat', 'student_code_year_format'],
+    studentCodeSequenceLength: ['studentCodeSequenceLength', 'student_code_sequence_length'],
+    studentCodePreview: ['studentCodePreview', 'student_code_preview'],
+    defaultClassCapacity: ['defaultClassCapacity', 'default_class_capacity'],
+    teacherStudentRatio: ['teacherStudentRatio', 'teacher_student_ratio'],
+    waitlistEnabled: ['waitlistEnabled', 'waitlist_enabled'],
+    minimumGuardians: ['minimumGuardians', 'minimum_guardians'],
+    maximumGuardians: ['maximumGuardians', 'maximum_guardians'],
+    primaryGuardianRequired: ['primaryGuardianRequired', 'primary_guardian_required'],
+    pickupAuthorizationRequired: ['pickupAuthorizationRequired', 'pickup_authorization_required'],
+    attendanceAlertEnabled: ['attendanceAlertEnabled', 'attendance_alert_enabled'],
+    assessmentAlertEnabled: ['assessmentAlertEnabled', 'assessment_alert_enabled'],
+    healthAlertEnabled: ['healthAlertEnabled', 'health_alert_enabled'],
+    enrollmentNotificationEnabled: ['enrollmentNotificationEnabled', 'enrollment_notification_enabled'],
+    enrollmentRulesLabel: ['enrollmentRulesLabel', 'enrollment_rules_label'],
+    studentCodeFormatLabel: ['studentCodeFormatLabel', 'student_code_format_label'],
+    classCapacityLabel: ['classCapacityLabel', 'class_capacity_label'],
+    guardianRulesLabel: ['guardianRulesLabel', 'guardian_rules_label'],
+    communicationRulesLabel: ['communicationRulesLabel', 'communication_rules_label'],
+  })
+  normalizedPreferences.minimumEnrollmentAgeMonths = Number(preferences.minimumEnrollmentAgeMonths ?? preferences.minimum_enrollment_age_months ?? 24)
+  normalizedPreferences.maximumEnrollmentAgeMonths = Number(preferences.maximumEnrollmentAgeMonths ?? preferences.maximum_enrollment_age_months ?? 60)
+  normalizedPreferences.autoApproveEnrollment = Boolean(preferences.autoApproveEnrollment ?? preferences.auto_approve_enrollment ?? false)
+  normalizedPreferences.studentCodePrefix = normalizeText(preferences.studentCodePrefix ?? preferences.student_code_prefix ?? 'PS')
+  normalizedPreferences.studentCodeYearFormat = normalizeText(preferences.studentCodeYearFormat ?? preferences.student_code_year_format ?? 'YYYY')
+  normalizedPreferences.studentCodeSequenceLength = Number(preferences.studentCodeSequenceLength ?? preferences.student_code_sequence_length ?? 4)
+  normalizedPreferences.studentCodePreview = normalizeText(preferences.studentCodePreview ?? preferences.student_code_preview ?? '')
+  normalizedPreferences.defaultClassCapacity = Number(preferences.defaultClassCapacity ?? preferences.default_class_capacity ?? 18)
+  normalizedPreferences.teacherStudentRatio = Number(preferences.teacherStudentRatio ?? preferences.teacher_student_ratio ?? 10)
+  normalizedPreferences.waitlistEnabled = Boolean(preferences.waitlistEnabled ?? preferences.waitlist_enabled ?? true)
+  normalizedPreferences.minimumGuardians = Number(preferences.minimumGuardians ?? preferences.minimum_guardians ?? 1)
+  normalizedPreferences.maximumGuardians = Number(preferences.maximumGuardians ?? preferences.maximum_guardians ?? 2)
+  normalizedPreferences.primaryGuardianRequired = Boolean(preferences.primaryGuardianRequired ?? preferences.primary_guardian_required ?? true)
+  normalizedPreferences.pickupAuthorizationRequired = Boolean(preferences.pickupAuthorizationRequired ?? preferences.pickup_authorization_required ?? true)
+  normalizedPreferences.attendanceAlertEnabled = Boolean(preferences.attendanceAlertEnabled ?? preferences.attendance_alert_enabled ?? true)
+  normalizedPreferences.assessmentAlertEnabled = Boolean(preferences.assessmentAlertEnabled ?? preferences.assessment_alert_enabled ?? true)
+  normalizedPreferences.healthAlertEnabled = Boolean(preferences.healthAlertEnabled ?? preferences.health_alert_enabled ?? true)
+  normalizedPreferences.enrollmentNotificationEnabled = Boolean(preferences.enrollmentNotificationEnabled ?? preferences.enrollment_notification_enabled ?? true)
+  normalizedPreferences.enrollmentRulesLabel = normalizeText(preferences.enrollmentRulesLabel ?? preferences.enrollment_rules_label ?? `${normalizedPreferences.minimumEnrollmentAgeMonths}-${normalizedPreferences.maximumEnrollmentAgeMonths} months • Auto-approve: ${formatBooleanStatus(normalizedPreferences.autoApproveEnrollment)}`)
+  normalizedPreferences.studentCodeFormatLabel = normalizeText(preferences.studentCodeFormatLabel ?? preferences.student_code_format_label ?? `${normalizedPreferences.studentCodePrefix}-${normalizedPreferences.studentCodeYearFormat}-${String(1).padStart(normalizedPreferences.studentCodeSequenceLength || 4, '0')}`)
+  normalizedPreferences.classCapacityLabel = normalizeText(preferences.classCapacityLabel ?? preferences.class_capacity_label ?? `${normalizedPreferences.defaultClassCapacity} students • 1:${normalizedPreferences.teacherStudentRatio} ratio • ${normalizedPreferences.waitlistEnabled ? 'Waitlist enabled' : 'Waitlist disabled'}`)
+  normalizedPreferences.guardianRulesLabel = normalizeText(preferences.guardianRulesLabel ?? preferences.guardian_rules_label ?? `Min ${normalizedPreferences.minimumGuardians} • Max ${normalizedPreferences.maximumGuardians}`)
+  normalizedPreferences.communicationRulesLabel = normalizeText(preferences.communicationRulesLabel ?? preferences.communication_rules_label ?? `Attendance: ${formatBooleanStatus(normalizedPreferences.attendanceAlertEnabled)} • Assessment: ${formatBooleanStatus(normalizedPreferences.assessmentAlertEnabled)} • Health: ${formatBooleanStatus(normalizedPreferences.healthAlertEnabled)} • Enrollment: ${formatBooleanStatus(normalizedPreferences.enrollmentNotificationEnabled)}`)
+  normalizedPreferences.isConfigured = normalizeDashboardSectionFlags(preferences, ['timezone', 'defaultLanguage', 'minimumEnrollmentAgeMonths', 'studentCodePrefix', 'defaultClassCapacity', 'minimumGuardians', 'attendanceAlertEnabled'])
+
+  return {
+    academic: normalizedAcademic,
+    attendance: normalizedAttendance,
+    payments: normalizedPayments,
+    assessments: normalizedAssessments,
+    health: normalizedHealth,
+    preferences: normalizedPreferences,
+  }
+}
+
 export async function fetchPreschoolDashboard(options = {}) {
   const response = await http.get('/preschool/dashboard', {
     signal: options.signal,
@@ -366,14 +636,31 @@ export async function fetchPreschoolSettingsBackbone(options = {}) {
   }
 }
 
+export async function fetchPreschoolSettingsDashboard(options = {}) {
+  const response = await http.get('/preschool/settings/dashboard', {
+    signal: options.signal,
+  })
+
+  const payload = unwrapApiData(response) || {}
+  return normalizePreschoolSettingsDashboard(payload.dashboard || payload)
+}
+
 export {
+  archiveAcademicTerm,
+  archiveAcademicYear,
+  archiveCalendarEvent,
   activateAcademicTerm,
   activateAcademicYear,
   closeAcademicTerm,
   closeAcademicYear,
   createAcademicTerm,
   createAcademicYear,
+  createCalendarEvent,
+  fetchAttendanceSettings,
+  fetchCalendarEvents,
   fetchAcademicLifecycle,
+  updateAttendanceSettings,
+  updateCalendarEvent,
   updateAcademicTerm,
   updateAcademicYear,
 }

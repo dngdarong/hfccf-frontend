@@ -253,6 +253,11 @@ export default {
       errorDecision: 'បរាជ័យក្នុងការដំណើរការការសម្រេចចិត្ត។',
     },
 
+    sidebar: {
+      title: 'ស្ថានភាពចុះឈ្មោះ',
+      checklist: 'សកម្មភាពរហ័ស',
+    },
+
     validation: {
       firstNameRequired: 'ត្រូវការនាមខ្លួន។',
       lastNameRequired: 'ត្រូវការនាមត្រកូល។',

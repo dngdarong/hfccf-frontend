@@ -297,6 +297,7 @@ const checklistItems = computed(() => [
             />
 
             <AddAdminPasswordFields
+              v-if="!isEditMode"
               class="add-admin-page__field add-admin-page__field--full"
               v-model:password="form.password"
               v-model:confirmPassword="form.confirmPassword"

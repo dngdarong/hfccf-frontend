@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { ensureSessionIsValid, getCurrentUser, touchActivity } from '@/services/auth'
+import { ensureSessionIsValid, getCurrentUser, touchActivity, requiresPasswordChange } from '@/services/auth'
 import { canAccessRoute } from '@/services/accessControl'
 import { authRoutes } from '@/modules/auth/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { notificationsRoutes } from '@/modules/notifications/routes'
 import { reportsRoutes } from '@/modules/reports/routes'
+import { governanceRoutes } from '@/modules/governance/routes'
 import { superAdminRoutes } from '@/modules/super-admin/routes'
 import { englishRoutes } from '@/modules/english/routes'
 import { preschoolRoutes } from '@/modules/preschool/routes'
@@ -20,6 +21,7 @@ const routes = [
   ...dashboardRoutes,
   ...notificationsRoutes,
   ...reportsRoutes,
+  ...governanceRoutes,
   ...superAdminRoutes,
   ...englishRoutes,
   ...preschoolRoutes,
@@ -48,6 +50,10 @@ function isGuestOnly(to) {
   return routeMetaMatches(to, 'guestOnly')
 }
 
+function isPasswordChangeRoute(to) {
+  return routeMetaMatches(to, 'passwordChangeOnly') || to.name === 'force-password-change'
+}
+
 function hasValidSession() {
   return ensureSessionIsValid()
 }
@@ -60,12 +66,21 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const sessionValid = await hasValidSession()
   const currentUser = getCurrentUser()
+  const passwordChangeRequired = sessionValid && requiresPasswordChange(currentUser)
 
-  if (requiresAuth(to) && !sessionValid) {
+  if (!sessionValid && requiresAuth(to)) {
     return {
       name: 'login',
       query: { redirect: to.fullPath },
     }
+  }
+
+  if (passwordChangeRequired && !isPasswordChangeRoute(to)) {
+    return { name: 'force-password-change' }
+  }
+
+  if (isPasswordChangeRoute(to) && !passwordChangeRequired) {
+    return { name: 'dashboard' }
   }
 
   if (isGuestOnly(to) && sessionValid) {

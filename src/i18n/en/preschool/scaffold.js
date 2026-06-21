@@ -79,6 +79,14 @@ export default {
         },
       },
     },
+    reportManagement: {
+      loading: 'Loading report management...',
+      title: 'Report Management',
+      subtitle: 'Create, organize, review, and manage Preschool reports.',
+      eyebrow: 'Report overview',
+      description:
+        'Manage the launch points for report builders, recent reports, summaries, and review tools.',
+    },
   },
   preschoolAdminAttendancePage: {
     status: {

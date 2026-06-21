@@ -8,6 +8,9 @@ import http from '@/services/http'
 import { buildQueryParams, unwrapApiData, unwrapApiItems, unwrapApiPagination } from '@/services/api'
 import { normalizePerPage } from '@/modules/sport/services/api/sportApiUtils'
 import {
+  fetchAssessmentCategories as fetchAssessmentConfigurationCategories,
+} from '@/modules/preschool/services/api/preschoolAssessmentConfigurationApi'
+import {
   normalizeAssessment,
   normalizeAssessmentCategory,
   normalizeProgressSummary,
@@ -20,6 +23,26 @@ const FORM_QUESTION_TYPE_MAP = {
   rating: 'rating_scale',
   table: 'dynamic_table',
   signature: 'signature',
+}
+
+function isPersistedId(value) {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value > 0
+  }
+
+  if (typeof value === 'string') {
+    return /^\d+$/.test(value.trim())
+  }
+
+  return false
+}
+
+function normalizePersistedId(value) {
+  if (!isPersistedId(value)) {
+    return undefined
+  }
+
+  return typeof value === 'string' ? Number(value.trim()) : value
 }
 
 function normalizeFormOption(option = {}) {
@@ -143,6 +166,17 @@ function normalizeFormVersion(version = {}) {
   }
 }
 
+function normalizeUserReference(value) {
+  if (value && typeof value === 'object') {
+    return {
+      id: value.id ?? '',
+      name: String(value.name ?? '').trim(),
+    }
+  }
+
+  return value ? { id: value, name: '' } : null
+}
+
 function normalizeFormTemplate(row = {}) {
   const versions = Array.isArray(row.versions) ? row.versions.map(normalizeFormVersion) : []
   const sections = Array.isArray(row.sections) ? row.sections.map(normalizeFormSection) : []
@@ -158,15 +192,23 @@ function normalizeFormTemplate(row = {}) {
     category: String(row.category ?? '').trim(),
     module: String(row.module ?? 'preschool').trim(),
     status: String(row.status ?? 'draft').trim(),
+    reviewStatus: String(row.review_status ?? row.reviewStatus ?? 'draft').trim(),
     isLocked: Boolean(row.is_locked ?? row.isLocked ?? false),
     isDraft: Boolean(row.is_draft ?? row.isDraft ?? row.status === 'draft'),
     isPublished: Boolean(row.is_published ?? row.isPublished ?? row.status === 'published'),
     isArchived: Boolean(row.is_archived ?? row.isArchived ?? row.status === 'archived'),
+    isUnderReview: Boolean(row.is_under_review ?? row.isUnderReview ?? ['submitted', 'in_review'].includes(String(row.review_status ?? row.reviewStatus ?? ''))),
+    isReviewApproved: Boolean(row.is_review_approved ?? row.isReviewApproved ?? row.review_status === 'approved'),
+    isReviewRejected: Boolean(row.is_review_rejected ?? row.isReviewRejected ?? row.review_status === 'rejected'),
     currentVersion: Number(row.current_version ?? row.currentVersion ?? versions.find(version => version.isCurrent)?.versionNumber ?? 0),
     publishNotes: String(row.publish_notes ?? row.publishNotes ?? row.version_notes ?? '').trim(),
     versionNotes: String(row.version_notes ?? row.versionNotes ?? '').trim(),
     reviewNotes: String(row.review_notes ?? row.reviewNotes ?? '').trim(),
-    reviewedBy: row.reviewed_by ?? row.reviewedBy ?? null,
+    submittedBy: normalizeUserReference(row.submitted_by ?? row.submittedBy ?? null),
+    submittedAt: row.submitted_at || row.submittedAt || '',
+    reviewStartedBy: normalizeUserReference(row.review_started_by ?? row.reviewStartedBy ?? null),
+    reviewStartedAt: row.review_started_at || row.reviewStartedAt || '',
+    reviewedBy: normalizeUserReference(row.reviewed_by ?? row.reviewedBy ?? null),
     reviewedAt: row.reviewed_at || row.reviewedAt || '',
     duplicatedFromTemplateId: row.duplicated_from_template_id ?? row.duplicatedFromTemplateId ?? null,
     duplicatedFromVersion: row.duplicated_from_version ?? row.duplicatedFromVersion ?? null,
@@ -176,6 +218,10 @@ function normalizeFormTemplate(row = {}) {
     publishedBy: row.published_by ?? row.publishedBy ?? null,
     archivedAt: row.archived_at || row.archivedAt || '',
     archivedBy: row.archived_by ?? row.archivedBy ?? null,
+    createdBy: normalizeUserReference(row.created_by ?? row.createdBy ?? null),
+    updatedBy: normalizeUserReference(row.updated_by ?? row.updatedBy ?? null),
+    createdAt: row.created_at || row.createdAt || '',
+    updatedAt: row.updated_at || row.updatedAt || '',
     settings: row.settings ?? {},
     sections,
     versions,
@@ -192,21 +238,166 @@ function normalizeFormTemplateListResponse(response, fallbackPage = 1, fallbackP
   }
 }
 
-function buildFormQuestionOptionsPayload(options = '') {
-  return String(options || '')
-    .split(',')
-    .map(option => option.trim())
-    .filter(Boolean)
-    .map((label, index) => ({
+function normalizeReviewQueueResponse(response, fallbackPage = 1, fallbackPerPage = 20) {
+  const data = unwrapApiData(response) || {}
+  const items = Array.isArray(data.items) ? data.items.map(normalizeFormTemplate) : []
+  const summary = data.summary || {}
+
+  return {
+    items,
+    summary: {
+      pendingReview: Number(summary.pending_review ?? summary.pendingReview ?? 0),
+      inReview: Number(summary.in_review ?? summary.inReview ?? 0),
+      approved: Number(summary.approved ?? 0),
+      rejected: Number(summary.rejected ?? 0),
+    },
+    pagination: unwrapApiPagination(response, fallbackPage, fallbackPerPage, items.length),
+  }
+}
+
+function normalizeReviewHistoryEntry(entry = {}) {
+  return {
+    id: entry.id ?? '',
+    event: String(entry.event ?? entry.action ?? '').trim(),
+    action: String(entry.action ?? entry.event ?? '').trim(),
+    actor: normalizeUserReference(entry.actor ?? null),
+    description: String(entry.description ?? entry.entity_label ?? '').trim(),
+    entityType: String(entry.entity_type ?? entry.entityType ?? '').trim(),
+    entityId: entry.entity_id ?? entry.entityId ?? '',
+    entityLabel: String(entry.entity_label ?? entry.entityLabel ?? '').trim(),
+    oldValue: entry.old_value ?? entry.oldValue ?? null,
+    newValue: entry.new_value ?? entry.newValue ?? null,
+    meta: entry.meta ?? {},
+    createdAt: entry.created_at || entry.createdAt || '',
+    raw: entry,
+  }
+}
+
+function buildFormQuestionOptionPayload(option, index = 0) {
+  if (typeof option === 'string') {
+    const label = option.trim()
+
+    return label ? {
       label,
       value: label.toLowerCase().replace(/\s+/g, '_'),
       sort_order: index + 1,
       score_value: index + 1,
-    }))
+    } : null
+  }
+
+  const label = String(option?.label ?? option?.option_text ?? option?.value ?? '').trim()
+
+  if (!label) {
+    return null
+  }
+
+  const value = String(option?.value ?? label.toLowerCase().replace(/\s+/g, '_')).trim()
+  const payload = {
+    label,
+    value,
+    sort_order: Number(option?.sort_order ?? option?.sortOrder ?? index + 1),
+    score_value: Number(option?.score_value ?? option?.scoreValue ?? index + 1),
+  }
+
+  const persistedId = normalizePersistedId(option?.id)
+  if (persistedId !== undefined) {
+    payload.id = persistedId
+  }
+
+  return payload
+}
+
+function normalizeFormQuestionOptionsText(options = '') {
+  if (Array.isArray(options)) {
+    return options
+      .map(option => String(option?.label ?? option?.option_text ?? option?.value ?? option ?? '').trim())
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return String(options || '')
+}
+
+function buildFormQuestionOptionsPayload(options = '') {
+  const source = Array.isArray(options)
+    ? options
+    : String(options || '')
+        .split(',')
+        .map(option => option.trim())
+        .filter(Boolean)
+
+  return source
+    .map((option, index) => buildFormQuestionOptionPayload(option, index))
+    .filter(Boolean)
+}
+
+function stripTemporaryIdsForPayload(payload = {}) {
+  const normalized = { ...payload }
+  const persistedId = normalizePersistedId(normalized.id)
+
+  if (persistedId !== undefined) {
+    normalized.id = persistedId
+  } else {
+    delete normalized.id
+  }
+
+  if (!Array.isArray(normalized.sections)) {
+    return normalized
+  }
+
+  normalized.sections = normalized.sections.map((section) => {
+    const nextSection = { ...section }
+    const sectionId = normalizePersistedId(nextSection.id)
+
+    if (sectionId !== undefined) {
+      nextSection.id = sectionId
+    } else {
+      delete nextSection.id
+    }
+
+    if (!Array.isArray(nextSection.questions)) {
+      return nextSection
+    }
+
+    nextSection.questions = nextSection.questions.map((question) => {
+      const nextQuestion = { ...question }
+      const questionId = normalizePersistedId(nextQuestion.id)
+
+      if (questionId !== undefined) {
+        nextQuestion.id = questionId
+      } else {
+        delete nextQuestion.id
+      }
+
+      if (!Array.isArray(nextQuestion.options)) {
+        return nextQuestion
+      }
+
+      nextQuestion.options = nextQuestion.options.map((option) => {
+        const nextOption = { ...option }
+        const optionId = normalizePersistedId(nextOption.id)
+
+        if (optionId !== undefined) {
+          nextOption.id = optionId
+        } else {
+          delete nextOption.id
+        }
+
+        return nextOption
+      })
+
+      return nextQuestion
+    })
+
+    return nextSection
+  })
+
+  return normalized
 }
 
 function buildFormTemplatePayload(template = {}, sections = []) {
-  return {
+  return stripTemporaryIdsForPayload({
+    id: template.id,
     name: template.name,
     name_kh: template.nameKh ?? template.name_kh ?? null,
     description: template.description ?? null,
@@ -263,13 +454,13 @@ function buildFormTemplatePayload(template = {}, sections = []) {
             answerType: question.answerType || mappedType,
             validationMode: question.validationMode || 'basic',
             score: question.score ?? question.maxScore ?? null,
-            options: question.options || '',
+            options: normalizeFormQuestionOptionsText(question.options),
           },
           options: buildFormQuestionOptionsPayload(question.options),
         }
       }),
     })),
-  }
+  })
 }
 
 export {
@@ -281,6 +472,9 @@ export {
   normalizeFormQuestion,
   normalizeFormOption,
   normalizeFormVersion,
+  isPersistedId,
+  normalizePersistedId,
+  stripTemporaryIdsForPayload,
   buildFormTemplatePayload,
 }
 
@@ -293,18 +487,8 @@ function normalizeAssessmentListResponse(response, fallbackPage = 1, fallbackPer
   }
 }
 
-function normalizeCategoryListResponse(response) {
-  const items = unwrapApiItems(response)
-
-  return items.map(normalizeAssessmentCategory)
-}
-
 export async function fetchAssessmentCategories(options = {}) {
-  const response = await http.get('/preschool/assessment-categories', {
-    signal: options.signal,
-  })
-
-  return normalizeCategoryListResponse(response)
+  return fetchAssessmentConfigurationCategories(options)
 }
 
 export async function fetchStudentAssessments(studentId, params = {}, options = {}) {
@@ -407,6 +591,24 @@ export async function fetchAssessmentForms(params = {}, options = {}) {
   return normalizeFormTemplateListResponse(response, params.page ?? 1, perPage)
 }
 
+export async function fetchAssessmentFormReviewQueue(params = {}, options = {}) {
+  const perPage = normalizePerPage(params.perPage ?? params.per_page, 10, 100)
+  const response = await http.get('/assessment/forms/review-queue', {
+    params: buildQueryParams({
+      page: params.page ?? 1,
+      per_page: perPage,
+      search: params.search || '',
+      status: params.status || '',
+      review_status: params.reviewStatus || params.review_status || '',
+      sort_by: params.sortBy || 'updated_at',
+      sort_direction: params.sortDirection || 'desc',
+    }),
+    signal: options.signal,
+  })
+
+  return normalizeReviewQueueResponse(response, params.page ?? 1, perPage)
+}
+
 export async function fetchAssessmentForm(formId, options = {}) {
   const response = await http.get(`/assessment/forms/${encodeURIComponent(formId)}`, {
     signal: options.signal,
@@ -458,6 +660,45 @@ export async function restoreAssessmentForm(formId, payload = {}) {
     review_notes: payload.reviewNotes || payload.review_notes || '',
   })
   return normalizeFormTemplate(unwrapApiData(response) || {})
+}
+
+export async function submitAssessmentFormForReview(formId, payload = {}) {
+  const response = await http.post(`/assessment/forms/${encodeURIComponent(formId)}/submit-review`, {
+    review_notes: payload.reviewNotes || payload.review_notes || '',
+  })
+
+  return normalizeFormTemplate(unwrapApiData(response) || {})
+}
+
+export async function startAssessmentFormReview(formId) {
+  const response = await http.post(`/assessment/forms/${encodeURIComponent(formId)}/start-review`)
+
+  return normalizeFormTemplate(unwrapApiData(response) || {})
+}
+
+export async function approveAssessmentFormReview(formId, payload = {}) {
+  const response = await http.post(`/assessment/forms/${encodeURIComponent(formId)}/approve`, {
+    review_notes: payload.reviewNotes || payload.review_notes || '',
+  })
+
+  return normalizeFormTemplate(unwrapApiData(response) || {})
+}
+
+export async function rejectAssessmentFormReview(formId, payload = {}) {
+  const response = await http.post(`/assessment/forms/${encodeURIComponent(formId)}/reject`, {
+    rejection_reason: payload.rejectionReason || payload.rejection_reason || '',
+    review_notes: payload.reviewNotes || payload.review_notes || '',
+  })
+
+  return normalizeFormTemplate(unwrapApiData(response) || {})
+}
+
+export async function fetchAssessmentFormReviewHistory(formId, options = {}) {
+  const response = await http.get(`/assessment/forms/${encodeURIComponent(formId)}/review-history`, {
+    signal: options.signal,
+  })
+
+  return (unwrapApiItems(response) || []).map(normalizeReviewHistoryEntry)
 }
 
 export async function fetchAssessmentFormVersions(formId, options = {}) {

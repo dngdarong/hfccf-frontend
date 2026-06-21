@@ -2,6 +2,7 @@ import overview from './overview'
 import student from './student'
 import classroom from './classroom'
 import shared from './shared'
+import dashboard from './dashboard'
 
 export default {
   // Keep report keys merged at the Preschool module boundary so pages can read
@@ -10,4 +11,5 @@ export default {
   ...student,
   ...classroom,
   ...shared,
+  ...dashboard,
 }

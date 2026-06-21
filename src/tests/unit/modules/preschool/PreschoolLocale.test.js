@@ -7,7 +7,7 @@ import khPreschool from '@/i18n/kh/preschool'
 // the module evolves.
 function expectString(source, path) {
   const value = path.split('.').reduce((carry, key) => carry?.[key], source)
-  expect(typeof value).toBe('string')
+  expect(value, `missing locale key: ${path}`).toBeTypeOf('string')
   expect(value).not.toContain('<')
   // Regression protection: keep the scan focused on raw Unicode corruption
   // without embedding corrupted marker bytes in the test file itself.
@@ -21,6 +21,19 @@ describe('preschool locale parity', () => {
       'preschoolDashboardPage.loading',
       'preschoolStudentInfoPage.alerts.deleteFallback',
       'preschoolTeacherAttendancePage.messages.noResults',
+      'preschoolTeachersManagement.resetPassword',
+      'preschoolTeachersManagement.resetPasswordTitle',
+      'preschoolTeachersManagement.resetPasswordDescription',
+      'preschoolTeachersManagement.newPassword',
+      'preschoolTeachersManagement.confirmPassword',
+      'preschoolTeachersManagement.reason',
+      'preschoolTeachersManagement.reasonPlaceholder',
+      'preschoolTeachersManagement.passwordResetSuccess',
+      'preschoolTeachersManagement.validation.passwordRequired',
+      'preschoolTeachersManagement.validation.confirmPasswordRequired',
+      'preschoolTeachersManagement.validation.passwordTooShort',
+      'preschoolTeachersManagement.validation.passwordMismatch',
+      'preschoolTeachersManagement.validation.reasonRequired',
       'preschoolPaymentManagementPage.alerts.deleteFallback',
       'preschoolClassesManagement.alerts.deleteTitle',
       'preschoolAddClass.statusLabels.success',

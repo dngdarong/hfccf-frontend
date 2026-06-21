@@ -8,9 +8,12 @@ import { useLanguage } from '@/composables/useLanguage'
 import { formatDate } from '@/utils/date'
 import { getAvatarInitials, resolveAvatarSource } from '@/utils/avatar'
 import { fetchPreschoolStudent } from '@/modules/preschool/services/preschoolApi'
+import { fetchPreschoolStudentPaymentSummary } from '@/modules/preschool/services/api/preschoolPaymentApi'
 import { fetchStudentHealthSummary } from '@/modules/preschool/services/api/preschoolHealthApi'
+import { fetchStudentGuardianCommunications } from '@/modules/preschool/services/api/preschoolGuardianCommunicationApi'
 import { BACK_ROUTE_NAME } from './constants/studentProfileConstants'
 import { buildInfoCards, getStatusLabel, getStatusClass, getStudentDisplayName } from './utils/studentProfileHelpers'
+import GuardianCommunicationTimeline from '@/modules/preschool/admin/components/guardian/GuardianCommunicationTimeline.vue'
 
 defineOptions({
   name: 'PreschoolAdminStudentProfilePage',
@@ -24,6 +27,8 @@ const loading = ref(false)
 const errorMessage = ref('')
 const student = ref(null)
 const healthSummary = ref(null)
+const paymentSummary = ref(null)
+const communicationTimeline = ref(null)
 
 const profileClasses = computed(() => student.value?.classes || [])
 const avatarSrc = computed(() => resolveAvatarSource(student.value?.avatarUrl || ''))
@@ -38,6 +43,8 @@ async function loadStudent() {
   if (!studentId) {
     errorMessage.value = t('preschoolStudentProfilePage.messages.notFound')
     student.value = null
+    paymentSummary.value = null
+    communicationTimeline.value = null
     return
   }
 
@@ -45,20 +52,28 @@ async function loadStudent() {
   errorMessage.value = ''
 
   try {
-    const [response, summary] = await Promise.all([
+    const [response, healthResponse, paymentResponse, communications] = await Promise.all([
       fetchPreschoolStudent(studentId),
       fetchStudentHealthSummary(studentId).catch(() => null),
+      fetchPreschoolStudentPaymentSummary(studentId).catch(() => null),
+      fetchStudentGuardianCommunications(studentId, { perPage: 5 }).catch(() => null),
     ])
     if (!response) {
       student.value = null
+      paymentSummary.value = null
+      communicationTimeline.value = null
       errorMessage.value = t('preschoolStudentProfilePage.messages.notFound')
       return
     }
 
     student.value = response
-    healthSummary.value = summary
+    healthSummary.value = healthResponse
+    paymentSummary.value = paymentResponse
+    communicationTimeline.value = communications
   } catch (error) {
     student.value = null
+    paymentSummary.value = null
+    communicationTimeline.value = null
     errorMessage.value = error?.message || t('preschoolStudentProfilePage.messages.loadFailed')
   } finally {
     loading.value = false
@@ -73,6 +88,18 @@ function goToHealthRecords() {
   const studentId = String(route.params.id || '').trim()
   if (!studentId) return
   router.push({ name: 'dashboard-preschool-admin-health-student', params: { id: studentId } })
+}
+
+function goToPayments() {
+  const studentId = String(route.params.id || '').trim()
+  if (!studentId) return
+  router.push({ name: 'dashboard-preschool-admin-payment', query: { studentId } })
+}
+
+function goToCommunications() {
+  const studentId = String(route.params.id || '').trim()
+  if (!studentId) return
+  router.push({ name: 'dashboard-preschool-admin-guardian-communications', query: { studentId } })
 }
 
 watch(() => route.params.id, () => {
@@ -97,6 +124,9 @@ onMounted(loadStudent)
           </Button>
           <Button type="button" variant="secondary" rounded="xl" @click="goToHealthRecords">
             {{ t('preschoolStudentProfilePage.actions.health') }}
+          </Button>
+          <Button type="button" variant="secondary" rounded="xl" @click="goToCommunications">
+            {{ t('preschoolGuardianCommunicationPage.title') }}
           </Button>
         </div>
 
@@ -162,6 +192,78 @@ onMounted(loadStudent)
               <div class="student-profile-page__health-chip">{{ t('preschoolHealthPage.summary.contacts') }}: {{ healthSummary.counts.emergencyContacts }}</div>
               <div class="student-profile-page__health-chip">{{ t('preschoolHealthPage.summary.checks') }}: {{ healthSummary.counts.healthChecks }}</div>
             </div>
+          </div>
+
+          <div v-if="paymentSummary" class="student-profile-page__payments">
+            <div class="student-profile-page__health-header">
+              <div>
+                <p class="student-profile-page__panel-eyebrow">{{ t('preschoolStudentProfilePage.actions.paymentSummary') }}</p>
+                <h3 class="student-profile-page__panel-title">{{ t('preschoolStudentProfilePage.paymentSummary.title') }}</h3>
+              </div>
+              <Button type="button" variant="secondary" size="sm" rounded="xl" @click="goToPayments">
+                {{ t('preschoolStudentProfilePage.actions.paymentSummary') }}
+              </Button>
+            </div>
+
+            <div class="student-profile-page__payments-grid">
+              <div class="student-profile-page__payment-chip">
+                <span>{{ t('preschoolStudentProfilePage.paymentSummary.outstandingBalance') }}</span>
+                <strong>${{ Number(paymentSummary.summary?.outstandingBalance || 0).toFixed(2) }}</strong>
+              </div>
+              <div class="student-profile-page__payment-chip">
+                <span>{{ t('preschoolStudentProfilePage.paymentSummary.totalBilled') }}</span>
+                <strong>${{ Number(paymentSummary.summary?.totalBilled || 0).toFixed(2) }}</strong>
+              </div>
+              <div class="student-profile-page__payment-chip">
+                <span>{{ t('preschoolStudentProfilePage.paymentSummary.totalPaid') }}</span>
+                <strong>${{ Number(paymentSummary.summary?.totalPaid || 0).toFixed(2) }}</strong>
+              </div>
+            </div>
+
+            <div class="student-profile-page__payment-columns">
+              <div class="student-profile-page__payment-column">
+                <h4>{{ t('preschoolStudentProfilePage.paymentSummary.invoices') }}</h4>
+                <div v-if="paymentSummary.recentInvoices?.length" class="student-profile-page__payment-list">
+                  <article v-for="invoice in paymentSummary.recentInvoices" :key="invoice.id" class="student-profile-page__payment-card">
+                    <div>
+                      <p class="student-profile-page__payment-card-title">{{ invoice.invoiceNumber || invoice.number || '-' }}</p>
+                      <p class="student-profile-page__payment-card-meta">{{ invoice.status || '-' }} · {{ formatDate(invoice.issueDate) || invoice.issueDate || '-' }}</p>
+                    </div>
+                    <strong>${{ Number(invoice.balanceDue || 0).toFixed(2) }}</strong>
+                  </article>
+                </div>
+                <div v-else class="student-profile-page__empty-inline">
+                  {{ t('preschoolStudentProfilePage.paymentSummary.noInvoices') }}
+                </div>
+              </div>
+
+              <div class="student-profile-page__payment-column">
+                <h4>{{ t('preschoolStudentProfilePage.paymentSummary.receipts') }}</h4>
+                <div v-if="paymentSummary.recentReceipts?.length" class="student-profile-page__payment-list">
+                  <article v-for="receipt in paymentSummary.recentReceipts" :key="receipt.id" class="student-profile-page__payment-card">
+                    <div>
+                      <p class="student-profile-page__payment-card-title">{{ receipt.receiptNumber || receipt.number || '-' }}</p>
+                      <p class="student-profile-page__payment-card-meta">{{ receipt.paymentMethod || '-' }} · {{ formatDate(receipt.issuedAt) || receipt.issuedAt || '-' }}</p>
+                    </div>
+                    <strong>${{ Number(receipt.amount || 0).toFixed(2) }}</strong>
+                  </article>
+                </div>
+                <div v-else class="student-profile-page__empty-inline">
+                  {{ t('preschoolStudentProfilePage.paymentSummary.noReceipts') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="communicationTimeline" class="student-profile-page__communications">
+            <GuardianCommunicationTimeline
+              compact
+              :title="t('preschoolGuardianCommunicationPage.timelineTitle')"
+              :subtitle="t('preschoolGuardianCommunicationPage.timelineSubtitle')"
+              :communications="communicationTimeline.items || []"
+              :summary="communicationTimeline.summary || {}"
+              :empty-text="t('preschoolGuardianCommunicationPage.messages.noCommunicationYet')"
+            />
           </div>
 
           <div class="student-profile-page__content-grid">
@@ -390,6 +492,14 @@ onMounted(loadStudent)
 }
 
 .student-profile-page__health {
+  border-radius: 1.25rem;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.45);
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.student-profile-page__communications {
   border-radius: 1.25rem;
   border: 1px solid #dbe3ef;
   background: #fff;

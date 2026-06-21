@@ -1,20 +1,27 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
+import Toast from 'primevue/toast'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Table from '@/components/data-display/Table.vue'
+import TableActions from '@/components/data-display/components/TableActions.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
 import Button from '@/components/buttons/Button.vue'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useUserStore } from '@/store/userStore'
+import { ROLES, isSuperAdminRole } from '@/constants/roles'
 import { mapUsers } from '@/services/mappers/userMapper'
+import { resetAdminUserPassword } from '@/modules/super-admin/services/adminUsersApi'
 import {
   deletePreschoolTeacher,
   fetchPreschoolTeachers,
 } from '@/modules/preschool/services/preschoolApi'
 import { PAGE_SIZE, ADD_TEACHER_PATH, STATUS_OPTIONS, DEFAULT_PAGINATION } from './constants/teacherManagementConstants'
+import ResetTeacherPasswordDialog from '@/modules/preschool/admin/components/teacher-management/ResetTeacherPasswordDialog.vue'
 import { buildTableColumns } from './utils/teacherManagementHelpers'
 
 defineOptions({
@@ -23,6 +30,8 @@ defineOptions({
 
 const router = useRouter()
 const { t } = useLanguage()
+const toast = useToast()
+const userStore = useUserStore()
 
 const searchQuery = ref('')
 const statusFilter = ref('')
@@ -35,8 +44,17 @@ const isDeleteOpen = ref(false)
 const selectedTeacher = ref(null)
 const showSuccess = ref(false)
 const successMessage = ref('')
+const isResetOpen = ref(false)
+const resetTarget = ref(null)
+const resetLoading = ref(false)
+const resetBackendError = ref('')
 
 const tableColumns = computed(() => buildTableColumns(t))
+const currentUser = computed(() => userStore.currentUser || {})
+const currentUserRole = computed(() => String(currentUser.value?.role || '').trim().toLowerCase())
+const canManageTeacherResets = computed(() =>
+  isSuperAdminRole(currentUser.value?.role) || currentUserRole.value === ROLES.ADMIN_PRESCHOOL,
+)
 
 const statusOptions = computed(() => STATUS_OPTIONS)
 
@@ -50,6 +68,13 @@ const mappedTeachers = computed(() =>
     permissions: Array.isArray(teacher.permissions) ? teacher.permissions : [],
   })),
 )
+
+function canResetTeacher(teacher) {
+  return (
+    canManageTeacherResets.value &&
+    String(teacher?.role || '').trim().toLowerCase() === ROLES.TEACHER_PRESCHOOL
+  )
+}
 
 function goToAddTeacher() {
   router.push({ path: ADD_TEACHER_PATH })
@@ -101,9 +126,23 @@ function onDeleteUser(user) {
   isDeleteOpen.value = true
 }
 
+function onResetTeacher(user) {
+  if (!canResetTeacher(user)) return
+
+  resetTarget.value = user || null
+  resetBackendError.value = ''
+  isResetOpen.value = true
+}
+
 function onCancelDelete() {
   isDeleteOpen.value = false
   selectedTeacher.value = null
+}
+
+function onCancelReset() {
+  isResetOpen.value = false
+  resetTarget.value = null
+  resetBackendError.value = ''
 }
 
 async function onConfirmDelete() {
@@ -118,6 +157,35 @@ async function onConfirmDelete() {
     await loadTeachers()
   } catch (error) {
     errorMessage.value = error?.message || t('preschoolTeachersManagement.deleteFailed')
+  }
+}
+
+async function onConfirmReset(payload) {
+  const id = String(resetTarget.value?.id || '').trim()
+  if (!id) return
+
+  resetLoading.value = true
+  resetBackendError.value = ''
+
+  try {
+    await resetAdminUserPassword(id, {
+      password: payload?.password || '',
+      confirmPassword: payload?.password_confirmation || '',
+      reason: payload?.reason || '',
+    })
+
+    toast.add({
+      severity: 'success',
+      summary: t('preschoolTeachersManagement.passwordResetSuccess'),
+      life: 3000,
+    })
+
+    onCancelReset()
+    await loadTeachers()
+  } catch (error) {
+    resetBackendError.value = error?.message || t('common.error')
+  } finally {
+    resetLoading.value = false
   }
 }
 
@@ -137,6 +205,7 @@ onMounted(() => {
 
 <template>
   <MainLayout>
+    <Toast />
     <section class="preschool-users-page">
       <HeaderSection
         :title="t('preschoolTeachersManagement.title')"
@@ -213,10 +282,21 @@ onMounted(() => {
           :columns="tableColumns"
           :loading="loading"
           :empty-text="t('preschoolTeachersManagement.tableEmpty')"
-          @view="onViewUser"
-          @edit="onEditUser"
-          @delete="onDeleteUser"
-        />
+        >
+          <template #actions="{ data }">
+            <TableActions
+              :item="data"
+              :show-view-action="true"
+              :show-edit-action="true"
+              :show-delete-action="true"
+              :show-reset-action="canResetTeacher(data)"
+              @view="onViewUser"
+              @edit="onEditUser"
+              @delete="onDeleteUser"
+              @reset="onResetTeacher"
+            />
+          </template>
+        </Table>
 
         <div v-if="pagination.totalPages > 1" class="flex justify-end">
           <Pagination v-model="currentPage" :total-pages="pagination.totalPages" class="mt-2" />
@@ -241,6 +321,14 @@ onMounted(() => {
       :message="successMessage"
       :button-text="t('preschoolTeachersManagement.closeButton')"
       @close="showSuccess = false"
+    />
+
+    <ResetTeacherPasswordDialog
+      v-model:visible="isResetOpen"
+      :loading="resetLoading"
+      :backend-error="resetBackendError"
+      @confirm="onConfirmReset"
+      @cancel="onCancelReset"
     />
   </MainLayout>
 </template>

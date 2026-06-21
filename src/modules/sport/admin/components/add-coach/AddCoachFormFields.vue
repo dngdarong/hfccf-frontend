@@ -79,6 +79,10 @@ defineProps({
     type: Function,
     required: true,
   },
+  showPasswordFields: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const emit = defineEmits([
@@ -165,6 +169,7 @@ const placeholders = computed(() => ({
     />
 
     <AddAdminPasswordFields
+      v-if="showPasswordFields"
       class="add-coach-form-fields__field add-coach-form-fields__field--full"
       :password="password"
       :confirm-password="confirmPassword"

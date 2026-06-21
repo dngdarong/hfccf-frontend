@@ -140,7 +140,11 @@ export function usePreschoolSchedules() {
       await loadSchedules()
       return result
     } catch (error) {
-      errorMessage.value = error?.message || 'Unable to archive the Preschool schedule right now.'
+      if (error?.status !== 409) {
+        errorMessage.value = error?.message || 'Unable to archive the Preschool schedule right now.'
+      } else {
+        errorMessage.value = ''
+      }
       throw error
     } finally {
       saving.value = false

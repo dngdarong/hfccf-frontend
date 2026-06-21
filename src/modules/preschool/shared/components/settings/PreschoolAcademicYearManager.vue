@@ -31,7 +31,7 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['open-add', 'open-edit', 'activate', 'close'])
+const emit = defineEmits(['open-add', 'open-edit', 'activate', 'close', 'archive'])
 
 function formatDate(value) {
   if (!value) return '—'
@@ -43,6 +43,8 @@ function formatDate(value) {
 function statusClass(status, isCurrent) {
   if (isCurrent) return 'bg-emerald-100 text-emerald-700'
   switch (String(status || 'active').toLowerCase()) {
+    case 'draft':
+      return 'bg-sky-100 text-sky-700'
     case 'closed':
       return 'bg-amber-100 text-amber-700'
     case 'archived':
@@ -82,13 +84,13 @@ function statusClass(status, isCurrent) {
         <div class="flex items-start justify-between gap-3">
           <div>
             <h4 class="text-base font-semibold text-slate-900">
-              {{ year.label || year.code }}
+              {{ year.name || year.label || year.code }}
             </h4>
             <p class="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
               {{ year.code }}
             </p>
             <p class="mt-1 text-sm text-slate-500">
-              {{ formatDate(year.startDate) }} - {{ formatDate(year.endDate) }}
+              {{ year.dateRange || `${formatDate(year.startDate)} - ${formatDate(year.endDate)}` }}
             </p>
           </div>
           <div class="flex flex-col items-end gap-2">
@@ -101,8 +103,8 @@ function statusClass(status, isCurrent) {
           </div>
         </div>
 
-        <p v-if="year.notes" class="mt-3 text-sm text-slate-600">
-          {{ year.notes }}
+        <p v-if="year.description || year.notes" class="mt-3 text-sm text-slate-600">
+          {{ year.description || year.notes }}
         </p>
 
         <p v-if="currentContext.academic_year_id && String(currentContext.academic_year_id) === String(year.id)" class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
@@ -110,14 +112,17 @@ function statusClass(status, isCurrent) {
         </p>
 
         <div class="mt-4 flex flex-wrap gap-2">
-          <Button variant="ghost" :disabled="saving" @click="emit('open-edit', index)">
+          <Button variant="ghost" :disabled="saving || ['closed', 'archived'].includes(String(year.status || '').toLowerCase())" @click="emit('open-edit', index)">
             {{ t('preschoolLifecyclePage.actions.edit') }}
           </Button>
-          <Button variant="ghost" :disabled="saving || year.isCurrent" @click="emit('activate', index)">
+          <Button variant="ghost" :disabled="saving || year.isCurrent || String(year.status || '').toLowerCase() === 'archived'" @click="emit('activate', index)">
             {{ t('preschoolLifecyclePage.actions.activate') }}
           </Button>
-          <Button variant="ghost" :disabled="saving || year.status === 'closed'" @click="emit('close', index)">
+          <Button variant="ghost" :disabled="saving || ['closed', 'archived'].includes(String(year.status || '').toLowerCase())" @click="emit('close', index)">
             {{ t('preschoolLifecyclePage.actions.close') }}
+          </Button>
+          <Button variant="ghost" :disabled="saving || year.status === 'archived'" @click="emit('archive', index)">
+            {{ t('preschoolLifecyclePage.actions.archive') }}
           </Button>
         </div>
       </article>

@@ -205,7 +205,9 @@ export function useLoginForm({ accessPolicy, language }) {
         throw new Error(t('auth.loginForm.missingRequiredPermissions'))
       }
 
-      loginRedirectTarget.value = getRedirectTargetForRole(authenticatedUser)
+      loginRedirectTarget.value = authenticatedUser?.mustChangePassword
+        ? '/change-password'
+        : getRedirectTargetForRole(authenticatedUser)
       shouldRedirectAfterSuccess.value = true
       showLoginSuccess.value = true
     } catch (error) {

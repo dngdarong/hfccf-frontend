@@ -1,164 +1,134 @@
-export default {
-  preschoolSettingsPage: {
-    pageTitle: 'កំណត់តម្លៃ Preschool',
-    pageSubtitle: 'កំណត់ប្រតិទិនសិក្សា ព្រំដែនថ្នាក់ វិន័យវត្តមាន និងតម្លៃបង់ប្រាក់លំនាំដើមសម្រាប់ការងារ Preschool។',
-    statusEyebrow: 'ការគ្រប់គ្រងប្រតិបត្តិការ',
-    statusDescription: 'រក្សាកំណត់ត្រាឲ្យសមស្របជាមួយឆ្នាំសិក្សា និងរក្សាការត្រួតពិនិត្យមូលដ្ឋានមុនរក្សាទុកការផ្លាស់ប្តូរ។',
+import enPreschool from '@/i18n/en/preschool/settings.js'
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function mergeDeep(base, overrides) {
+  if (Array.isArray(base) && Array.isArray(overrides)) {
+    return overrides.map((item) => (isPlainObject(item) ? mergeDeep({}, item) : item))
+  }
+
+  if (!isPlainObject(base) || !isPlainObject(overrides)) {
+    return overrides === undefined ? base : overrides
+  }
+
+  const output = { ...base }
+
+  for (const [key, value] of Object.entries(overrides)) {
+    output[key] = mergeDeep(base[key], value)
+  }
+
+  return output
+}
+
+const overrides = {
+  preschoolPreferencesSettingsPage: {
+    pageTitle: 'ចំណូលចិត្ត',
+    pageSubtitle: 'កំណត់លំនាំប្រតិបត្តិការសម្រាប់ការចុះឈ្មោះ សមត្ថភាពថ្នាក់ លេខកូដសិស្ស អាណាព្យាបាល និងការទំនាក់ទំនង។',
     sections: {
-      summary: {
-        eyebrow: 'សេចក្តីសង្ខេបការកំណត់',
-        title: 'ស្ថានភាពការកំណត់បច្ចុប្បន្ន',
-        subtitle: 'ពិនិត្យសេចក្តីព្រាងក្នុងមូលដ្ឋានមុនរក្សាទុកសម្រាប់ប្រតិបត្តិការ Preschool។',
+      general: {
+        eyebrow: 'ចំណូលចិត្តទូទៅ',
+        title: 'ចំណូលចិត្តទូទៅ',
+        subtitle: 'កំណត់ភាសា និងទម្រង់បង្ហាញដែលប្រើទូទាំង Preschool។',
       },
-      academicYear: {
-        eyebrow: 'ឆ្នាំសិក្សា',
-        title: 'ការកំណត់ឆ្នាំសិក្សា',
-        subtitle: 'កំណត់ព្រំប្រទល់ឆ្នាំសិក្សាសកម្មដែលប្រើក្នុងលំហូរ Preschool ទាំងមូល។',
+      enrollment: {
+        eyebrow: 'ច្បាប់ចុះឈ្មោះ',
+        title: 'ច្បាប់ចុះឈ្មោះ',
+        subtitle: 'កំណត់អាយុអប្បបរមា អតិបរមា និងលំនាំអនុម័តការចុះឈ្មោះ។',
       },
-      terms: {
-        eyebrow: 'ការរៀបចំ term',
-        title: 'Term',
-        subtitle: 'បន្ថែម ឬកែសម្រួលរយៈពេល term ដោយមិនចាកចេញពីទំព័រកំណត់តម្លៃ។',
-        description: 'រក្សាបង្អួច term ឲ្យច្បាស់ ដើម្បីឲ្យវត្តមាន របាយការណ៍ និងវដ្តបង់ប្រាក់ត្រូវគ្នា។',
+      studentCode: {
+        eyebrow: 'ច្បាប់លេខកូដសិស្ស',
+        title: 'ច្បាប់លេខកូដសិស្ស',
+        subtitle: 'កំណត់កូដនាំមុខ ទម្រង់ឆ្នាំ និងប្រវែងលេខរៀង។',
       },
-      classConfiguration: {
-        eyebrow: 'ការកំណត់ថ្នាក់',
-        title: 'ការកំណត់ថ្នាក់',
-        subtitle: 'កំណត់សមត្ថភាពថ្នាក់ បន្ទប់ និងលំនាំដើមបុគ្គលិកដោយសុវត្ថិភាព។',
-        description: 'ប្រើជួរកំណត់ក្នុងមូលដ្ឋាន ដើម្បីរក្សាបញ្ជីថ្នាក់ឲ្យស្របគ្នាសម្រាប់បុគ្គលិក Preschool។',
+      classRules: {
+        eyebrow: 'ច្បាប់ថ្នាក់',
+        title: 'ច្បាប់ថ្នាក់',
+        subtitle: 'កំណត់សមត្ថភាពថ្នាក់លំនាំដើម និងសមាមាត្រគ្រូ-សិស្ស។',
       },
-      attendance: {
-        eyebrow: 'ការកំណត់វត្តមាន',
-        title: 'ការកំណត់វត្តមាន',
-        subtitle: 'គ្រប់គ្រងច្បាប់វត្តមានមុនពេលបញ្ចូលកំណត់ត្រាប្រចាំថ្ងៃ។',
+      guardianRules: {
+        eyebrow: 'ច្បាប់អាណាព្យាបាល',
+        title: 'ច្បាប់អាណាព្យាបាល',
+        subtitle: 'កំណត់ចំនួនអាណាព្យាបាល និងលំនាំអនុញ្ញាតទទួលសិស្ស។',
       },
-      payment: {
-        eyebrow: 'ការកំណត់ការបង់ប្រាក់',
-        title: 'ការកំណត់ការបង់ប្រាក់',
-        subtitle: 'កំណត់តម្លៃសិក្សាលំនាំដើម និងឥរិយាបថការរំលឹកសម្រាប់ការបង់ប្រាក់ Preschool។',
+      communicationRules: {
+        eyebrow: 'ច្បាប់ទំនាក់ទំនង',
+        title: 'ច្បាប់ទំនាក់ទំនង',
+        subtitle: 'បើក ឬបិទការជូនដំណឹងប្រតិបត្តិការសម្រាប់បុគ្គលិក និងគ្រួសារ។',
       },
-    },
-    summary: {
-      academicYear: 'ឆ្នាំសិក្សា',
-      terms: 'Term',
-      classes: 'ថ្នាក់',
-      issues: 'បញ្ហាត្រួតពិនិត្យ',
     },
     fields: {
-      currentAcademicYear: 'ឆ្នាំសិក្សាបច្ចុប្បន្ន',
-      startDate: 'កាលបរិច្ឆេទចាប់ផ្តើម',
-      endDate: 'កាលបរិច្ឆេទបញ្ចប់',
-      status: 'ស្ថានភាព',
-      termName: 'ឈ្មោះ Term',
-      classLevel: 'កម្រិតថ្នាក់',
-      capacity: 'សមត្ថភាព',
-      assignedTeacher: 'គ្រូដែលបានចាត់តាំង',
-      room: 'បន្ទប់',
-      markingWindow: 'រយៈពេលសម្គាល់វត្តមាន',
-      lateThreshold: 'កម្រិតយឺត (នាទី)',
-      absenceRule: 'ច្បាប់អវត្តមាន',
-      teacherCanEditAttendance: 'គ្រូអាចកែវត្តមាន',
-      defaultTuitionFee: 'តម្លៃសិក្សាលំនាំដើម',
-      paymentCycle: 'វដ្តបង់ប្រាក់',
-      dueDay: 'ថ្ងៃកំណត់',
-      lateFeeRule: 'ច្បាប់ពិន័យយឺត',
-      enableOverdueReminders: 'បើកការរំលឹកបំណុលហួសកំណត់',
+      timezone: 'ល្វែងម៉ោង',
+      defaultLanguage: 'ភាសាលំនាំដើម',
+      dateFormat: 'ទម្រង់កាលបរិច្ឆេទ',
+      timeFormat: 'ទម្រង់ម៉ោង',
+      minimumEnrollmentAgeMonths: 'អាយុចុះឈ្មោះអប្បបរមា (ខែ)',
+      maximumEnrollmentAgeMonths: 'អាយុចុះឈ្មោះអតិបរមា (ខែ)',
+      autoApproveEnrollment: 'អនុម័តការចុះឈ្មោះដោយស្វ័យប្រវត្តិ',
+      studentCodePrefix: 'បុព្វបទលេខកូដសិស្ស',
+      studentCodeYearFormat: 'ទម្រង់ឆ្នាំ',
+      studentCodeSequenceLength: 'ប្រវែងលេខរៀង',
+      defaultClassCapacity: 'សមត្ថភាពថ្នាក់លំនាំដើម',
+      teacherStudentRatio: 'សមាមាត្រគ្រូ-សិស្ស',
+      waitlistEnabled: 'បញ្ជីរង់ចាំ',
+      minimumGuardians: 'អាណាព្យាបាលអប្បបរមា',
+      maximumGuardians: 'អាណាព្យាបាលអតិបរមា',
+      primaryGuardianRequired: 'តម្រូវឱ្យមានអាណាព្យាបាលសំខាន់',
+      pickupAuthorizationRequired: 'តម្រូវឱ្យមានការអនុញ្ញាតទទួលសិស្ស',
+      attendanceAlerts: 'ការជូនដំណឹងវត្តមាន',
+      assessmentAlerts: 'ការជូនដំណឹងវាយតម្លៃ',
+      healthAlerts: 'ការជូនដំណឹងសុខភាព',
+      enrollmentNotifications: 'ការជូនដំណឹងចុះឈ្មោះ',
     },
-    placeholders: {
-      currentAcademicYear: 'ឧទាហរណ៍៖ 2025 - 2026',
-      startDate: 'ជ្រើសកាលបរិច្ឆេទចាប់ផ្តើម',
-      endDate: 'ជ្រើសកាលបរិច្ឆេទបញ្ចប់',
-      status: 'ជ្រើសស្ថានភាព',
-      termName: 'ឧទាហរណ៍៖ Term 1',
-      classLevel: 'ជ្រើសកម្រិតថ្នាក់',
-      capacity: 'បញ្ចូលសមត្ថភាពវិជ្ជមាន',
-      assignedTeacher: 'ជ្រើសគ្រូដែលបានចាត់តាំង',
-      room: 'បញ្ចូលឈ្មោះបន្ទប់',
-      markingWindow: 'ឧទាហរណ៍៖ 07:30 - 08:15',
-      lateThreshold: 'បញ្ចូលចំនួននាទី',
-      absenceRule: 'ជ្រើសច្បាប់អវត្តមាន',
-      defaultTuitionFee: 'បញ្ចូលតម្លៃសិក្សាលំនាំដើម',
-      paymentCycle: 'ជ្រើសវដ្តបង់ប្រាក់',
-      dueDay: 'ជ្រើសថ្ងៃពី 1 ដល់ 31',
-      lateFeeRule: 'ជ្រើសច្បាប់ពិន័យយឺត',
+    preview: {
+      studentCode: 'មើលសាកល្បងលេខកូដសិស្ស',
+    },
+    languages: {
+      english: 'អង់គ្លេស',
+      khmer: 'ខ្មែរ',
     },
     actions: {
-      addTerm: 'បន្ថែម Term',
-      saveTerm: 'រក្សាទុក Term',
-      edit: 'កែសម្រួល',
-      remove: 'លុបចេញ',
-      cancel: 'បោះបង់',
-      saveChanges: 'រក្សាទុកការផ្លាស់ប្តូរ',
-      reset: 'កំណត់ឡើងវិញ',
-      addClassConfiguration: 'បន្ថែមថ្នាក់',
+      saveSettings: 'រក្សាទុកចំណូលចិត្ត',
     },
-    classCard: {
-      eyebrow: 'ថ្នាក់',
-    },
-    statusOptions: {
-      active: 'សកម្ម',
-      inactive: 'មិនសកម្ម',
-    },
-    classLevels: {
-      nursery: 'Nursery',
-      kindergarten1: 'Kindergarten 1',
-      kindergarten2: 'Kindergarten 2',
-      prep: 'Prep',
-    },
-    teacherOptions: {
-      leadTeacher: 'គ្រូដឹកនាំ',
-      assistantTeacher: 'គ្រូជំនួយ',
-      floatingTeacher: 'គ្រូបំពេញបន្ថែម',
-    },
-    absenceRules: {
-      windowAndThreshold: 'បង្អួច + កម្រិត',
-      strict: 'ច្បាប់អវត្តមានតឹងរ៉ឹង',
-    },
-    paymentCycles: {
-      monthly: 'រៀងរាល់ខែ',
-      term: 'រៀងរាល់ term',
-      quarterly: 'រៀងរាល់ត្រីមាស',
-    },
-    lateFeeRules: {
-      fixed: 'ថ្លៃថេរ',
-      perDay: 'រាល់ថ្ងៃ',
-      percentage: 'ភាគរយ',
-    },
-    termStatuses: {
-      active: 'សកម្ម',
-      inactive: 'មិនសកម្ម',
-    },
-    termDialog: {
-      eyebrow: 'កែសម្រួល Term',
-      subtitle: 'ធ្វើបច្ចុប្បន្នភាព term មួយក្នុងមួយពេល ដើម្បីឲ្យការត្រួតពិនិត្យងាយស្រួល។',
-      cardTitle: 'ព័ត៌មាន Term',
-      cardSubtitle: 'ប្រើប្រអប់ក្នុងមូលដ្ឋាន ដើម្បីបន្ថែម ឬកែសម្រួល term សម្រាប់ឆ្នាំ Preschool។',
-      createTitle: 'បន្ថែម Term',
-      editTitle: 'កែសម្រួល Term',
-    },
-    help: {
-      teacherCanEditAttendance: 'អនុញ្ញាតឲ្យគ្រូបុគ្គលិកកែប្រែវត្តមានក្នុងបង្អួចដែលបានកំណត់។',
-      enableOverdueReminders: 'ផ្ញើការរំលឹកក្នុងប្រព័ន្ធនៅពេលកំណត់ត្រាបង់ប្រាក់នៅតែខកខាន។',
-    },
-    emptyStates: {
-      terms: 'មិនទាន់មាន term ត្រូវបានកំណត់នៅឡើយ។',
-      classConfigurations: 'មិនទាន់មានជួរកំណត់ថ្នាក់ទេ។',
-      unsaved: 'សេចក្តីព្រាងមិនទាន់រក្សាទុក',
-    },
-    footer: {
-      title: 'រក្សាទុកការកំណត់ Preschool',
-      subtitle: 'កំណត់ឡើងវិញនូវសេចក្តីព្រាងក្នុងមូលដ្ឋាន ឬរក្សាទុកសំបុត្រកំណត់ដែលបានត្រួតពិនិត្យ។',
-      validationNotice: 'សូមដោះស្រាយវាលដែលបានបន្លិច មុនពេលរក្សាទុកសំបុត្រកំណត់។',
+    messages: {
+      loadFailed: 'មិនអាចផ្ទុកចំណូលចិត្តបានទេ។',
+      saveFailed: 'មិនអាចរក្សាទុកចំណូលចិត្តបានទេ។',
+      settingsSaved: 'បានរក្សាទុកចំណូលចិត្តរួចហើយ។',
+      validationFailed: 'សូមកែប្រែវាលដែលបានបន្លិចមុនរក្សាទុក។',
     },
     validation: {
-      required: 'វាលនេះគឺចាំបាច់។',
-      range: 'កាលបរិច្ឆេទបញ្ចប់ត្រូវតែស្មើ ឬក្រោយកាលបរិច្ឆេទចាប់ផ្តើម។',
+      required: 'វាលនេះត្រូវតែបំពេញ។',
       positive: 'សូមបញ្ចូលលេខវិជ្ជមាន។',
+      range: 'អាយុអតិបរមាត្រូវធំជាង ឬស្មើអាយុអប្បបរមា។',
     },
-    operationalStates: {
-      ready: 'រួចរាល់សម្រាប់ពិនិត្យ',
-      saved: 'បានរក្សាទុកក្នុងមូលដ្ឋាន',
-      needsAttention: 'ត្រូវការត្រួតពិនិត្យ',
+  },
+  preschoolSettingsPage: {
+    dashboard: {
+      fields: {
+        enrollmentRules: 'ច្បាប់ចុះឈ្មោះ',
+        studentCodeFormat: 'ទម្រង់លេខកូដសិស្ស',
+        classCapacity: 'សមត្ថភាពថ្នាក់',
+        guardianRules: 'ច្បាប់អាណាព្យាបាល',
+        communicationRules: 'ច្បាប់ទំនាក់ទំនង',
+      },
+      emptyStates: {
+        enrollmentRules: 'មិនទាន់កំណត់ច្បាប់ចុះឈ្មោះ',
+        studentCodeFormat: 'មិនទាន់កំណត់ទម្រង់លេខកូដសិស្ស',
+        classCapacity: 'មិនទាន់កំណត់សមត្ថភាពថ្នាក់',
+        guardianRules: 'មិនទាន់កំណត់ច្បាប់អាណាព្យាបាល',
+        communicationRules: 'មិនទាន់កំណត់ច្បាប់ទំនាក់ទំនង',
+      },
+      sections: {
+        preferences: {
+          eyebrow: 'ចំណូលចិត្ត',
+          title: 'ចំណូលចិត្ត',
+          subtitle: 'ពិនិត្យមើលលំនាំប្រតិបត្តិការដែលកំពុងប្រើសម្រាប់ Preschool។',
+          action: 'បើកចំណូលចិត្ត',
+        },
+      },
     },
   },
 }
+
+export default mergeDeep(enPreschool, overrides)

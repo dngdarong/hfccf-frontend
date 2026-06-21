@@ -25,7 +25,7 @@ export const FORM_MANAGEMENT_PAGE_CARDS = [
     fallbackDescription: 'Work on the tools used to create and refine forms.',
     // Forms should jump straight to the canonical assessment builder. The
     // legacy build route stays available only as a backward-compatible alias.
-    to: { name: 'preschool-assessment-form-builder' },
+    to: { name: 'dashboard-preschool-admin-forms-build' },
   },
   {
     key: 'review',
@@ -66,7 +66,7 @@ export const FORM_MANAGEMENT_ACTION_CARDS = [
     titleKey: 'preschoolScaffold.formManagement.cards.newForm.title',
     descriptionKey: 'preschoolScaffold.formManagement.cards.newForm.description',
     fallbackDescription: 'Create a new form for a workflow or data collection flow.',
-    to: { name: 'preschool-assessment-form-builder' },
+    to: { name: 'dashboard-preschool-admin-forms-build' },
   },
   {
     key: 'submissions',
@@ -86,7 +86,7 @@ export const FORM_MANAGEMENT_ACTION_CARDS = [
     titleKey: 'preschoolScaffold.formManagement.cards.wizard.title',
     descriptionKey: 'preschoolScaffold.formManagement.cards.wizard.description',
     fallbackDescription: 'Build forms step by step with guided assistance.',
-    to: { name: 'preschool-assessment-form-builder' },
+    to: { name: 'dashboard-preschool-admin-forms-build' },
   },
   {
     key: 'scoring',
@@ -96,7 +96,7 @@ export const FORM_MANAGEMENT_ACTION_CARDS = [
     titleKey: 'preschoolScaffold.formManagement.cards.scoring.title',
     descriptionKey: 'preschoolScaffold.formManagement.cards.scoring.description',
     fallbackDescription: 'Define and manage scoring rules for the active form.',
-    to: { name: 'preschool-assessment-form-builder' },
+    to: { name: 'dashboard-preschool-admin-forms-build' },
   },
   {
     key: 'print-designer',
@@ -106,7 +106,7 @@ export const FORM_MANAGEMENT_ACTION_CARDS = [
     titleKey: 'preschoolScaffold.formManagement.cards.printDesigner.title',
     descriptionKey: 'preschoolScaffold.formManagement.cards.printDesigner.description',
     fallbackDescription: 'Arrange print layouts and present forms cleanly.',
-    to: { name: 'preschool-assessment-form-builder' },
+    to: { name: 'dashboard-preschool-admin-forms-build' },
   },
   {
     key: 'reports',

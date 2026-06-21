@@ -22,6 +22,18 @@ export default {
         title: 'Attendance Today',
         label: 'Recorded today',
       },
+      reports: {
+        title: 'Reports',
+        subtitle: 'Cross-module reporting overview',
+        action: 'Open Reports Center',
+        label: 'Attendance rate',
+        revenue: 'Revenue',
+        revenueLabel: 'Billing performance',
+        health: 'Open health alerts',
+        healthLabel: 'Health risk',
+        assessments: 'Assessment completion',
+        assessmentsLabel: 'Learning progress',
+      },
     },
     actions: {
       queueTitle: 'Action Queue',

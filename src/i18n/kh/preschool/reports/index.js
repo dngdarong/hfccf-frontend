@@ -2,6 +2,7 @@ import overview from './overview'
 import student from './student'
 import classroom from './classroom'
 import shared from './shared'
+import dashboard from './dashboard'
 
 export default {
   // Merge the report copy at the module boundary so the page keys stay flat and
@@ -10,4 +11,5 @@ export default {
   ...student,
   ...classroom,
   ...shared,
+  ...dashboard,
 }

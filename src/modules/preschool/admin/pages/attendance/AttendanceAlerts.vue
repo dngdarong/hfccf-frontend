@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
@@ -7,6 +7,13 @@ import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { formatDate } from '@/utils/date'
 import { fetchPreschoolAttendance, fetchPreschoolClasses } from '@/modules/preschool/services/preschoolApi'
+import {
+  fetchAttendanceSettings,
+} from '@/modules/preschool/services/api/preschoolAttendanceConfigurationApi'
+import {
+  getAbsenceAlertDays,
+  setAttendanceConfigurationSnapshot,
+} from '@/modules/preschool/services/preschoolAttendanceConfigurationService'
 
 defineOptions({ name: 'PreschoolAdminAttendanceAlertsPage' })
 
@@ -18,7 +25,7 @@ const classOptions = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 const selectedClassId = ref('')
-const threshold = ref(3)
+const threshold = ref(getAbsenceAlertDays() || 3)
 
 const thresholdOptions = [3, 5, 7, 10]
 
@@ -103,7 +110,17 @@ async function loadData() {
   }
 }
 
-loadClasses()
+onMounted(async () => {
+  await loadClasses()
+
+  try {
+    const settings = await fetchAttendanceSettings()
+    setAttendanceConfigurationSnapshot({ settings })
+    threshold.value = getAbsenceAlertDays() || threshold.value
+  } catch {
+    // Fall back to the default threshold when settings are unavailable.
+  }
+})
 </script>
 
 <template>

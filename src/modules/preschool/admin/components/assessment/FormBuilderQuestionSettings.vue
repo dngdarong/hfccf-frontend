@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, watch } from 'vue'
 import Button from '@/components/buttons/Button.vue'
+import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
   name: 'PreschoolAssessmentFormBuilderQuestionSettings',
@@ -27,6 +28,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:state', 'reset', 'apply'])
 
+const { t, te } = useLanguage()
+
+function safeText(key, fallback) {
+  return te(key) ? t(key) : fallback
+}
+
 const localState = reactive({
   label: '',
   helpText: '',
@@ -38,7 +45,11 @@ const localState = reactive({
   options: '',
 })
 
-const sectionLabel = computed(() => props.section?.title || 'Selected section')
+const sectionLabel = computed(() => props.section?.title || safeText('assessmentFormBuilder.questionSettings.selectedSection', 'Selected section'))
+const groupLabel = computed(() => safeText(
+  `assessmentFormBuilder.questionGroups.${String(props.question?.group || 'core')}`,
+  String(props.question?.group || 'core'),
+))
 let syncingFromProps = false
 
 function syncFromProps() {
@@ -87,48 +98,50 @@ watch(
   <section class="builder-settings">
     <div class="builder-settings__header">
       <div>
-        <p class="builder-settings__eyebrow">Question Settings</p>
-        <h3>{{ props.question?.title || 'No question selected' }}</h3>
+        <p class="builder-settings__eyebrow">
+          {{ safeText('assessmentFormBuilder.questionSettings.eyebrow', 'Question Settings') }}
+        </p>
+        <h3>{{ props.question?.title || safeText('assessmentFormBuilder.questionSettings.noQuestionSelected', 'No question selected') }}</h3>
       </div>
       <span class="builder-settings__section">{{ sectionLabel }}</span>
     </div>
 
     <div class="builder-settings__summary">
       <div class="builder-settings__summary-item">
-        <strong>Type</strong>
-        <span>{{ props.question?.title || 'Short Text' }}</span>
+        <strong>{{ safeText('assessmentFormBuilder.questionSettings.typeLabel', 'Type') }}</strong>
+        <span>{{ props.question?.title || safeText('assessmentFormBuilder.questionSettings.shortText', 'Short Text') }}</span>
       </div>
       <div class="builder-settings__summary-item">
-        <strong>Group</strong>
-        <span>{{ props.question?.group || 'core' }}</span>
+        <strong>{{ safeText('assessmentFormBuilder.questionSettings.groupLabel', 'Group') }}</strong>
+        <span>{{ groupLabel }}</span>
       </div>
     </div>
 
     <div class="builder-settings__fields">
       <label class="builder-settings__field">
-        <span>Label</span>
-        <input v-model="localState.label" type="text" placeholder="Question label" />
+        <span>{{ safeText('assessmentFormBuilder.questionSettings.labelLabel', 'Label') }}</span>
+        <input v-model="localState.label" type="text" :placeholder="safeText('assessmentFormBuilder.questionSettings.labelPlaceholder', 'Question label')" />
       </label>
 
       <label class="builder-settings__field">
-        <span>Help text</span>
-        <textarea v-model="localState.helpText" rows="3" placeholder="Optional helper text" />
+        <span>{{ safeText('assessmentFormBuilder.questionSettings.helpTextLabel', 'Help text') }}</span>
+        <textarea v-model="localState.helpText" rows="3" :placeholder="safeText('assessmentFormBuilder.questionSettings.helpTextPlaceholder', 'Optional helper text')" />
       </label>
 
       <label class="builder-settings__field">
-        <span>Answer type</span>
+        <span>{{ safeText('assessmentFormBuilder.questionSettings.answerTypeLabel', 'Answer type') }}</span>
         <select v-model="localState.answerType">
-          <option value="shortText">Short Text</option>
-          <option value="longText">Long Text</option>
-          <option value="dropdown">Dropdown</option>
-          <option value="rating">Rating Scale</option>
-          <option value="table">Table / Grid</option>
-          <option value="signature">Signature</option>
+          <option value="shortText">{{ safeText('assessmentFormBuilder.questionTypes.shortText', 'Short Text') }}</option>
+          <option value="longText">{{ safeText('assessmentFormBuilder.questionTypes.longText', 'Long Text') }}</option>
+          <option value="dropdown">{{ safeText('assessmentFormBuilder.questionTypes.dropdown', 'Dropdown') }}</option>
+          <option value="rating">{{ safeText('assessmentFormBuilder.questionTypes.rating', 'Rating Scale') }}</option>
+          <option value="table">{{ safeText('assessmentFormBuilder.questionTypes.table', 'Table / Grid') }}</option>
+          <option value="signature">{{ safeText('assessmentFormBuilder.questionTypes.signature', 'Signature') }}</option>
         </select>
       </label>
 
       <label class="builder-settings__field">
-        <span>Section</span>
+        <span>{{ safeText('assessmentFormBuilder.questionSettings.sectionLabel', 'Section') }}</span>
         <select v-model="localState.sectionKey">
           <option
             v-for="section in props.sectionOptions"
@@ -143,39 +156,39 @@ watch(
       <div class="builder-settings__row">
         <label class="builder-settings__toggle">
           <input v-model="localState.required" type="checkbox" />
-          <span>Required</span>
+          <span>{{ safeText('assessmentFormBuilder.questionSettings.requiredLabel', 'Required') }}</span>
         </label>
 
         <label class="builder-settings__field builder-settings__field--compact">
-          <span>Score</span>
+          <span>{{ safeText('assessmentFormBuilder.questionSettings.scoreLabel', 'Score') }}</span>
           <input v-model.number="localState.score" type="number" min="0" max="100" />
         </label>
       </div>
 
       <label class="builder-settings__field">
-        <span>Validation mode</span>
+        <span>{{ safeText('assessmentFormBuilder.questionSettings.validationModeLabel', 'Validation mode') }}</span>
         <select v-model="localState.validationMode">
-          <option value="basic">Basic</option>
-          <option value="strict">Strict</option>
-          <option value="scored">Scored</option>
+          <option value="basic">{{ safeText('assessmentFormBuilder.questionSettings.validationBasic', 'Basic') }}</option>
+          <option value="strict">{{ safeText('assessmentFormBuilder.questionSettings.validationStrict', 'Strict') }}</option>
+          <option value="scored">{{ safeText('assessmentFormBuilder.questionSettings.validationScored', 'Scored') }}</option>
         </select>
       </label>
 
       <label class="builder-settings__field">
-        <span>Options</span>
-        <textarea v-model="localState.options" rows="3" placeholder="Comma-separated options for choice fields" />
+        <span>{{ safeText('assessmentFormBuilder.questionSettings.optionsLabel', 'Options') }}</span>
+        <textarea v-model="localState.options" rows="3" :placeholder="safeText('assessmentFormBuilder.questionSettings.optionsPlaceholder', 'Comma-separated options for choice fields')" />
       </label>
     </div>
 
     <div class="builder-settings__actions">
       <Button
-        label="Reset"
+        :label="safeText('assessmentFormBuilder.questionSettings.reset', 'Reset')"
         icon="pi pi-refresh"
         severity="secondary"
         @click="emit('reset')"
       />
       <Button
-        label="Apply"
+        :label="safeText('assessmentFormBuilder.questionSettings.apply', 'Apply')"
         icon="pi pi-check"
         @click="emit('apply')"
       />

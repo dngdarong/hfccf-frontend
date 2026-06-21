@@ -16,6 +16,12 @@ vi.mock('@/services/auth', () => ({
   getCurrentUser: () => mockGetCurrentUser(),
 }))
 
+vi.mock('@/composables/useLanguage', () => ({
+  useLanguage: () => ({
+    t: (key) => key,
+  }),
+}))
+
 vi.mock('@/modules/preschool/services/preschoolApi', () => ({
   fetchPreschoolClasses: (...args) => mockFetchPreschoolClasses(...args),
   fetchPreschoolTeachers: (...args) => mockFetchPreschoolTeachers(...args),
@@ -97,5 +103,17 @@ describe('usePreschoolSchedules', () => {
       { type: 'teacher', message: 'Same teacher has an overlapping schedule.' },
     ])
     expect(schedules.errorMessage.value).toContain('Schedule conflict detected.')
+  })
+
+  it('clears the banner state when archive returns a 409 conflict', async () => {
+    const schedules = usePreschoolSchedules()
+
+    mockArchiveSchedule.mockRejectedValueOnce({
+      status: 409,
+      message: 'Archived schedules cannot be edited.',
+    })
+
+    await expect(schedules.archiveSchedule(21)).rejects.toMatchObject({ status: 409 })
+    expect(schedules.errorMessage.value).toBe('')
   })
 })

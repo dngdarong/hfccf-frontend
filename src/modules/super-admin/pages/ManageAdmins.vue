@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
@@ -11,7 +11,9 @@ import AdminSummaryCards from '@/modules/super-admin/components/admin-management
 import AdminManagementToolbar from '@/modules/super-admin/components/admin-management/list/AdminManagementToolbar.vue'
 import AdminManagementListPanel from '@/modules/super-admin/components/admin-management/list/AdminManagementListPanel.vue'
 import AdminManagementDialogs from '@/modules/super-admin/components/admin-management/dialogs/AdminManagementDialogs.vue'
+import ResetPasswordDialog from '@/modules/super-admin/components/admin-management/dialogs/ResetPasswordDialog.vue'
 import { useAdminManagement } from '@/modules/super-admin/composables/useAdminManagement'
+import { resetAdminUserPassword } from '@/modules/super-admin/services/adminUsersApi'
 
 defineOptions({
   name: 'AdminManagementPage',
@@ -103,6 +105,16 @@ const {
   onClearFilters,
 } = useAdminManagement()
 
+const resetTarget = ref(null)
+const resetOpen = ref(false)
+const resetLoading = ref(false)
+const resetPasswordError = ref('')
+const resetForm = reactive({
+  password: '',
+  confirmPassword: '',
+  reason: '',
+})
+
 function goToAddAdmin() {
   router.push('/module/super-admin/users/add')
 }
@@ -117,6 +129,54 @@ function onViewAdmin(admin) {
   const id = String(admin?.id || '').trim()
   if (!id) return
   router.push({ name: 'dashboard-super-admin-users-view', params: { id } })
+}
+
+function resetResetForm() {
+  resetForm.password = ''
+  resetForm.confirmPassword = ''
+  resetForm.reason = ''
+  resetPasswordError.value = ''
+}
+
+function onResetAdmin(admin) {
+  resetTarget.value = admin || null
+  resetResetForm()
+  resetOpen.value = true
+}
+
+function onResetCancel() {
+  resetOpen.value = false
+  resetTarget.value = null
+  resetResetForm()
+}
+
+async function onResetConfirm() {
+  const targetId = String(resetTarget.value?.id || '').trim()
+  if (!targetId) return
+
+  if (resetForm.password.length < 8 || resetForm.password !== resetForm.confirmPassword) {
+    resetPasswordError.value = 'Passwords do not match.'
+    return
+  }
+
+  resetLoading.value = true
+  resetPasswordError.value = ''
+
+  try {
+    await resetAdminUserPassword(targetId, {
+      password: resetForm.password,
+      confirmPassword: resetForm.confirmPassword,
+      reason: resetForm.reason,
+    })
+    await loadAdmins()
+    resetOpen.value = false
+    resetTarget.value = null
+    resetResetForm()
+  } catch (error) {
+    resetPasswordError.value = error?.message || t('common.error')
+  } finally {
+    resetLoading.value = false
+  }
 }
 </script>
 
@@ -163,6 +223,7 @@ function onViewAdmin(admin) {
           :users="paginatedAdmins"
           :empty-text="tableEmptyText"
           :loading="isLoading"
+          :show-reset-action="true"
           :loading-label="loadingLabel"
           @update:search-query="searchQuery = $event"
           @update:role-filter="roleFilter = $event"
@@ -170,6 +231,7 @@ function onViewAdmin(admin) {
           @view="onViewAdmin"
           @edit="onEditAdmin"
           @delete="onDeleteAdmin"
+          @reset="onResetAdmin"
           @refresh="loadAdmins"
           @clear="onClearFilters"
           @sort="onSort"
@@ -200,6 +262,23 @@ function onViewAdmin(admin) {
       @cancel-delete="onCancelDelete"
       @close-success="showSuccess = false"
       @close-error="showError = false"
+    />
+
+    <ResetPasswordDialog
+      :visible="resetOpen"
+      :loading="resetLoading"
+      title="Reset password"
+      description="Set a new password and leave a reason for the audit trail."
+      :password="resetForm.password"
+      :confirm-password="resetForm.confirmPassword"
+      :reason="resetForm.reason"
+      :error-message="resetPasswordError"
+      @update:visible="resetOpen = $event"
+      @update:password="resetForm.password = $event"
+      @update:confirmPassword="resetForm.confirmPassword = $event"
+      @update:reason="resetForm.reason = $event"
+      @confirm="onResetConfirm"
+      @cancel="onResetCancel"
     />
   </MainLayout>
 </template>

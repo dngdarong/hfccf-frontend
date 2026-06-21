@@ -14,12 +14,12 @@ export default {
     coach: 'គ្រូបង្វឹក',
   },
   sportAttendanceShared: {
-    playersEyebrow: 'áž€áž¸áž¡áž¶áž€ážš',
-    coachesEyebrow: 'áž‚áŸ’ážšáž¼áž”áž„áŸ’ážœáž¹áž€',
-    historyEyebrow: 'áž”áŸ’ážšážœážáŸ’ážáž·',
-    progress: 'ážœáž·ážœážáŸ’ážáž—áž¶áž–',
-    activeFilters: 'តម្រងសកម្ម',
-    results: 'លទ្ធផល',
+    playersEyebrow: '??????',
+    coachesEyebrow: '??????????',
+    historyEyebrow: '???????????????',
+    progress: '????????',
+    activeFilters: '??????????',
+    results: '??????',
   },
   sportAttendanceHubPage: {
     title: 'ការគ្រប់គ្រងវត្តមានកីឡា',
@@ -32,10 +32,6 @@ export default {
       coaches: {
         title: 'វត្តមានគ្រូបង្វឹក',
         description: 'កត់ត្រាវត្តមានគ្រូបង្វឹកប្រចាំថ្ងៃ។',
-      },
-      idcard: {
-        title: 'បង្កើតបណ្ណសម្គាល់',
-        description: 'បង្កើត និងនាំចេញបណ្ណសម្គាល់ឌីជីថលសម្រាប់កីឡាករ។',
       },
       history: {
         title: 'ប្រវត្តិវត្តមាន',

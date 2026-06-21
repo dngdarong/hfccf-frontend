@@ -13,6 +13,7 @@ defineOptions({ name: 'FormTrackerPage' })
 // consolidate around the canonical builder and report routes.
 const router = useRouter()
 const { t } = useLanguage()
+const formBuilderRouteName = 'dashboard-preschool-admin-forms-build'
 
 const formStats = ref({
   totalForms: 0,
@@ -54,7 +55,7 @@ const workflowSteps = computed(() => [
     description: 'Design and build new assessment forms',
     icon: '✏️',
     color: '#10b981',
-    action: () => router.push({ name: 'preschool-assessment-form-builder' }),
+    action: () => router.push({ name: formBuilderRouteName }),
     badge: null,
   },
   {
@@ -63,7 +64,7 @@ const workflowSteps = computed(() => [
     description: 'Set up scoring and print layouts',
     icon: '⚙️',
     color: '#06b6d4',
-    action: () => router.push({ name: 'preschool-assessment-form-builder' }),
+    action: () => router.push({ name: formBuilderRouteName }),
     badge: null,
   },
   {
@@ -99,7 +100,7 @@ onMounted(load)
           <Button
             label="New Form"
             icon="pi pi-plus"
-            @click="router.push({ name: 'preschool-assessment-form-builder' })"
+            @click="router.push({ name: formBuilderRouteName })"
           />
         </template>
       </HeaderSection>
@@ -114,7 +115,7 @@ onMounted(load)
             <Button
               label="New Form"
               icon="pi pi-plus"
-              @click="router.push({ name: 'preschool-assessment-form-builder' })"
+              @click="router.push({ name: formBuilderRouteName })"
             />
             <Button
               label="Manage Forms"
@@ -198,7 +199,7 @@ onMounted(load)
                 v-for="(form, idx) in recentForms"
                 :key="idx"
                 class="forms-tracker__form-item"
-                @click="router.push({ name: 'preschool-assessment-form-builder', query: { templateId: form.templateId } })"
+                @click="router.push({ name: formBuilderRouteName, query: { templateId: form.templateId } })"
               >
                 <div class="forms-tracker__form-info">
                   <div class="forms-tracker__form-name">{{ form.name }}</div>
@@ -219,7 +220,7 @@ onMounted(load)
                   icon="pi pi-history"
                   text
                   severity="secondary"
-                  @click="router.push({ name: 'preschool-assessment-form-builder', query: { templateId: recentForms[0]?.templateId } })"
+                  @click="router.push({ name: formBuilderRouteName, query: { templateId: recentForms[0]?.templateId } })"
                 />
                 <Button
                   label="View All Forms"
@@ -291,7 +292,7 @@ onMounted(load)
               <div class="forms-tracker__related-arrow">→</div>
             </div>
 
-            <div class="forms-tracker__related-card" @click="router.push({ name: 'preschool-assessment-form-builder' })">
+            <div class="forms-tracker__related-card" @click="router.push({ name: formBuilderRouteName })">
               <div class="forms-tracker__related-icon">✨</div>
               <div class="forms-tracker__related-info">
                 <div class="forms-tracker__related-title">Assessment Wizard</div>

@@ -1,4 +1,6 @@
 <script setup>
+import { useLanguage } from '@/composables/useLanguage'
+
 defineOptions({
   name: 'PreschoolAssessmentFormBuilderQuestionPalette',
 })
@@ -20,6 +22,12 @@ const props = defineProps({
 
 const emit = defineEmits(['select-question', 'drag-question-start', 'drag-question-end'])
 
+const { t, te } = useLanguage()
+
+function safeText(key, fallback) {
+  return te(key) ? t(key) : fallback
+}
+
 function handleSelect(question) {
   emit('select-question', question)
 }
@@ -37,8 +45,10 @@ function handleDragEnd() {
   <section class="builder-palette">
     <div class="builder-palette__header">
       <div>
-        <p class="builder-palette__eyebrow">Question Palette</p>
-        <h3>Reusable building blocks</h3>
+        <p class="builder-palette__eyebrow">
+          {{ safeText('assessmentFormBuilder.palette.eyebrow', 'Question Palette') }}
+        </p>
+        <h3>{{ safeText('assessmentFormBuilder.palette.title', 'Reusable building blocks') }}</h3>
       </div>
       <span class="builder-palette__count">{{ props.palette.length }}</span>
     </div>

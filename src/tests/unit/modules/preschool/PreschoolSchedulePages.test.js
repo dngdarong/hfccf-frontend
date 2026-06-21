@@ -12,6 +12,7 @@ import ClassSchedule from '@/modules/preschool/admin/pages/classes/ClassSchedule
 import TeacherSchedule from '@/modules/preschool/admin/pages/teachers/TeacherSchedule.vue'
 import MySchedule from '@/modules/preschool/teacher/pages/MySchedule.vue'
 
+const mockToastAdd = vi.fn()
 const mockLoadLookups = vi.fn(() => Promise.resolve())
 const mockLoadSchedules = vi.fn(() => Promise.resolve())
 const mockLoadClassOptions = vi.fn(() => Promise.resolve())
@@ -20,12 +21,20 @@ const mockLoadTeacherOptions = vi.fn(() => Promise.resolve())
 const mockLoadTeacherSchedule = vi.fn(() => Promise.resolve())
 const mockLoadMySchedule = vi.fn(() => Promise.resolve())
 
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({
+    add: mockToastAdd,
+  }),
+}))
+
 vi.mock('@/modules/preschool/composables/usePreschoolSchedules', () => ({
   usePreschoolSchedules: () => ({
     archiveSchedule: vi.fn(),
     classOptions: { value: [{ label: 'PS-3 - Morning Class', value: 3 }] },
     conflicts: { value: [] },
     errorMessage: { value: '' },
+    isReportPeriodLocked: { value: false },
+    isTermLocked: { value: false },
     loadLookups: mockLoadLookups,
     loadSchedules: mockLoadSchedules,
     loading: { value: false },
@@ -46,6 +55,7 @@ vi.mock('@/modules/preschool/composables/usePreschoolSchedules', () => ({
     setSelectedTeacherId: vi.fn(),
     saving: { value: false },
     teacherOptions: { value: [{ label: 'Teacher One (teacher1)', value: 'usr_teacher' }] },
+    lockMessage: { value: '' },
   }),
 }))
 
@@ -96,6 +106,7 @@ function stubs() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockToastAdd.mockClear()
 })
 
 describe('Preschool schedule pages', () => {
@@ -168,6 +179,4 @@ describe('Preschool schedule pages', () => {
     expect(errorSpy).not.toHaveBeenCalled()
   })
 })
-
-
 

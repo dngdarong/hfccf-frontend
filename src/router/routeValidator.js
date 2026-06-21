@@ -30,7 +30,7 @@ function validateAccessRule(route, access, warnings) {
     warnings.push(`invalid domain(s): ${domainIssues.join(', ')}`)
   }
 
-  if (access.requiresAuth && !route.meta?.access) {
+  if (access.requiresAuth && !route.meta?.access && !route.meta?.scopes && !route.meta?.domains && !route.meta?.roles) {
     warnings.push('requiresAuth is set but access metadata is missing')
   }
 }
@@ -55,7 +55,7 @@ export function validateRouteConfig(routes) {
     const meta = route.meta || {}
     const access = meta.access
 
-    if (meta.requiresAuth && !access) {
+    if (meta.requiresAuth && !access && !meta.scopes && !meta.domains && !meta.roles) {
       warnings.push('requiresAuth is set but access metadata is missing')
     }
 

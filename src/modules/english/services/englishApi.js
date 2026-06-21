@@ -97,6 +97,21 @@ export async function deleteEnglishTeacher(id) {
   return true
 }
 
+export async function resetEnglishTeacherPassword(id, payload = {}) {
+  const targetId = String(id || '').trim()
+  if (!targetId) {
+    throw new Error('Teacher id is required.')
+  }
+
+  const response = await request('post', `/users/${encodeURIComponent(targetId)}/reset-password`, {
+    password: String(payload.password || ''),
+    password_confirmation: String(payload.password_confirmation || payload.confirmPassword || payload.password || ''),
+    reason: String(payload.reason || '').trim(),
+  })
+
+  return unwrapEntity(response, 'user')
+}
+
 export async function fetchEnglishStudents(params = {}) {
   const response = await request('get', ENGLISH_ROUTES.students, null, {
     params: normalizeListParams(params),

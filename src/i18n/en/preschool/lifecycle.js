@@ -23,6 +23,7 @@ export default {
       edit: 'Edit',
       activate: 'Activate',
       close: 'Close',
+      archive: 'Archive',
     },
     status: {
       current: 'Current',

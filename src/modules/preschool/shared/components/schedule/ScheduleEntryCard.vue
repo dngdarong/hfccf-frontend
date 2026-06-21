@@ -1,10 +1,11 @@
 <script setup>
 // Keep timetable rows self-contained so the grid and management list can reuse
 // the same card without duplicating class/teacher/time rendering logic.
+import { computed } from 'vue'
 import Button from '@/components/buttons/Button.vue'
 import ScheduleStatusBadge from './ScheduleStatusBadge.vue'
 
-defineProps({
+const props = defineProps({
   entry: {
     type: Object,
     required: true,
@@ -29,9 +30,15 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  viewLabel: {
+    type: String,
+    default: '',
+  },
 })
 
-const emit = defineEmits(['edit', 'archive'])
+const emit = defineEmits(['edit', 'archive', 'view'])
+
+const isArchived = computed(() => String(props.entry?.status || '').toLowerCase() === 'archived')
 </script>
 
 <template>
@@ -59,12 +66,24 @@ const emit = defineEmits(['edit', 'archive'])
     </div>
 
     <div v-if="showActions" class="mt-4 flex flex-wrap gap-2">
-      <Button v-if="editLabel" type="button" variant="ghost" size="sm" rounded="xl" :disabled="isLocked" @click="emit('edit', entry)">
-        {{ editLabel }}
+      <Button
+        v-if="isArchived && viewLabel"
+        type="button"
+        variant="ghost"
+        size="sm"
+        rounded="xl"
+        @click="emit('view', entry)"
+      >
+        {{ viewLabel }}
       </Button>
-      <Button v-if="archiveLabel" type="button" variant="danger" size="sm" rounded="xl" :disabled="isLocked" @click="emit('archive', entry)">
-        {{ archiveLabel }}
-      </Button>
+      <template v-else>
+        <Button v-if="editLabel" type="button" variant="ghost" size="sm" rounded="xl" :disabled="isLocked" @click="emit('edit', entry)">
+          {{ editLabel }}
+        </Button>
+        <Button v-if="archiveLabel" type="button" variant="danger" size="sm" rounded="xl" :disabled="isLocked" @click="emit('archive', entry)">
+          {{ archiveLabel }}
+        </Button>
+      </template>
     </div>
   </article>
 </template>

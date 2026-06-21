@@ -27,7 +27,7 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['open-add', 'open-edit', 'activate', 'close'])
+const emit = defineEmits(['open-add', 'open-edit', 'activate', 'close', 'archive'])
 
 function formatDate(value) {
   if (!value) return '—'
@@ -39,6 +39,8 @@ function formatDate(value) {
 function statusClass(status, isCurrent) {
   if (isCurrent) return 'bg-emerald-100 text-emerald-700'
   switch (String(status || 'active').toLowerCase()) {
+    case 'draft':
+      return 'bg-sky-100 text-sky-700'
     case 'closed':
       return 'bg-amber-100 text-amber-700'
     case 'archived':
@@ -77,7 +79,7 @@ function statusClass(status, isCurrent) {
               {{ term.code }}
             </p>
             <p class="mt-1 text-sm text-slate-500">
-              {{ term.academicYearLabel || term.academicYearCode }} · {{ formatDate(term.startDate) }} - {{ formatDate(term.endDate) }}
+              {{ term.academicYearName || term.academicYearLabel || term.academicYearCode }} · {{ term.dateRange || `${formatDate(term.startDate)} - ${formatDate(term.endDate)}` }}
             </p>
           </div>
           <div class="flex flex-col items-end gap-2">
@@ -90,19 +92,22 @@ function statusClass(status, isCurrent) {
           </div>
         </div>
 
-        <p v-if="term.notes" class="mt-3 text-sm text-slate-600">
-          {{ term.notes }}
+        <p v-if="term.description || term.notes" class="mt-3 text-sm text-slate-600">
+          {{ term.description || term.notes }}
         </p>
 
         <div class="mt-4 flex flex-wrap gap-2">
-          <Button variant="ghost" :disabled="saving" @click="emit('open-edit', index)">
+          <Button variant="ghost" :disabled="saving || ['closed', 'archived'].includes(String(term.status || '').toLowerCase())" @click="emit('open-edit', index)">
             {{ t('preschoolLifecyclePage.actions.edit') }}
           </Button>
-          <Button variant="ghost" :disabled="saving || term.isCurrent" @click="emit('activate', index)">
+          <Button variant="ghost" :disabled="saving || term.isCurrent || String(term.status || '').toLowerCase() === 'archived'" @click="emit('activate', index)">
             {{ t('preschoolLifecyclePage.actions.activate') }}
           </Button>
-          <Button variant="ghost" :disabled="saving || term.status === 'closed'" @click="emit('close', index)">
+          <Button variant="ghost" :disabled="saving || ['closed', 'archived'].includes(String(term.status || '').toLowerCase())" @click="emit('close', index)">
             {{ t('preschoolLifecyclePage.actions.close') }}
+          </Button>
+          <Button variant="ghost" :disabled="saving || term.status === 'archived'" @click="emit('archive', index)">
+            {{ t('preschoolLifecyclePage.actions.archive') }}
           </Button>
         </div>
       </article>

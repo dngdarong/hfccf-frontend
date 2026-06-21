@@ -104,6 +104,24 @@ export const preschoolRoutes = [
     },
   }),
   defineAppRoute({
+    path: '/module/preschool-admin/payment/invoices/:id',
+    name: 'dashboard-preschool-admin-invoice-detail',
+    component: () => import('@/modules/preschool/admin/pages/payments/InvoiceDetail.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/module/preschool-admin/payment/receipts/:id',
+    name: 'dashboard-preschool-admin-receipt-view',
+    component: () => import('@/modules/preschool/admin/pages/payments/ReceiptView.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
     path: '/module/preschool-admin/attendance',
     name: 'dashboard-preschool-admin-attendance',
     component: () => import('@/modules/preschool/admin/pages/attendance/AttendanceManagement.vue'),
@@ -172,12 +190,82 @@ export const preschoolRoutes = [
       scopes: [ACCESS_SCOPES.ADMIN],
     },
   }),
+  defineAppRoute({
+    path: '/module/preschool-admin/guardians/communications',
+    name: 'dashboard-preschool-admin-guardian-communications',
+    component: () => import('@/modules/preschool/admin/pages/guardian/GuardianCommunicationDashboard.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
   // Settings stays in the admin Preschool route tree so the configuration
   // surface remains discoverable without creating a second dashboard shell.
   defineAppRoute({
-    path: '/module/preschool-admin/settings',
+    path: '/preschool/settings',
+    alias: '/module/preschool-admin/settings',
     name: 'dashboard-preschool-admin-settings',
-    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolSettings.vue'),
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolSettingsDashboard.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/settings/academic',
+    alias: '/module/preschool-admin/settings/academic',
+    name: 'dashboard-preschool-admin-settings-academic',
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolAcademicSettingsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/settings/attendance',
+    alias: '/module/preschool-admin/settings/attendance',
+    name: 'dashboard-preschool-admin-settings-attendance',
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolAttendanceSettingsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/settings/payments',
+    alias: '/module/preschool-admin/settings/payments',
+    name: 'dashboard-preschool-admin-settings-payments',
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolPaymentSettingsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/settings/assessments',
+    alias: '/module/preschool-admin/settings/assessments',
+    name: 'dashboard-preschool-admin-settings-assessments',
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolAssessmentSettingsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/settings/health',
+    alias: '/module/preschool-admin/settings/health',
+    name: 'dashboard-preschool-admin-settings-health',
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolHealthSettingsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/settings/preferences',
+    alias: '/module/preschool-admin/settings/preferences',
+    name: 'dashboard-preschool-admin-settings-preferences',
+    component: () => import('@/modules/preschool/admin/pages/settings/PreschoolPreferencesSettingsPage.vue'),
     access: {
       domains: [DOMAINS.PRESCHOOL],
       scopes: [ACCESS_SCOPES.ADMIN],
@@ -239,9 +327,70 @@ export const preschoolRoutes = [
     },
   }),
   defineAppRoute({
-    path: '/module/preschool-admin/reports',
+    path: '/preschool/reports',
+    alias: '/module/preschool-admin/reports',
     name: 'dashboard-preschool-admin-reports',
-    component: () => import('@/modules/preschool/admin/pages/reports/ReportManagement.vue'),
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolReportsDashboard.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/reports/attendance',
+    alias: '/module/preschool-admin/reports/attendance',
+    name: 'dashboard-preschool-admin-reports-attendance',
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolAttendanceReportsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN, ACCESS_SCOPES.STAFF],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/reports/assessments',
+    alias: '/module/preschool-admin/reports/assessments',
+    name: 'dashboard-preschool-admin-reports-assessments',
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolAssessmentReportsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN, ACCESS_SCOPES.STAFF],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/reports/health',
+    alias: '/module/preschool-admin/reports/health',
+    name: 'dashboard-preschool-admin-reports-health',
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolHealthReportsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/reports/payments',
+    alias: '/module/preschool-admin/reports/payments',
+    name: 'dashboard-preschool-admin-reports-payments',
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolPaymentReportsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/reports/enrollments',
+    alias: '/module/preschool-admin/reports/enrollments',
+    name: 'dashboard-preschool-admin-reports-enrollments',
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolEnrollmentReportsPage.vue'),
+    access: {
+      domains: [DOMAINS.PRESCHOOL],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/preschool/reports/guardians',
+    alias: '/module/preschool-admin/reports/guardians',
+    name: 'dashboard-preschool-admin-reports-guardians',
+    component: () => import('@/modules/preschool/admin/pages/reports/PreschoolGuardianReportsPage.vue'),
     access: {
       domains: [DOMAINS.PRESCHOOL],
       scopes: [ACCESS_SCOPES.ADMIN],
@@ -394,11 +543,7 @@ export const preschoolRoutes = [
   defineAppRoute({
     path: '/module/preschool-admin/forms/build',
     name: 'dashboard-preschool-admin-forms-build',
-    // Compatibility redirect: older build links now resolve to the canonical
-    // assessment form builder so we keep one real authoring path.
-    redirect: () => ({
-      name: 'preschool-assessment-form-builder',
-    }),
+    component: () => import('@/modules/preschool/admin/pages/assessments/AssessmentFormBuilderPage.vue'),
     access: {
       domains: [DOMAINS.PRESCHOOL],
       scopes: [ACCESS_SCOPES.ADMIN],

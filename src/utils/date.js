@@ -25,6 +25,22 @@ export function formatDate(value) {
 }
 
 /**
+ * Normalize a date/datetime value for <input type="date">.
+ * Returns a YYYY-MM-DD string or an empty string for invalid input.
+ *
+ * @param {string|Date|null|undefined} value
+ * @returns {string}
+ */
+export function normalizeDateForInput(value) {
+  if (!value) return ''
+
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return ''
+
+  return d.toISOString().slice(0, 10)
+}
+
+/**
  * Format a datetime value as "30 May 2026, 12:14 PM".
  * Use for ISO timestamp fields (createdAt, updatedAt, generatedAt, recordedAt).
  * Converts from UTC to the browser's local timezone automatically.

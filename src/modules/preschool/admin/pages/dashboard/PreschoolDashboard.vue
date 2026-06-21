@@ -12,6 +12,7 @@ import PreschoolDashboardActionList from '@/modules/preschool/admin/components/d
 import PreschoolDashboardActivity from '@/modules/preschool/admin/components/dashboard/PreschoolDashboardActivity.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { fetchPreschoolDashboard } from '@/modules/preschool/services/preschoolApi'
+import { fetchReportsDashboard } from '@/modules/preschool/services/api/preschoolReportingApi'
 
 defineOptions({
   name: 'PreschoolDashboardPage',
@@ -38,6 +39,12 @@ const dashboard = ref({
     cancelled: 0,
   },
 })
+const reportsDashboard = ref({
+  kpis: {},
+  modules: {},
+  cards: [],
+  risk: {},
+})
 const loading = ref(false)
 const errorMessage = ref('')
 
@@ -46,7 +53,13 @@ async function loadDashboard() {
   errorMessage.value = ''
 
   try {
-    dashboard.value = await fetchPreschoolDashboard()
+    const [coreDashboard, reportsPayload] = await Promise.all([
+      fetchPreschoolDashboard(),
+      fetchReportsDashboard(),
+    ])
+
+    dashboard.value = coreDashboard
+    reportsDashboard.value = reportsPayload.dashboard || reportsDashboard.value
   } catch (error) {
     errorMessage.value = error?.message || t('preschoolDashboardPage.errors.loadFailed')
   } finally {
@@ -86,6 +99,33 @@ const actions = computed(() => [
   t('preschoolDashboardPage.actions.overduePayments', { count: dashboard.value.summary.overduePayments || 0 }),
   t('preschoolDashboardPage.actions.paidPayments', { count: dashboard.value.paymentSummary?.paid || 0 }),
   t('preschoolDashboardPage.actions.upcomingClasses', { count: dashboard.value.upcomingClasses.length || 0 }),
+])
+
+const reportsCard = computed(() => [
+  {
+    title: t('preschoolDashboardPage.cards.reports.title'),
+    value: reportsDashboard.value.kpis?.attendanceRate || 0,
+    label: t('preschoolDashboardPage.cards.reports.label'),
+    status: 'success',
+  },
+  {
+    title: t('preschoolDashboardPage.cards.reports.revenue'),
+    value: reportsDashboard.value.kpis?.revenue || 0,
+    label: t('preschoolDashboardPage.cards.reports.revenueLabel'),
+    status: 'info',
+  },
+  {
+    title: t('preschoolDashboardPage.cards.reports.health'),
+    value: reportsDashboard.value.kpis?.openHealthAlerts || 0,
+    label: t('preschoolDashboardPage.cards.reports.healthLabel'),
+    status: 'error',
+  },
+  {
+    title: t('preschoolDashboardPage.cards.reports.assessments'),
+    value: reportsDashboard.value.kpis?.assessmentCompletion || 0,
+    label: t('preschoolDashboardPage.cards.reports.assessmentsLabel'),
+    status: 'warning',
+  },
 ])
 
 const notes = computed(() =>
@@ -148,6 +188,21 @@ onMounted(() => {
 
       <PreschoolDashboardSummary :cards="cards" />
 
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="space-y-1">
+            <h3 class="text-sm font-semibold text-slate-900">{{ t('preschoolDashboardPage.cards.reports.title') }}</h3>
+            <p class="text-sm text-slate-500">{{ t('preschoolDashboardPage.cards.reports.subtitle') }}</p>
+          </div>
+          <Button type="button" variant="primary" size="md" rounded="xl" @click="router.push({ name: 'dashboard-preschool-admin-reports' })">
+            {{ t('preschoolDashboardPage.cards.reports.action') }}
+          </Button>
+        </div>
+        <div class="mt-4">
+          <PreschoolDashboardSummary :cards="reportsCard" />
+        </div>
+      </div>
+
       <div class="preschool-dashboard-page__grid">
         <PreschoolDashboardSpotlight
           :title="spotlightTitle"
@@ -181,4 +236,3 @@ onMounted(() => {
   }
 }
 </style>
-

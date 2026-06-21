@@ -303,6 +303,11 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.payment' },
   ],
+  'dashboard-preschool-admin-invoice-detail': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'breadcrumb.payment', to: { name: 'dashboard-preschool-admin-payment' } },
+    { labelKey: 'breadcrumb.invoiceDetail' },
+  ],
 
   // ── Attendance ────────────────────���───────────────────────────────────────
   'dashboard-preschool-admin-attendance': [
@@ -455,6 +460,11 @@ const CRUMB_MAP = {
   'dashboard-preschool-admin-forms': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.forms' },
+  ],
+  'dashboard-preschool-admin-forms-review': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'breadcrumb.forms', to: { name: 'dashboard-preschool-admin-forms' } },
+    { labelKey: 'breadcrumb.formsReview' },
   ],
   'dashboard-preschool-admin-classroom-resources': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },

@@ -23,6 +23,7 @@ export default {
       edit: 'កែប្រែ',
       activate: 'បើកដំណើរការ',
       close: 'បិទ',
+      archive: 'រក្សាទុក',
     },
     status: {
       current: 'បច្ចុប្បន្ន',
@@ -102,4 +103,3 @@ export default {
     },
   },
 }
-

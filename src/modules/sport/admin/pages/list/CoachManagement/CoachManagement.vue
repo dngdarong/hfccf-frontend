@@ -1,16 +1,26 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
+import Toast from 'primevue/toast'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import SearchFilterBar from '@/components/forms/SearchFilterBar.vue'
 import Table from '@/components/data-display/Table.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
+import TableActions from '@/components/data-display/components/TableActions.vue'
 import CoachManagementSummaryGrid from '@/modules/sport/admin/components/coach-management/CoachManagementSummaryGrid.vue'
 import CoachManagementToolbar from '@/modules/sport/admin/components/coach-management/CoachManagementToolbar.vue'
 import CoachManagementHighlights from '@/modules/sport/admin/components/coach-management/CoachManagementHighlights.vue'
+import ResetCoachPasswordDialog from '@/modules/sport/admin/components/coach-management/ResetCoachPasswordDialog.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { deleteSportCoach, fetchSportCoaches } from '@/modules/sport/services/sportApi'
+import { useUserStore } from '@/store/userStore'
+import { ROLES, isSuperAdminRole } from '@/constants/roles'
+import {
+  deleteSportCoach,
+  fetchSportCoaches,
+  resetSportCoachPassword,
+} from '@/modules/sport/services/sportApi'
 import {
   filterCoaches,
   getPaginatedCoaches,
@@ -29,13 +39,24 @@ defineOptions({
 
 const router = useRouter()
 const { t, language } = useLanguage()
+const toast = useToast()
+const userStore = useUserStore()
 const searchQuery = ref('')
 const roleFilter = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
+const resetTarget = ref(null)
+const resetOpen = ref(false)
+const resetLoading = ref(false)
+const resetBackendError = ref('')
 
 const pageSize = COACH_PAGE_SIZE
 const isKh = computed(() => language.value === 'KH')
+const currentUser = computed(() => userStore.currentUser || {})
+const currentUserRole = computed(() => String(currentUser.value?.role || '').trim().toLowerCase())
+const canManageCoachResets = computed(
+  () => isSuperAdminRole(currentUser.value?.role) || currentUserRole.value === ROLES.ADMIN_SPORT,
+)
 const roleOptions = ROLE_OPTIONS
 const statusOptions = STATUS_OPTIONS
 const pageTitle = computed(() => t('sportCoachManagement.title'))
@@ -161,12 +182,62 @@ function onEditUser(user) {
   router.push({ path: '/module/sport-admin/users/add', query: { mode: 'edit', id } })
 }
 
+function canResetCoach(user) {
+  return (
+    canManageCoachResets.value &&
+    String(user?.role || '').trim().toLowerCase() === ROLES.COACH
+  )
+}
+
 async function onDeleteUser(user) {
   const id = String(user?.id || '').trim()
   if (!id) return
 
   await deleteSportCoach(id).catch(() => null)
   coachUsers.value = coachUsers.value.filter((item) => item.id !== id)
+}
+
+function onResetCoach(user) {
+  if (!canResetCoach(user)) return
+
+  resetTarget.value = user || null
+  resetBackendError.value = ''
+  resetOpen.value = true
+}
+
+function onCancelReset() {
+  resetOpen.value = false
+  resetTarget.value = null
+  resetBackendError.value = ''
+}
+
+async function onConfirmReset(payload) {
+  const id = String(resetTarget.value?.id || '').trim()
+  if (!id) return
+
+  resetLoading.value = true
+  resetBackendError.value = ''
+
+  try {
+    await resetSportCoachPassword(id, {
+      password: payload?.password || '',
+      password_confirmation: payload?.password_confirmation || '',
+      reason: payload?.reason || '',
+    })
+
+    toast.add({
+      severity: 'success',
+      summary: t('sportCoachManagement.passwordResetSuccess'),
+      life: 3000,
+    })
+
+    onCancelReset()
+    await loadCoaches()
+  } catch (error) {
+    resetBackendError.value = error?.message || t('common.error')
+  } finally {
+    resetLoading.value = false
+  }
 }
 
 async function loadCoaches() {
@@ -181,6 +252,7 @@ onMounted(() => {
 
 <template>
   <MainLayout>
+    <Toast />
     <section class="coach-management-page">
       <HeaderSection :title="pageTitle" :subtitle="pageSubtitle" />
 
@@ -215,16 +287,36 @@ onMounted(() => {
           :rows="paginatedUsers"
           :columns="tableColumns"
           :empty-text="tableEmptyText"
-          @view="onViewUser"
-          @edit="onEditUser"
-          @delete="onDeleteUser"
-        />
+        >
+          <template #actions="{ data }">
+            <TableActions
+              :item="data"
+              :show-view-action="true"
+              :show-edit-action="true"
+              :show-reset-action="canResetCoach(data)"
+              :show-delete-action="true"
+              :reset-label="t('sportCoachManagement.resetPassword')"
+              @view="onViewUser"
+              @edit="onEditUser"
+              @reset="onResetCoach"
+              @delete="onDeleteUser"
+            />
+          </template>
+        </Table>
 
         <div v-if="totalPages > 1" class="flex justify-end">
           <Pagination v-model="currentPage" :total-pages="totalPages" class="mt-2" />
         </div>
       </div>
     </section>
+
+    <ResetCoachPasswordDialog
+      v-model:visible="resetOpen"
+      :loading="resetLoading"
+      :backend-error="resetBackendError"
+      @confirm="onConfirmReset"
+      @cancel="onCancelReset"
+    />
   </MainLayout>
 </template>
 

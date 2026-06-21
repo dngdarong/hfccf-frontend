@@ -83,6 +83,7 @@ export default {
     actions: {
       back: 'Back to Students',
       health: 'Health Records',
+      paymentSummary: 'Payment Summary',
     },
     hero: {
       eyebrow: 'Student Profile',
@@ -113,6 +114,17 @@ export default {
       createdAt: 'Created At',
       updatedAt: 'Updated At',
       classesCount: 'Classes Count',
+    },
+    paymentSummary: {
+      title: 'Payment Summary',
+      outstandingBalance: 'Outstanding Balance',
+      totalBilled: 'Total Billed',
+      totalPaid: 'Total Paid',
+      invoices: 'Recent Invoices',
+      receipts: 'Recent Receipts',
+      paymentHistory: 'Payment History',
+      noInvoices: 'No invoices found.',
+      noReceipts: 'No receipts found.',
     },
     messages: {
       loading: 'Loading student profile...',

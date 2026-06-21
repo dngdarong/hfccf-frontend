@@ -8,6 +8,7 @@ import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Button from '@/components/buttons/Button.vue'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
+import { useToast } from 'primevue/usetoast'
 import Pagination from '@/components/data-display/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { usePreschoolSchedules } from '@/modules/preschool/composables/usePreschoolSchedules'
@@ -22,6 +23,7 @@ defineOptions({
 })
 
 const { t } = useLanguage()
+const toast = useToast()
 const {
   archiveSchedule,
   classOptions,
@@ -70,6 +72,22 @@ const statusOptions = computed(() => [
 
 const visibleSchedules = computed(() => schedules.value || [])
 const selectedScheduleId = computed(() => selectedSchedule.value?.id || '')
+const isSelectedScheduleArchived = computed(
+  () => String(selectedSchedule.value?.status || '').toLowerCase() === PreschoolScheduleStatus.ARCHIVED,
+)
+const formIsLocked = computed(() => isTermLocked.value || isReportPeriodLocked.value || isSelectedScheduleArchived.value)
+const formLockMessage = computed(
+  () => lockMessage.value || (isSelectedScheduleArchived.value ? t('preschoolLifecyclePage.messages.archivedScheduleLocked') : ''),
+)
+const selectedScheduleActionLabel = computed(() => {
+  if (!selectedScheduleId.value) {
+    return t('preschoolSchedulesPage.actions.create')
+  }
+
+  return isSelectedScheduleArchived.value
+    ? t('preschoolSchedulesPage.actions.view')
+    : t('preschoolSchedulesPage.actions.update')
+})
 const selectedDayLabel = computed(() => {
   const option = dayOptions.value.find((item) => String(item.value) === String(selectedDayOfWeek.value))
 
@@ -104,9 +122,21 @@ async function handleSave(payload) {
 async function handleArchive(entry) {
   if (!entry?.id) return
 
-  await archiveSchedule(entry.id)
-  if (selectedScheduleId.value === String(entry.id)) {
-    setSelectedSchedule(null)
+  try {
+    await archiveSchedule(entry.id)
+    if (selectedScheduleId.value === String(entry.id)) {
+      setSelectedSchedule(null)
+    }
+  } catch (error) {
+    if (error?.status === 409) {
+      errorMessage.value = ''
+      toast.add({
+        severity: 'warn',
+        summary: t('preschoolSchedulesPage.messages.alreadyArchived'),
+        life: 4000,
+      })
+      return
+    }
   }
 }
 
@@ -239,11 +269,13 @@ onMounted(async () => {
                   :entry="entry"
                   :day-label="dayOptions.find((day) => String(day.value) === String(entry.dayOfWeek))?.label || ''"
                   :show-actions="true"
+                  :view-label="t('preschoolSchedulesPage.actions.view')"
                   :edit-label="t('preschoolSchedulesPage.actions.update')"
                   :archive-label="t('preschoolSchedulesPage.actions.archive')"
                   :is-locked="isTermLocked || isReportPeriodLocked"
                   @edit="handleEdit"
                   @archive="handleArchive"
+                  @view="handleEdit"
                 />
               </div>
 
@@ -277,9 +309,9 @@ onMounted(async () => {
             :status-options="statusOptions"
             :conflicts="conflicts"
             :saving="saving"
-            :title="selectedScheduleId ? t('preschoolSchedulesPage.actions.update') : t('preschoolSchedulesPage.actions.create')"
+            :title="selectedScheduleActionLabel"
             :subtitle="t('preschoolSchedulesPage.form.subtitle')"
-            :submit-label="selectedScheduleId ? t('preschoolSchedulesPage.actions.update') : t('preschoolSchedulesPage.actions.create')"
+            :submit-label="selectedScheduleActionLabel"
             :cancel-label="t('preschoolSchedulesPage.actions.cancel')"
             :empty-class-label="t('preschoolSchedulesPage.form.placeholders.class')"
             :empty-teacher-label="t('preschoolSchedulesPage.form.placeholders.teacher')"
@@ -304,8 +336,8 @@ onMounted(async () => {
             }"
             :conflict-title="t('preschoolSchedulesShared.conflicts.title')"
             :conflict-subtitle="t('preschoolSchedulesShared.conflicts.subtitle')"
-            :is-locked="isTermLocked || isReportPeriodLocked"
-            :lock-message="lockMessage"
+            :is-locked="formIsLocked"
+            :lock-message="formLockMessage"
             @submit="handleSave"
             @cancel="setSelectedSchedule(null)"
           />

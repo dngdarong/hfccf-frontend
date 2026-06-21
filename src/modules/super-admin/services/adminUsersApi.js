@@ -141,6 +141,24 @@ export async function updateAdminUser(id, payload) {
   return mapUser(responsePayload.user || responsePayload.data || responsePayload)
 }
 
+export async function resetAdminUserPassword(id, payload = {}) {
+  const targetId = String(id || '').trim()
+  if (!targetId) {
+    throw new Error('Admin user id is required.')
+  }
+
+  const response = await http.post(
+    `${ADMIN_ROUTES}/${encodeURIComponent(targetId)}/reset-password`,
+    {
+      password: String(payload.password || ''),
+      password_confirmation: String(payload.confirmPassword || payload.password || ''),
+      reason: String(payload.reason || '').trim(),
+    },
+  )
+  const responsePayload = unwrapApiData(response) || {}
+  return mapUser(responsePayload.user || responsePayload.data || responsePayload)
+}
+
 export async function deleteAdminUser(id) {
   const targetId = String(id || '').trim()
   if (!targetId) return false

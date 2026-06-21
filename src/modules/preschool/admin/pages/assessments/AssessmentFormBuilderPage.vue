@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import MainLayout from '@/layouts/MainLayout.vue'
 import Button from '@/components/buttons/Button.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
@@ -36,7 +37,10 @@ defineOptions({
 const { t, te } = useLanguage()
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
+let questionSequence = 0
 const selectedQuestionKey = ref(PRESCHOOL_ASSESSMENT_FORM_BUILDER_PALETTE[0]?.key || null)
+const selectedQuestionId = ref('')
 const selectedSectionKey = ref(PRESCHOOL_ASSESSMENT_FORM_BUILDER_DEFAULT_SECTIONS[0]?.key || null)
 const builderSections = ref(
   PRESCHOOL_ASSESSMENT_FORM_BUILDER_DEFAULT_SECTIONS.map((section, index) => ({
@@ -74,7 +78,6 @@ const dragState = ref({
   fromSectionKey: null,
 })
 const questionState = ref({})
-let questionSequence = 0
 
 function safeText(key, fallback) {
   return te(key) ? t(key) : fallback
@@ -82,16 +85,26 @@ function safeText(key, fallback) {
 
 const workspaceStats = computed(() => [
   {
-    label: safeText('assessmentFormBuilder.stats.sections', 'Sections'),
+    label: safeText('assessmentFormBuilder.summary.sections', 'Sections'),
     value: String(builderSections.value.length),
   },
   {
-    label: safeText('assessmentFormBuilder.stats.questions', 'Questions'),
+    label: safeText('assessmentFormBuilder.summary.questions', 'Questions'),
     value: String(totalQuestionCount.value),
   },
   {
-    label: safeText('assessmentFormBuilder.stats.version', 'Version'),
+    label: safeText('assessmentFormBuilder.summary.version', 'Version'),
     value: String(templateVersion.value || '1'),
+  },
+  {
+    label: safeText('assessmentFormBuilder.summary.status', 'Status'),
+    value: templateStatusLabel.value,
+  },
+  {
+    label: safeText('assessmentFormBuilder.summary.changeState', 'Changes'),
+    value: hasUnsavedChanges.value
+      ? safeText('assessmentFormBuilder.summary.unsaved', 'Unsaved changes')
+      : safeText('assessmentFormBuilder.summary.saved', 'Saved'),
   },
 ])
 
@@ -135,8 +148,22 @@ const paletteGroups = computed(() => {
   }))
 })
 
-function handleQuestionSelect(question) {
+function handleQuestionSelect(payload) {
+  const question = payload?.question || payload
+  const section = payload?.section || null
+
+  if (!question) {
+    return
+  }
+
   selectedQuestionKey.value = question.key
+  selectedQuestionId.value = section?.key ? String(question.id || '') : ''
+
+  if (section?.key) {
+    selectedSectionKey.value = section.key
+    return
+  }
+
   if (question.group === 'core') {
     selectedSectionKey.value = 'studentProfile'
     return
@@ -150,6 +177,14 @@ function handleQuestionSelect(question) {
 
 function handleSectionSelect(section) {
   selectedSectionKey.value = section.key
+}
+
+function handleAddQuestion(payload) {
+  const section = payload?.section || payload
+
+  if (!section?.key) return
+
+  addQuestionToSection(section.key, selectedQuestionKey.value || selectedQuestion.value?.key || 'shortText')
 }
 
 function handlePaletteDragStart(payload) {
@@ -186,13 +221,43 @@ function handleQuestionDragStart(payload) {
   }
 }
 
-const selectedQuestion = computed(() =>
+const selectedPaletteQuestion = computed(() =>
   paletteGroups.value.find(question => question.key === selectedQuestionKey.value) || paletteGroups.value[0] || null
 )
 
 const selectedSection = computed(() =>
   builderCanvasSections.value.find(section => section.key === selectedSectionKey.value) || builderCanvasSections.value[0] || null
 )
+
+function findQuestionInSection(sectionKey, questionKey = null, questionId = null) {
+  const questions = builderSectionQuestionMap.value?.[sectionKey] || []
+
+  if (questionId) {
+    return questions.find(question => String(question.id) === String(questionId)) || null
+  }
+
+  if (questionKey) {
+    return questions.find(question => question.key === questionKey || question.answerType === questionKey) || null
+  }
+
+  return questions[0] || null
+}
+
+const selectedQuestion = computed(() => {
+  if (selectedSection.value) {
+    const question = findQuestionInSection(
+      selectedSection.value.key,
+      selectedQuestionKey.value,
+      selectedQuestionId.value,
+    )
+
+    if (question) {
+      return question
+    }
+  }
+
+  return selectedPaletteQuestion.value
+})
 
 const totalQuestionCount = computed(() =>
   Object.values(builderSectionQuestionMap.value).reduce((count, sectionQuestions) => count + sectionQuestions.length, 0)
@@ -227,28 +292,35 @@ function createSectionQuestions(sectionKey) {
   return seeds.map((seed, index) => createQuestionInstance(seed.key, sectionKey, index, seed))
 }
 
-function createQuestionInstance(questionKey, sectionKey, index = 0, seed = null) {
+function createQuestionInstance(questionKey, sectionKey, index = 0, seed = null, state = null) {
   const paletteQuestion = PRESCHOOL_ASSESSMENT_FORM_BUILDER_PALETTE.find(question => question.key === questionKey)
-  const title = seed?.titleFallback
+  const normalizedState = state || {}
+  const title = normalizedState.label
+    || seed?.titleFallback
     || paletteQuestion?.title
     || safeText(`assessmentFormBuilder.palette.${questionKey}.title`, questionKey)
-  const description = seed?.descriptionFallback
+  const description = normalizedState.helpText
+    || seed?.descriptionFallback
     || paletteQuestion?.description
     || safeText(`assessmentFormBuilder.palette.${questionKey}.description`, '')
+  const answerType = normalizedState.answerType || questionKey
+  const questionGroup = paletteQuestion?.group || 'core'
 
   return {
     id: `${sectionKey}-${questionKey}-${index + 1}-${questionSequence += 1}`,
     key: questionKey,
     title,
     description,
-    group: paletteQuestion?.group || 'core',
-    answerType: questionKey,
-    required: false,
-    score: questionKey === 'rating' || questionKey === 'table' ? 10 : 5,
-    validationMode: questionKey === 'table' ? 'strict' : 'basic',
-    options: questionKey === 'dropdown' || questionKey === 'rating'
-      ? 'Option 1, Option 2'
-      : '',
+    group: questionGroup,
+    answerType,
+    required: Boolean(normalizedState.required ?? false),
+    score: normalizedState.score ?? (questionKey === 'rating' || questionKey === 'table' ? 10 : 5),
+    validationMode: normalizedState.validationMode
+      || (questionKey === 'table' ? 'strict' : 'basic'),
+    options: normalizedState.options
+      ?? (questionKey === 'dropdown' || questionKey === 'rating'
+        ? 'Option 1, Option 2'
+        : ''),
   }
 }
 
@@ -280,7 +352,14 @@ function reorderSections(fromKey, toKey) {
 
 function addQuestionToSection(sectionKey, questionKey, beforeQuestionId = null) {
   const targetQuestions = [...(builderSectionQuestionMap.value[sectionKey] || [])]
-  const nextQuestion = createQuestionInstance(questionKey, sectionKey, targetQuestions.length)
+  const isSelectedQuestionType = questionKey === selectedQuestionKey.value
+  const nextQuestion = createQuestionInstance(
+    questionKey,
+    sectionKey,
+    targetQuestions.length,
+    null,
+    isSelectedQuestionType ? questionState.value : null,
+  )
   const insertIndex = beforeQuestionId
     ? targetQuestions.findIndex(question => question.id === beforeQuestionId)
     : targetQuestions.length
@@ -290,6 +369,57 @@ function addQuestionToSection(sectionKey, questionKey, beforeQuestionId = null) 
     ...builderSectionQuestionMap.value,
     [sectionKey]: targetQuestions,
   }
+}
+
+function updateQuestionInSection(sectionKey, questionId, nextState = {}) {
+  if (!sectionKey || !questionId) return false
+
+  const targetQuestions = [...(builderSectionQuestionMap.value[sectionKey] || [])]
+  const questionIndex = targetQuestions.findIndex(question => String(question.id) === String(questionId))
+
+  if (questionIndex < 0) return false
+
+  const currentQuestion = targetQuestions[questionIndex]
+  const nextAnswerType = nextState.answerType || currentQuestion.answerType || currentQuestion.key
+  const paletteQuestion = PRESCHOOL_ASSESSMENT_FORM_BUILDER_PALETTE.find(question => question.key === nextAnswerType)
+
+  targetQuestions[questionIndex] = {
+    ...currentQuestion,
+    key: nextAnswerType,
+    title: nextState.label ?? currentQuestion.title,
+    description: nextState.helpText ?? currentQuestion.description,
+    group: paletteQuestion?.group || currentQuestion.group || 'core',
+    answerType: nextAnswerType,
+    required: Boolean(nextState.required ?? currentQuestion.required ?? false),
+    score: Number(nextState.score ?? currentQuestion.score ?? 0),
+    validationMode: nextState.validationMode || currentQuestion.validationMode || 'basic',
+    options: nextState.options ?? currentQuestion.options ?? '',
+  }
+
+  builderSectionQuestionMap.value = {
+    ...builderSectionQuestionMap.value,
+    [sectionKey]: targetQuestions,
+  }
+
+  return true
+}
+
+function moveSelectedQuestionToSection(nextSectionKey, questionId) {
+  const currentQuestionId = questionId || selectedQuestionId.value
+  if (!currentQuestionId || !nextSectionKey) return false
+
+  const currentLocation = Object.entries(builderSectionQuestionMap.value).find(([, questions]) =>
+    questions.some(question => String(question.id) === String(currentQuestionId)),
+  )
+
+  if (!currentLocation) return false
+
+  const [fromSectionKey] = currentLocation
+  if (fromSectionKey === nextSectionKey) return true
+
+  moveQuestionToSection(currentQuestionId, fromSectionKey, nextSectionKey)
+  selectedSectionKey.value = nextSectionKey
+  return true
 }
 
 function moveQuestionToSection(questionId, fromSectionKey, toSectionKey, beforeQuestionId = null) {
@@ -368,12 +498,12 @@ function createQuestionState(question, section) {
   return {
     label: question?.title || '',
     helpText: question?.description || '',
-    required: false,
-    score: question?.group === 'structured' ? 10 : 5,
-    answerType: question?.key || 'shortText',
+    required: Boolean(question?.required ?? false),
+    score: Number(question?.score ?? (question?.group === 'structured' ? 10 : 5)),
+    answerType: question?.answerType || question?.key || 'shortText',
     sectionKey: section?.key || '',
-    validationMode: question?.group === 'structured' ? 'strict' : 'basic',
-    options: question?.group === 'choices' ? 'Option 1, Option 2' : '',
+    validationMode: question?.validationMode || (question?.group === 'structured' ? 'strict' : 'basic'),
+    options: question?.options || '',
   }
 }
 
@@ -381,25 +511,67 @@ function normalizeNoteValue(value) {
   return String(value ?? '').trim()
 }
 
+function normalizeQuestionOptions(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(option => String(option?.label ?? option?.value ?? option ?? '').trim())
+      .filter(Boolean)
+  }
+
+  return String(value ?? '')
+    .split(',')
+    .map(option => option.trim())
+    .filter(Boolean)
+}
+
 function resetQuestionState() {
   questionState.value = createQuestionState(selectedQuestion.value, selectedSection.value)
 }
 
 function handleQuestionStateUpdate(nextState) {
-  questionState.value = nextState
+  const normalizedState = {
+    label: String(nextState?.label ?? '').trim(),
+    helpText: String(nextState?.helpText ?? '').trim(),
+    required: Boolean(nextState?.required ?? false),
+    score: Number(nextState?.score ?? 0),
+    answerType: String(nextState?.answerType ?? selectedQuestion.value?.key ?? 'shortText').trim(),
+    sectionKey: String(nextState?.sectionKey || selectedSection.value?.key || '').trim(),
+    validationMode: String(nextState?.validationMode ?? 'basic').trim(),
+    options: nextState?.options ?? '',
+  }
+
+  questionState.value = normalizedState
+
+  if (!selectedSection.value || !selectedQuestion.value) {
+    return
+  }
+
+  const targetSectionKey = normalizedState.sectionKey || selectedSection.value.key
+  const targetQuestionId = selectedQuestionId.value || selectedQuestion.value.id
+
+  if (targetSectionKey && targetSectionKey !== selectedSection.value.key) {
+    moveSelectedQuestionToSection(targetSectionKey, targetQuestionId)
+  }
+
+  const currentSectionKey = targetSectionKey || selectedSection.value.key
+  updateQuestionInSection(currentSectionKey, targetQuestionId, normalizedState)
+
+  if (normalizedState.answerType && normalizedState.answerType !== selectedQuestionKey.value) {
+    selectedQuestionKey.value = normalizedState.answerType
+  }
 }
 
 function handleSettingsApply() {
-  questionState.value = {
+  handleQuestionStateUpdate({
     ...questionState.value,
     sectionKey: selectedSection.value?.key || questionState.value.sectionKey,
-  }
+  })
 }
 
 resetQuestionState()
 
 watch(
-  [selectedQuestionKey, selectedSectionKey],
+  [selectedQuestionKey, selectedSectionKey, selectedQuestionId],
   () => {
     resetQuestionState()
   },
@@ -495,7 +667,7 @@ function normalizeVersionSnapshot(snapshot) {
         isScored: Boolean(question.is_scored ?? question.isScored ?? question.scored ?? false),
         score: Number(question.max_score ?? question.score ?? 0),
         validationRules: question.validation_rules ?? question.validationRules ?? (question.validationMode ? { mode: question.validationMode } : {}),
-        options: (question.options || []).map(option => String(option.label ?? '').trim()).filter(Boolean),
+        options: normalizeQuestionOptions(question.options),
       })),
     })),
     raw,
@@ -808,6 +980,7 @@ function hydrateBuilderTemplate(template) {
       ]
     }),
   )
+  selectedQuestionId.value = builderSectionQuestionMap.value[selectedSectionKey.value]?.[0]?.id || ''
 
   resetQuestionState()
   templateSnapshot.value = serializeTemplateSnapshot()
@@ -905,7 +1078,8 @@ function hydrateBuilderTemplateFromVersionSnapshot(snapshot) {
     ]),
   )
   selectedSectionKey.value = builderSections.value[0]?.key || selectedSectionKey.value
-  selectedQuestionKey.value = builderSections.value[0]?.questions?.[0]?.key || selectedQuestionKey.value
+  selectedQuestionId.value = builderSectionQuestionMap.value[selectedSectionKey.value]?.[0]?.id || ''
+  selectedQuestionKey.value = builderSectionQuestionMap.value[selectedSectionKey.value]?.[0]?.key || selectedQuestionKey.value
   templateSnapshot.value = serializeTemplateSnapshot()
 }
 
@@ -920,6 +1094,69 @@ function requireVersionChangeConfirmation() {
       'You have unsaved changes. Continue and leave the current draft?',
     ),
   )
+}
+
+function collectValidationMessages(payload) {
+  const errors = payload?.errors
+
+  if (!errors) return []
+
+  if (Array.isArray(errors)) {
+    return errors.map(item => String(item ?? '').trim()).filter(Boolean)
+  }
+
+  if (typeof errors !== 'object') {
+    return []
+  }
+
+  return Object.values(errors)
+    .flatMap(value => (Array.isArray(value) ? value : [value]))
+    .map(message => String(message ?? '').trim())
+    .filter(Boolean)
+}
+
+function isTemporaryIdValidationError(error) {
+  const payload = error?.response?.data || error?.details || {}
+  const message = String(payload?.message || error?.message || '').toLowerCase()
+  const validationText = collectValidationMessages(payload).join(' ').toLowerCase()
+  const combined = `${message} ${validationText}`
+
+  return /temporary ids?/.test(combined) || /temp(?:orary)?[-_\s]?id/.test(combined) || /client[-_\s]?generated/.test(combined)
+}
+
+function resolveTemplateErrorMessage(error, fallbackMessage) {
+  const payload = error?.response?.data || error?.details || {}
+  const backendMessage = String(payload?.message || payload?.error || '').trim()
+  const validationMessages = collectValidationMessages(payload)
+
+  if (backendMessage && !/^(the submitted data has validation errors\.?|validation failed\.?)$/i.test(backendMessage)) {
+    return backendMessage
+  }
+
+  if (validationMessages.length > 0) {
+    return validationMessages[0]
+  }
+
+  if (backendMessage) {
+    return backendMessage
+  }
+
+  if (error?.message) {
+    return String(error.message)
+  }
+
+  return fallbackMessage
+}
+
+function reportTemplateActionError(detail) {
+  templateError.value = detail
+  toast.add({
+    severity: 'error',
+    summary: safeText('common.error', 'Error'),
+    detail,
+    life: 5000,
+  })
+  return false
 }
 
 function selectVersion(version) {
@@ -1014,9 +1251,18 @@ async function saveDraft() {
       },
     })
     templateNotice.value = safeText('assessmentFormBuilder.messages.saved', 'Draft saved.')
+    return true
   } catch (error) {
-    templateError.value = error?.message || 'Unable to save the draft.'
-    throw error
+    const fallback = safeText('assessmentFormBuilder.messages.saveFailed', 'Unable to save the draft.')
+    const detail = error?.response?.status === 422 && isTemporaryIdValidationError(error)
+      ? safeText(
+          'assessmentFormBuilder.messages.saveValidationFailed',
+          'The draft could not be saved because it contains temporary IDs.',
+        )
+      : resolveTemplateErrorMessage(error, fallback)
+
+    reportTemplateActionError(detail)
+    return false
   } finally {
     isTemplateSaving.value = false
   }
@@ -1024,7 +1270,10 @@ async function saveDraft() {
 
 async function duplicateTemplate() {
   if (!currentTemplateId.value) {
-    await saveDraft()
+    const saved = await saveDraft()
+    if (!saved) {
+      return
+    }
   }
 
   isTemplateSaving.value = true
@@ -1046,8 +1295,7 @@ async function duplicateTemplate() {
     })
     templateNotice.value = safeText('assessmentFormBuilder.messages.duplicated', 'Template duplicated.')
   } catch (error) {
-    templateError.value = error?.message || 'Unable to duplicate the template.'
-    throw error
+    return reportTemplateActionError(resolveTemplateErrorMessage(error, safeText('assessmentFormBuilder.messages.duplicateFailed', 'Unable to duplicate the template.')))
   } finally {
     isTemplateSaving.value = false
   }
@@ -1055,7 +1303,10 @@ async function duplicateTemplate() {
 
 async function publishTemplate() {
   if (hasUnsavedChanges.value) {
-    await saveDraft()
+    const saved = await saveDraft()
+    if (!saved) {
+      return
+    }
   }
 
   isTemplateSaving.value = true
@@ -1072,8 +1323,7 @@ async function publishTemplate() {
     await loadVersionHistory(currentTemplateId.value)
     templateNotice.value = safeText('assessmentFormBuilder.messages.published', 'Template published.')
   } catch (error) {
-    templateError.value = error?.message || 'Unable to publish the template.'
-    throw error
+    return reportTemplateActionError(resolveTemplateErrorMessage(error, safeText('assessmentFormBuilder.messages.publishFailed', 'Unable to publish the template.')))
   } finally {
     isTemplateSaving.value = false
   }
@@ -1091,8 +1341,7 @@ async function archiveTemplate() {
     await loadVersionHistory(currentTemplateId.value)
     templateNotice.value = safeText('assessmentFormBuilder.messages.archived', 'Template archived.')
   } catch (error) {
-    templateError.value = error?.message || 'Unable to archive the template.'
-    throw error
+    return reportTemplateActionError(resolveTemplateErrorMessage(error, safeText('assessmentFormBuilder.messages.archiveFailed', 'Unable to archive the template.')))
   } finally {
     isTemplateSaving.value = false
   }
@@ -1114,8 +1363,7 @@ async function restoreTemplate() {
     await loadVersionHistory(currentTemplateId.value)
     templateNotice.value = safeText('assessmentFormBuilder.messages.restored', 'Template restored.')
   } catch (error) {
-    templateError.value = error?.message || 'Unable to restore the template.'
-    throw error
+    return reportTemplateActionError(resolveTemplateErrorMessage(error, safeText('assessmentFormBuilder.messages.restoreFailed', 'Unable to restore the template.')))
   } finally {
     isTemplateSaving.value = false
   }
@@ -1135,11 +1383,28 @@ onMounted(() => {
         :subtitle="safeText('assessmentFormBuilder.subtitle', 'Design assessment forms, scoring rubrics, and reusable question layouts.')"
       />
 
-      <div class="assessment-form-builder-toolbar">
-        <div class="assessment-form-builder-toolbar__meta">
-          <span class="assessment-form-builder-toolbar__badge">
-            {{ safeText('assessmentFormBuilder.badge', 'Preschool Assessment') }}
+      <section class="assessment-form-builder-hero">
+        <div class="assessment-form-builder-hero__copy">
+          <span class="assessment-form-builder-hero__eyebrow">
+            {{ safeText('assessmentFormBuilder.summary.eyebrow', 'Form Summary') }}
           </span>
+          <h2>{{ safeText('assessmentFormBuilder.summary.title', 'Builder Summary') }}</h2>
+          <p>{{ safeText('assessmentFormBuilder.summary.subtitle', 'Live template status and progress at a glance.') }}</p>
+        </div>
+        <div class="assessment-form-builder-hero__metrics">
+          <div
+            v-for="stat in workspaceStats"
+            :key="stat.label"
+            class="assessment-form-builder-hero__metric"
+          >
+            <strong>{{ stat.value }}</strong>
+            <span>{{ stat.label }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="assessment-form-builder-toolbar assessment-form-builder-panel">
+        <div class="assessment-form-builder-toolbar__meta">
           <div class="assessment-form-builder-toolbar__status">
             <span class="assessment-form-builder-toolbar__status-badge" :data-tone="templateStatusTone">
               {{ templateStatusLabel }}
@@ -1151,16 +1416,9 @@ onMounted(() => {
               {{ safeText('assessmentFormBuilder.messages.savedState', 'Draft saved') }}
             </span>
           </div>
-          <div class="assessment-form-builder-toolbar__stats">
-            <div
-              v-for="stat in workspaceStats"
-              :key="stat.label"
-              class="assessment-form-builder-toolbar__stat"
-            >
-              <strong>{{ stat.value }}</strong>
-              <span>{{ stat.label }}</span>
-            </div>
-          </div>
+          <p class="assessment-form-builder-toolbar__hint">
+            {{ safeText('assessmentFormBuilder.messages.toolbarHint', 'Manage the draft, version history, and publishing workflow from this panel.') }}
+          </p>
         </div>
 
         <div class="assessment-form-builder-toolbar__actions">
@@ -1207,13 +1465,15 @@ onMounted(() => {
             @click="archiveTemplate"
           />
         </div>
-      </div>
+      </section>
 
-      <div class="assessment-form-builder-notes">
-        <section class="assessment-form-builder-notes__card">
+      <section class="assessment-form-builder-notes">
+        <div class="assessment-form-builder-panel assessment-form-builder-notes__card">
           <div class="assessment-form-builder-notes__header">
-            <h3>{{ safeText('assessmentFormBuilder.notes.publishTitle', 'Publish note') }}</h3>
-            <p>{{ safeText('assessmentFormBuilder.notes.publishHint', 'Optional reason that will be saved with the published version.') }}</p>
+            <div>
+              <h3>{{ safeText('assessmentFormBuilder.notes.publishTitle', 'Publish note') }}</h3>
+              <p>{{ safeText('assessmentFormBuilder.notes.publishHint', 'Optional reason that will be saved with the published version.') }}</p>
+            </div>
           </div>
           <textarea
             v-model="publishNote"
@@ -1221,12 +1481,14 @@ onMounted(() => {
             class="assessment-form-builder-notes__textarea"
             :placeholder="safeText('assessmentFormBuilder.notes.publishPlaceholder', 'Add a note before publishing...')"
           />
-        </section>
+        </div>
 
-        <section class="assessment-form-builder-notes__card">
+        <div class="assessment-form-builder-panel assessment-form-builder-notes__card">
           <div class="assessment-form-builder-notes__header">
-            <h3>{{ safeText('assessmentFormBuilder.notes.versionTitle', 'Version note') }}</h3>
-            <p>{{ safeText('assessmentFormBuilder.notes.versionHint', 'Stored with the template and version snapshot for traceability.') }}</p>
+            <div>
+              <h3>{{ safeText('assessmentFormBuilder.notes.versionTitle', 'Version note') }}</h3>
+              <p>{{ safeText('assessmentFormBuilder.notes.versionHint', 'Stored with the template and version snapshot for traceability.') }}</p>
+            </div>
           </div>
           <textarea
             v-model="versionNote"
@@ -1243,12 +1505,14 @@ onMounted(() => {
               :placeholder="safeText('assessmentFormBuilder.notes.reviewPlaceholder', 'Add a review note...')"
             />
           </label>
-        </section>
+        </div>
 
-        <section class="assessment-form-builder-notes__card">
+        <div class="assessment-form-builder-panel assessment-form-builder-notes__card">
           <div class="assessment-form-builder-notes__header">
-            <h3>{{ safeText('assessmentFormBuilder.notes.duplicateTitle', 'Duplicate reason') }}</h3>
-            <p>{{ safeText('assessmentFormBuilder.notes.duplicateHint', 'Optional note saved when creating a draft copy from a version.') }}</p>
+            <div>
+              <h3>{{ safeText('assessmentFormBuilder.notes.duplicateTitle', 'Duplicate reason') }}</h3>
+              <p>{{ safeText('assessmentFormBuilder.notes.duplicateHint', 'Optional note saved when creating a draft copy from a version.') }}</p>
+            </div>
           </div>
           <textarea
             v-model="duplicateNote"
@@ -1265,78 +1529,113 @@ onMounted(() => {
               :placeholder="safeText('assessmentFormBuilder.notes.restorePlaceholder', 'Add a restore note...')"
             />
           </label>
-        </section>
-      </div>
+        </div>
+      </section>
 
       <div class="assessment-form-builder-grid">
         <aside class="assessment-form-builder-panel assessment-form-builder-panel--sidebar">
-          <HeaderSection
-            :title="safeText('assessmentFormBuilder.sidebar.title', 'Build Workspace')"
-            :subtitle="safeText('assessmentFormBuilder.sidebar.subtitle', 'Start with sections, question libraries, and logic rules.')"
-          />
-
-          <FormBuilderQuestionPalette
-            :sections="builderPaletteSections"
-            :palette="paletteGroups"
-            :selected-question-key="selectedQuestionKey"
-            @select-question="handleQuestionSelect"
-            @drag-question-start="handlePaletteDragStart"
-            @drag-question-end="handleDragEnd"
-          />
+          <div class="assessment-form-builder-panel__section-header">
+            <HeaderSection
+              :title="safeText('assessmentFormBuilder.sidebar.title', 'Build Workspace')"
+              :subtitle="safeText('assessmentFormBuilder.sidebar.subtitle', 'Start with sections, question libraries, and logic rules.')"
+            />
+          </div>
+          <div class="assessment-form-builder-panel__section-body">
+            <FormBuilderQuestionPalette
+              :sections="builderPaletteSections"
+              :palette="paletteGroups"
+              :selected-question-key="selectedQuestionKey"
+              @select-question="handleQuestionSelect"
+              @drag-question-start="handlePaletteDragStart"
+              @drag-question-end="handleDragEnd"
+            />
+          </div>
         </aside>
 
         <main class="assessment-form-builder-panel assessment-form-builder-panel--canvas">
-          <div v-if="isTemplateLoading" class="assessment-form-builder-state">
-            <i class="pi pi-spin pi-spinner" />
-            <span>{{ safeText('assessmentFormBuilder.messages.loading', 'Loading template...') }}</span>
+          <div class="assessment-form-builder-panel__section-header">
+            <div>
+              <h3 class="assessment-form-builder-panel__title">
+                {{ safeText('assessmentFormBuilder.canvas.title', 'Sections and Questions') }}
+              </h3>
+              <p class="assessment-form-builder-panel__subtitle">
+                {{ safeText('assessmentFormBuilder.canvas.subtitle', 'Organize the draft by dragging sections, adding questions, and reviewing structure.') }}
+              </p>
+            </div>
           </div>
-          <div v-else-if="templateError" class="assessment-form-builder-state assessment-form-builder-state--error">
-            <i class="pi pi-exclamation-triangle" />
-            <span>{{ templateError }}</span>
+          <div class="assessment-form-builder-panel__section-body">
+            <div v-if="isTemplateLoading" class="assessment-form-builder-state">
+              <i class="pi pi-spin pi-spinner" />
+              <span>{{ safeText('assessmentFormBuilder.messages.loading', 'Loading template...') }}</span>
+            </div>
+            <div v-else-if="templateError" class="assessment-form-builder-state assessment-form-builder-state--error">
+              <i class="pi pi-exclamation-triangle" />
+              <span>{{ templateError }}</span>
+            </div>
+            <div v-else-if="templateNotice" class="assessment-form-builder-state assessment-form-builder-state--success">
+              <i class="pi pi-check-circle" />
+              <span>{{ templateNotice }}</span>
+            </div>
+            <FormBuilderCanvas
+              :sections="builderCanvasSections"
+              :section-questions="builderSectionQuestionMap"
+              :selected-section-key="selectedSectionKey"
+              @select-section="handleSectionSelect"
+              @select-question="handleQuestionSelect"
+              @add-question="handleAddQuestion"
+              @add-section="handleSectionSelect(builderCanvasSections[builderCanvasSections.length - 1])"
+              @drag-section-start="handleSectionDragStart"
+              @drag-question-start="handleQuestionDragStart"
+              @drag-end="handleDragEnd"
+              @drop-section="handleSectionDrop"
+              @drop-question="handleQuestionDrop"
+            />
           </div>
-          <div v-else-if="templateNotice" class="assessment-form-builder-state assessment-form-builder-state--success">
-            <i class="pi pi-check-circle" />
-            <span>{{ templateNotice }}</span>
-          </div>
-          <FormBuilderCanvas
-            :sections="builderCanvasSections"
-            :section-questions="builderSectionQuestionMap"
-            :selected-section-key="selectedSectionKey"
-            @select-section="handleSectionSelect"
-            @add-section="handleSectionSelect(builderCanvasSections[builderCanvasSections.length - 1])"
-            @drag-section-start="handleSectionDragStart"
-            @drag-question-start="handleQuestionDragStart"
-            @drag-end="handleDragEnd"
-            @drop-section="handleSectionDrop"
-            @drop-question="handleQuestionDrop"
-          />
         </main>
 
         <aside class="assessment-form-builder-panel assessment-form-builder-panel--settings">
-          <FormBuilderQuestionSettings
-            :question="selectedQuestion"
-            :section="selectedSection"
-            :state="questionState"
-            :section-options="builderCanvasSections"
-            @update:state="handleQuestionStateUpdate"
-            @reset="resetQuestionState"
-            @apply="handleSettingsApply"
-          />
-          <div v-if="versionHistoryError" class="assessment-form-builder-state assessment-form-builder-state--error">
-            <i class="pi pi-exclamation-triangle" />
-            <span>{{ versionHistoryError }}</span>
+          <div class="assessment-form-builder-panel__section-header">
+            <div>
+              <h3 class="assessment-form-builder-panel__title">
+                {{ safeText('assessmentFormBuilder.settings.title', 'Question Settings') }}
+              </h3>
+              <p class="assessment-form-builder-panel__subtitle">
+                {{ safeText('assessmentFormBuilder.settings.subtitle', 'Adjust the selected question, then compare versions below.') }}
+              </p>
+            </div>
           </div>
-          <AssessmentFormVersionReview
-            :versions="assessmentVersions"
-            :selected-version-id="selectedVersionId"
-            :comparison="versionComparison"
-            :current-template-status="templateStatus"
-            :has-unsaved-changes="hasUnsavedChanges"
-            :loading="isVersionHistoryLoading"
-            @select-version="selectVersion"
-            @duplicate-version="duplicateVersionAsDraft"
-            @restore-version="restoreVersion"
-          />
+          <div class="assessment-form-builder-panel__section-body assessment-form-builder-panel__section-body--stacked">
+            <FormBuilderQuestionSettings
+              :question="selectedQuestion"
+              :section="selectedSection"
+              :state="questionState"
+              :section-options="builderCanvasSections"
+              @update:state="handleQuestionStateUpdate"
+              @reset="resetQuestionState"
+              @apply="handleSettingsApply"
+            />
+            <div v-if="versionHistoryError" class="assessment-form-builder-state assessment-form-builder-state--error">
+              <i class="pi pi-exclamation-triangle" />
+              <span>{{ versionHistoryError }}</span>
+            </div>
+            <div class="assessment-form-builder-version-card">
+              <div class="assessment-form-builder-version-card__header">
+                <h3>{{ safeText('assessmentFormBuilder.versionHistory.title', 'Version History') }}</h3>
+                <p>{{ safeText('assessmentFormBuilder.versionHistory.subtitle', 'Review past snapshots, duplicate a version, or restore a draft.') }}</p>
+              </div>
+              <AssessmentFormVersionReview
+                :versions="assessmentVersions"
+                :selected-version-id="selectedVersionId"
+                :comparison="versionComparison"
+                :current-template-status="templateStatus"
+                :has-unsaved-changes="hasUnsavedChanges"
+                :loading="isVersionHistoryLoading"
+                @select-version="selectVersion"
+                @duplicate-version="duplicateVersionAsDraft"
+                @restore-version="restoreVersion"
+              />
+            </div>
+          </div>
         </aside>
       </div>
     </section>
@@ -1347,42 +1646,102 @@ onMounted(() => {
 .assessment-form-builder-page {
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
+}
+
+.assessment-form-builder-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
   gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  border-radius: 1.5rem;
+  border: 1px solid #dbeafe;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, #f8fbff 0%, #ffffff 55%, #eef6ff 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.assessment-form-builder-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.assessment-form-builder-hero__eyebrow {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.33rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.assessment-form-builder-hero__copy h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.assessment-form-builder-hero__copy p {
+  margin: 0;
+  max-width: 62ch;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.assessment-form-builder-hero__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.assessment-form-builder-hero__metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(191, 219, 254, 0.85);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.assessment-form-builder-hero__metric strong {
+  color: #0f172a;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.assessment-form-builder-hero__metric span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
 .assessment-form-builder-toolbar {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-radius: 1.25rem;
-  border: 1px solid #dbeafe;
-  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  padding: 1rem 1.15rem;
+  border-radius: 1.35rem;
+  position: sticky;
+  top: 0.75rem;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .assessment-form-builder-toolbar__meta {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-.assessment-form-builder-toolbar__badge {
-  display: inline-flex;
-  align-self: flex-start;
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.assessment-form-builder-toolbar__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .assessment-form-builder-toolbar__status {
@@ -1423,32 +1782,18 @@ onMounted(() => {
   color: #64748b;
 }
 
-.assessment-form-builder-toolbar__stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: 0.9rem;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  min-width: 110px;
-}
-
-.assessment-form-builder-toolbar__stat strong {
-  font-size: 1.05rem;
-  color: #0f172a;
-}
-
-.assessment-form-builder-toolbar__stat span {
-  font-size: 0.78rem;
+.assessment-form-builder-toolbar__hint {
+  margin: 0;
   color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .assessment-form-builder-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .assessment-form-builder-notes {
@@ -1460,25 +1805,32 @@ onMounted(() => {
 .assessment-form-builder-notes__card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  border-radius: 1rem;
-  border: 1px solid #dbeafe;
-  background: #f8fafc;
-  padding: 1rem;
+  gap: 0.85rem;
+  border-radius: 1.25rem;
+  padding: 1rem 1.05rem;
 }
 
-.assessment-form-builder-notes__header h3 {
+.assessment-form-builder-notes__header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.assessment-form-builder-notes__header h3,
+.assessment-form-builder-version-card__header h3,
+.assessment-form-builder-panel__title {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #0f172a;
 }
 
-.assessment-form-builder-notes__header p {
-  margin: 0.2rem 0 0;
-  font-size: 0.78rem;
+.assessment-form-builder-notes__header p,
+.assessment-form-builder-version-card__header p,
+.assessment-form-builder-panel__subtitle {
+  margin: 0;
   color: #64748b;
-  line-height: 1.45;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .assessment-form-builder-notes__inline-label {
@@ -1510,19 +1862,51 @@ onMounted(() => {
 
 .assessment-form-builder-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(240px, 280px);
+  grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.45fr) minmax(300px, 0.92fr);
   gap: 1rem;
+  align-items: start;
 }
 
 .assessment-form-builder-panel {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  border-radius: 1.25rem;
+  gap: 0;
+  border-radius: 1.4rem;
   border: 1px solid #dbeafe;
   background: #ffffff;
-  padding: 1rem;
+  overflow: hidden;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+}
+
+.assessment-form-builder-panel__section-header {
+  padding: 1rem 1.1rem 0.8rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0));
+}
+
+.assessment-form-builder-panel__section-body {
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.assessment-form-builder-panel__section-body--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.assessment-form-builder-version-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.assessment-form-builder-version-card__header {
+  display: grid;
+  gap: 0.3rem;
 }
 
 .assessment-form-builder-state {
@@ -1549,6 +1933,14 @@ onMounted(() => {
 }
 
 @media (max-width: 1200px) {
+  .assessment-form-builder-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .assessment-form-builder-hero__metrics {
+    grid-template-columns: 1fr;
+  }
+
   .assessment-form-builder-notes {
     grid-template-columns: 1fr;
   }
@@ -1560,12 +1952,20 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .assessment-form-builder-toolbar {
-    align-items: stretch;
     flex-direction: column;
+    top: 0.5rem;
   }
 
   .assessment-form-builder-toolbar__actions {
-    justify-content: stretch;
+    justify-content: flex-start;
+  }
+
+  .assessment-form-builder-toolbar__actions :deep(.p-button) {
+    flex: 1 1 100%;
+  }
+
+  .assessment-form-builder-toolbar__actions :deep(.p-button .p-button-label) {
+    white-space: normal;
   }
 }
 </style>

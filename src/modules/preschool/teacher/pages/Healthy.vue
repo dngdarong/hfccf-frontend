@@ -16,6 +16,8 @@ import {
   saveStudentHealthIncident,
   saveStudentHealthCheck,
 } from '@/modules/preschool/services/api/preschoolHealthApi'
+import { fetchStudentGuardianCommunications } from '@/modules/preschool/services/api/preschoolGuardianCommunicationApi'
+import GuardianCommunicationTimeline from '@/modules/preschool/admin/components/guardian/GuardianCommunicationTimeline.vue'
 import { resolveAvatarSource } from '@/utils/avatar'
 
 defineOptions({
@@ -30,6 +32,7 @@ const selectedStudentSummary = ref(null)
 const urgentAlerts = ref([])
 const incidents = ref([])
 const contacts = ref([])
+const communications = ref(null)
 const loadingStudents = ref(false)
 const loadingSummary = ref(false)
 const savingIncident = ref(false)
@@ -95,6 +98,7 @@ async function loadStudentHealth() {
     selectedStudentSummary.value = null
     incidents.value = []
     contacts.value = []
+    communications.value = null
     return
   }
 
@@ -102,15 +106,17 @@ async function loadStudentHealth() {
   errorMessage.value = ''
 
   try {
-    const [summary, alertsPayload] = await Promise.all([
+    const [summary, alertsPayload, communicationsPayload] = await Promise.all([
       fetchStudentHealthSummary(studentId),
       fetchHealthAlerts({ student_id: studentId, scope: 'teacher' }),
+      fetchStudentGuardianCommunications(studentId, { perPage: 5 }).catch(() => null),
     ])
 
     selectedStudentSummary.value = summary
     urgentAlerts.value = alertsPayload.items || []
     incidents.value = await fetchStudentHealthIncidents(studentId)
     contacts.value = await fetchStudentHealthContacts(studentId)
+    communications.value = communicationsPayload
   } catch (error) {
     errorMessage.value = error?.message || t('preschoolHealthPage.messages.loadFailed')
   } finally {
@@ -291,6 +297,17 @@ onMounted(async () => {
                     </div>
                   </article>
                 </div>
+              </section>
+
+              <section v-if="communications" class="teacher-health-page__panel teacher-health-page__panel--communications">
+                <GuardianCommunicationTimeline
+                  compact
+                  :title="t('preschoolGuardianCommunicationPage.timelineTitle')"
+                  :subtitle="t('preschoolGuardianCommunicationPage.timelineSubtitle')"
+                  :communications="communications.items || []"
+                  :summary="communications.summary || {}"
+                  :empty-text="t('preschoolGuardianCommunicationPage.messages.noCommunicationYet')"
+                />
               </section>
 
               <div class="teacher-health-page__grid">

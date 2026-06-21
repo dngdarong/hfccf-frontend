@@ -1,4 +1,7 @@
 <script setup>
+import { nextTick } from 'vue'
+import { useLanguage } from '@/composables/useLanguage'
+
 defineOptions({
   name: 'PreschoolAssessmentFormBuilderCanvas',
 })
@@ -20,7 +23,9 @@ const props = defineProps({
 
 const emit = defineEmits([
   'select-section',
+  'select-question',
   'add-section',
+  'add-question',
   'drag-section-start',
   'drag-question-start',
   'drag-end',
@@ -28,16 +33,47 @@ const emit = defineEmits([
   'drop-question',
 ])
 
+const { t, te } = useLanguage()
+
+function safeText(key, fallback) {
+  return te(key) ? t(key) : fallback
+}
+
+function sectionQuestionCount(sectionKey) {
+  return Array.isArray(props.sectionQuestions?.[sectionKey]) ? props.sectionQuestions[sectionKey].length : 0
+}
+
+function sectionAnchorId(section) {
+  return `assessment-section-${String(section?.key || '').replace(/[^a-zA-Z0-9_-]/g, '-')}`
+}
+
+async function scrollToSection(section) {
+  if (!section) return
+
+  await nextTick()
+  const target = document.getElementById(sectionAnchorId(section))
+  target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 function handleSelect(section) {
   emit('select-section', section)
 }
 
+function handleSelectQuestion(question, section) {
+  emit('select-question', { question, section })
+}
+
 function handleAdd(section) {
-  emit('add-section', section)
+  emit('add-question', { section })
 }
 
 function handleAddClick() {
   emit('add-section')
+}
+
+async function handleJumpToSection(section) {
+  handleSelect(section)
+  await scrollToSection(section)
 }
 
 function handleSectionDragStart(section, event) {
@@ -65,19 +101,79 @@ function handleDragEnd() {
   <section class="builder-canvas">
     <div class="builder-canvas__header">
       <div>
-        <p class="builder-canvas__eyebrow">Canvas</p>
-        <h3>Live preview</h3>
+        <p class="builder-canvas__eyebrow">
+          {{ safeText('assessmentFormBuilder.canvas.eyebrow', 'Canvas') }}
+        </p>
+        <h3>{{ safeText('assessmentFormBuilder.canvas.title', 'Live preview') }}</h3>
       </div>
       <button type="button" class="builder-canvas__action" @click="handleAddClick">
         <i class="pi pi-plus" />
-        Add section
+        {{ safeText('assessmentFormBuilder.actions.addSection', 'Add section') }}
       </button>
     </div>
 
-    <div class="builder-canvas__sections">
+    <nav v-if="props.sections.length" class="builder-canvas__navigator" :aria-label="safeText('assessmentFormBuilder.canvas.navigatorAriaLabel', 'Section navigator')">
+      <div class="builder-canvas__navigator-header">
+        <div>
+          <p class="builder-canvas__navigator-eyebrow">
+            {{ safeText('assessmentFormBuilder.canvas.navigatorTitle', 'Sections') }}
+          </p>
+          <h4>{{ safeText('assessmentFormBuilder.canvas.navigatorHint', 'Jump to section') }}</h4>
+        </div>
+        <span class="builder-canvas__navigator-count">{{ props.sections.length }}</span>
+      </div>
+
+      <div class="builder-canvas__navigator-list">
+        <button
+          v-for="section in props.sections"
+          :key="section.key"
+          type="button"
+          class="builder-canvas__navigator-item"
+          :class="{
+            'builder-canvas__navigator-item--active': section.key === props.selectedSectionKey,
+            'builder-canvas__navigator-item--empty': sectionQuestionCount(section.key) === 0,
+          }"
+          :aria-current="section.key === props.selectedSectionKey ? 'true' : undefined"
+          :aria-label="`${safeText('assessmentFormBuilder.canvas.navigatorJump', 'Jump to section')}: ${section.title}`"
+          @click="handleJumpToSection(section)"
+        >
+          <span class="builder-canvas__navigator-title">{{ section.title }}</span>
+          <span class="builder-canvas__navigator-meta">
+            <span class="builder-canvas__navigator-count-label">
+              {{ sectionQuestionCount(section.key) }} {{ safeText('assessmentFormBuilder.canvas.questionsLabel', 'questions') }}
+            </span>
+            <span v-if="sectionQuestionCount(section.key) === 0" class="builder-canvas__navigator-empty">
+              {{ safeText('assessmentFormBuilder.canvas.navigatorEmpty', 'Empty') }}
+            </span>
+            <span v-if="section.key === props.selectedSectionKey" class="builder-canvas__navigator-current">
+              {{ safeText('assessmentFormBuilder.canvas.navigatorCurrent', 'Current') }}
+            </span>
+          </span>
+        </button>
+      </div>
+    </nav>
+
+    <div v-if="!props.sections.length" class="builder-canvas__empty-state">
+      <div class="builder-canvas__empty-state-card">
+        <span class="builder-canvas__empty-state-icon">
+          <i class="pi pi-sitemap" />
+        </span>
+        <div class="builder-canvas__empty-state-copy">
+          <h4>{{ safeText('assessmentFormBuilder.emptyStates.noSectionsTitle', 'No sections yet') }}</h4>
+          <p>{{ safeText('assessmentFormBuilder.emptyStates.noSectionsDescription', 'Create your first section to start building this assessment form.') }}</p>
+        </div>
+        <button type="button" class="builder-canvas__action builder-canvas__action--full" @click="handleAddClick">
+          <i class="pi pi-plus" />
+          {{ safeText('assessmentFormBuilder.emptyStates.noSectionsAction', 'Add Section') }}
+        </button>
+      </div>
+    </div>
+
+    <div v-else class="builder-canvas__sections">
       <article
         v-for="section in props.sections"
         :key="section.key"
+        :id="sectionAnchorId(section)"
         class="builder-canvas__section"
         :class="{ 'builder-canvas__section--active': section.key === props.selectedSectionKey }"
         draggable="true"
@@ -92,14 +188,19 @@ function handleDragEnd() {
             <p>{{ section.description }}</p>
           </div>
           <div class="builder-canvas__meta">
-            <span class="builder-canvas__badge">{{ section.questionCount }} questions</span>
-            <button type="button" class="builder-canvas__link" @click="handleSelect(section)">
-              Focus
+            <span class="builder-canvas__badge">{{ section.questionCount }} {{ safeText('assessmentFormBuilder.canvas.questionsLabel', 'questions') }}</span>
+            <button
+              type="button"
+              class="builder-canvas__link"
+              :aria-label="`${safeText('assessmentFormBuilder.canvas.navigatorJump', 'Jump to section')}: ${section.title}`"
+              @click="handleJumpToSection(section)"
+            >
+              {{ safeText('assessmentFormBuilder.canvas.focusAction', 'Focus') }}
             </button>
           </div>
         </div>
 
-        <div class="builder-canvas__questions">
+        <div v-if="(props.sectionQuestions?.[section.key] || []).length" class="builder-canvas__questions">
           <button
             v-for="question in props.sectionQuestions?.[section.key] || []"
             :key="question.id"
@@ -110,21 +211,34 @@ function handleDragEnd() {
             @dragend="handleDragEnd"
             @dragover.prevent
             @drop.prevent="handleQuestionDrop(section, question, $event)"
-            @click="handleSelect(section)"
+            @click="handleSelectQuestion(question, section)"
           >
             <span class="builder-canvas__question-title">{{ question.title }}</span>
             <span class="builder-canvas__question-meta">{{ question.group || question.key }}</span>
           </button>
         </div>
 
-        <div class="builder-canvas__dropzone">
+        <div v-else class="builder-canvas__empty-question-state">
+          <span class="builder-canvas__empty-question-state-icon">
+            <i class="pi pi-question-circle" />
+          </span>
+          <div class="builder-canvas__empty-question-state-copy">
+            <h4>{{ safeText('assessmentFormBuilder.emptyStates.noQuestionsTitle', 'No questions yet') }}</h4>
+            <p>{{ safeText('assessmentFormBuilder.emptyStates.noQuestionsDescription', 'Add your first question to this section.') }}</p>
+          </div>
+          <button type="button" class="builder-canvas__footer-action builder-canvas__footer-action--primary" @click="handleAdd(section)">
+            {{ safeText('assessmentFormBuilder.emptyStates.noQuestionsAction', 'Add Question') }}
+          </button>
+        </div>
+
+        <div v-if="(props.sectionQuestions?.[section.key] || []).length" class="builder-canvas__dropzone">
           <i class="pi pi-plus-circle" />
           <p>{{ section.hint }}</p>
         </div>
 
         <div class="builder-canvas__footer">
           <button type="button" class="builder-canvas__footer-action" @click="handleAdd(section)">
-            Add question
+            {{ safeText('assessmentFormBuilder.actions.addQuestion', 'Add question') }}
           </button>
         </div>
       </article>
@@ -144,6 +258,119 @@ function handleDragEnd() {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.builder-canvas__navigator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #fbfdff 0%, #f8fbff 100%);
+}
+
+.builder-canvas__navigator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.builder-canvas__navigator-eyebrow {
+  margin: 0 0 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.builder-canvas__navigator-header h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.builder-canvas__navigator-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.builder-canvas__navigator-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.builder-canvas__navigator-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 170px;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbeafe;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.builder-canvas__navigator-item--active {
+  border-color: #60a5fa;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.1);
+}
+
+.builder-canvas__navigator-item--empty {
+  border-style: dashed;
+}
+
+.builder-canvas__navigator-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.builder-canvas__navigator-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.builder-canvas__navigator-count-label,
+.builder-canvas__navigator-empty,
+.builder-canvas__navigator-current {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.builder-canvas__navigator-count-label {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.builder-canvas__navigator-empty {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.builder-canvas__navigator-current {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .builder-canvas__eyebrow {
@@ -174,9 +401,69 @@ function handleDragEnd() {
   cursor: pointer;
 }
 
+.builder-canvas__action--full,
+.builder-canvas__footer-action--primary {
+  justify-content: center;
+  width: 100%;
+}
+
 .builder-canvas__sections {
   display: grid;
   gap: 0.85rem;
+}
+
+.builder-canvas__empty-state {
+  display: flex;
+  justify-content: center;
+}
+
+.builder-canvas__empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1.25rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px dashed #bfdbfe;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  text-align: center;
+}
+
+.builder-canvas__empty-state-icon,
+.builder-canvas__empty-question-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #2563eb;
+  font-size: 1.15rem;
+}
+
+.builder-canvas__empty-state-copy,
+.builder-canvas__empty-question-state-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.builder-canvas__empty-state-copy h4,
+.builder-canvas__empty-question-state-copy h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.builder-canvas__empty-state-copy p,
+.builder-canvas__empty-question-state-copy p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
 }
 
 .builder-canvas__section {
@@ -256,6 +543,19 @@ function handleDragEnd() {
   padding: 1rem;
 }
 
+.builder-canvas__empty-question-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  border-radius: 0.95rem;
+  border: 1px dashed #bfdbfe;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  color: #94a3b8;
+  text-align: center;
+  padding: 1rem;
+}
+
 .builder-canvas__questions {
   display: grid;
   gap: 0.5rem;
@@ -324,8 +624,30 @@ function handleDragEnd() {
     flex-direction: column;
   }
 
+  .builder-canvas__navigator {
+    padding: 0.85rem;
+  }
+
+  .builder-canvas__navigator-list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  .builder-canvas__navigator-item {
+    min-width: 180px;
+    flex: 0 0 auto;
+  }
+
   .builder-canvas__meta {
     align-items: flex-start;
+  }
+
+  .builder-canvas__empty-state-card,
+  .builder-canvas__empty-question-state {
+    padding-inline: 0.9rem;
   }
 }
 </style>

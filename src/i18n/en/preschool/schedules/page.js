@@ -27,6 +27,7 @@ export default {
       create: 'Create schedule',
       update: 'Update schedule',
       archive: 'Archive schedule',
+      view: 'View only',
       cancel: 'Cancel',
       refresh: 'Refresh',
       back: 'Back',
@@ -45,6 +46,9 @@ export default {
       activity: 'Activity',
       apply: 'Apply filters',
       reset: 'Reset filters',
+    },
+    messages: {
+      alreadyArchived: 'This schedule has already been archived.',
     },
     form: {
       title: 'Schedule entry',

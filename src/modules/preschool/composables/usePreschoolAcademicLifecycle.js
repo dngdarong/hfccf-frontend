@@ -1,5 +1,7 @@
 import { computed, ref } from 'vue'
 import {
+  archiveAcademicTerm,
+  archiveAcademicYear,
   activateAcademicTerm,
   activateAcademicYear,
   closeAcademicTerm,
@@ -31,7 +33,7 @@ export function usePreschoolAcademicLifecycle() {
       const payload = await fetchAcademicLifecycle()
       academicYears.value = payload.academicYears || []
       terms.value = payload.terms || []
-      currentContext.value = payload.currentContext || {}
+      currentContext.value = hasContext(payload.currentContext) ? payload.currentContext : {}
 
       return payload
     } finally {
@@ -45,7 +47,7 @@ export function usePreschoolAcademicLifecycle() {
       const next = await createAcademicYear(payload)
       academicYears.value = next.academicYears || []
       terms.value = next.terms || terms.value
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -58,7 +60,7 @@ export function usePreschoolAcademicLifecycle() {
       const next = await updateAcademicYear(id, payload)
       academicYears.value = next.academicYears || []
       terms.value = next.terms || terms.value
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -71,7 +73,7 @@ export function usePreschoolAcademicLifecycle() {
       const next = await activateAcademicYear(id)
       academicYears.value = next.academicYears || []
       terms.value = next.terms || terms.value
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -84,7 +86,20 @@ export function usePreschoolAcademicLifecycle() {
       const next = await closeAcademicYear(id)
       academicYears.value = next.academicYears || []
       terms.value = next.terms || terms.value
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
+      return next
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function archiveYear(id) {
+    saving.value = true
+    try {
+      const next = await archiveAcademicYear(id)
+      academicYears.value = next.academicYears || []
+      terms.value = next.terms || terms.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -97,7 +112,7 @@ export function usePreschoolAcademicLifecycle() {
       const next = await createAcademicTerm(payload)
       academicYears.value = next.academicYears || academicYears.value
       terms.value = next.terms || []
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -110,7 +125,7 @@ export function usePreschoolAcademicLifecycle() {
       const next = await updateAcademicTerm(id, payload)
       academicYears.value = next.academicYears || academicYears.value
       terms.value = next.terms || []
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -123,7 +138,7 @@ export function usePreschoolAcademicLifecycle() {
       const next = await activateAcademicTerm(id)
       academicYears.value = next.academicYears || academicYears.value
       terms.value = next.terms || []
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -136,7 +151,20 @@ export function usePreschoolAcademicLifecycle() {
       const next = await closeAcademicTerm(id)
       academicYears.value = next.academicYears || academicYears.value
       terms.value = next.terms || []
-      currentContext.value = next.currentContext || currentContext.value
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
+      return next
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function archiveTerm(id) {
+    saving.value = true
+    try {
+      const next = await archiveAcademicTerm(id)
+      academicYears.value = next.academicYears || academicYears.value
+      terms.value = next.terms || []
+      currentContext.value = hasContext(next.currentContext) ? next.currentContext : currentContext.value
       return next
     } finally {
       saving.value = false
@@ -156,9 +184,15 @@ export function usePreschoolAcademicLifecycle() {
     updateYear,
     activateYear,
     closeYear,
+    archiveYear,
     createTerm,
     updateTerm,
     activateTerm,
     closeTerm,
+    archiveTerm,
   }
+}
+
+function hasContext(value) {
+  return Boolean(value && typeof value === 'object' && Object.keys(value).length > 0)
 }

@@ -7,11 +7,13 @@ import tasks from './tasks'
 import submissions from './submissions'
 
 export default {
-  ...common,
-  ...dashboard,
-  ...teachers,
-  ...students,
-  ...classes,
-  ...tasks,
-  ...submissions,
+  english: {
+    ...common.english,
+    ...dashboard.english,
+    ...teachers.english,
+    ...students.english,
+    ...classes.english,
+    ...tasks.english,
+    ...submissions.english,
+  },
 }

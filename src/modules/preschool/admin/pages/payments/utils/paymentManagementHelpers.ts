@@ -7,7 +7,14 @@ export function buildStatusOptions(t: any) {
   ]
 }
 
-export function buildMethodOptions(t: any) {
+export function buildMethodOptions(t: any, paymentMethods: any[] = []) {
+  if (Array.isArray(paymentMethods) && paymentMethods.length > 0) {
+    return paymentMethods.map((method) => ({
+      label: method.name || method.code || '-',
+      value: method.code || method.name || '',
+    }))
+  }
+
   return [
     { label: t('preschoolPaymentManagementPage.options.cash'), value: 'cash' },
     { label: t('preschoolPaymentManagementPage.options.mobilePayment'), value: 'mobile_payment' },

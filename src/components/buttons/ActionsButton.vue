@@ -50,6 +50,11 @@ const props = defineProps({
     default: '',
   },
 
+  resetLabel: {
+    type: String,
+    default: '',
+  },
+
   /**
    * Disable action trigger button.
    */
@@ -75,12 +80,18 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+
+  showReset: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits([
   'view',
   'edit',
   'delete',
+  'reset',
   'action',
 ])
 
@@ -103,6 +114,7 @@ const labels = computed(() => ({
   view: props.viewLabel || t('common.view'),
   edit: props.editLabel || t('common.edit'),
   delete: props.deleteLabel || t('common.delete'),
+  reset: props.resetLabel || t('common.reset'),
 }))
 
 /**
@@ -136,6 +148,15 @@ const menuItems = computed(() => {
       label: labels.value.edit,
       icon: 'pi pi-pencil',
       command: () => onAction('edit'),
+    })
+  }
+
+  if (props.showReset) {
+    items.push({
+      label: labels.value.reset,
+      icon: 'pi pi-refresh',
+      class: 'actions-button-menu__reset',
+      command: () => onAction('reset'),
     })
   }
 
@@ -276,6 +297,15 @@ function toggleMenu(event) {
 :deep(.actions-button-menu__danger .p-menu-item-content:hover .p-menu-item-link),
 :deep(.actions-button-menu__danger .p-menu-item-content:hover .p-menu-item-icon) {
   color: #be123c !important;
+}
+
+:deep(.actions-button-menu__reset .p-menu-item-content:hover) {
+  background: #ecfeff !important;
+}
+
+:deep(.actions-button-menu__reset .p-menu-item-content:hover .p-menu-item-link),
+:deep(.actions-button-menu__reset .p-menu-item-content:hover .p-menu-item-icon) {
+  color: #0e7490 !important;
 }
 
 @media (max-width: 640px) {

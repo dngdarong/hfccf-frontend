@@ -51,6 +51,7 @@ export default {
     classes: 'ថ្នាក់',
     addClass: 'បន្ថែមថ្នាក់',
     payment: 'ការទូទាត់',
+    invoiceDetail: 'ព័ត៌មានលម្អិតវិក្កយបត្រ',
     attendance: 'វត្តមាន',
     attendanceStudents: 'វត្តមានសិស្ស',
     attendanceTeachers: 'វត្តមានគ្រូ',

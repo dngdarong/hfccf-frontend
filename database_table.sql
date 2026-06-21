@@ -389,6 +389,71 @@ CREATE TABLE `preschool_attendance_records` (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `preschool_attendance_settings` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `late_threshold_minutes` INT UNSIGNED NOT NULL DEFAULT 15,
+  `half_day_threshold_minutes` INT UNSIGNED NOT NULL DEFAULT 180,
+  `absence_alert_days` INT UNSIGNED NOT NULL DEFAULT 3,
+  `guardian_alert_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `teacher_alert_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `admin_alert_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `monday_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `tuesday_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `wednesday_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `thursday_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `friday_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `saturday_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+  `sunday_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_by` VARCHAR(16) DEFAULT NULL,
+  `updated_by` VARCHAR(16) DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `preschool_attendance_settings_created_by_index` (`created_by`),
+  KEY `preschool_attendance_settings_updated_by_index` (`updated_by`),
+  CONSTRAINT `fk_preschool_attendance_settings_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_preschool_attendance_settings_updated_by`
+    FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `preschool_school_calendar_events` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_year_id` VARCHAR(32) NOT NULL,
+  `title` VARCHAR(150) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `type` ENUM('holiday', 'closure', 'teacher_training', 'examination', 'special_event') NOT NULL DEFAULT 'holiday',
+  `start_date` DATE NOT NULL,
+  `end_date` DATE NOT NULL,
+  `status` ENUM('active', 'archived') NOT NULL DEFAULT 'active',
+  `created_by` VARCHAR(16) DEFAULT NULL,
+  `updated_by` VARCHAR(16) DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `preschool_school_calendar_events_academic_year_index` (`academic_year_id`),
+  KEY `preschool_school_calendar_events_type_index` (`type`),
+  KEY `preschool_school_calendar_events_status_index` (`status`),
+  KEY `preschool_school_calendar_events_start_date_index` (`start_date`),
+  KEY `preschool_school_calendar_events_end_date_index` (`end_date`),
+  KEY `preschool_school_calendar_events_created_by_index` (`created_by`),
+  KEY `preschool_school_calendar_events_updated_by_index` (`updated_by`),
+  KEY `preschool_school_calendar_events_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `fk_preschool_school_calendar_events_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_preschool_school_calendar_events_updated_by`
+    FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `preschool_payments` (
   `id` VARCHAR(32) NOT NULL,
   `student_id` VARCHAR(32) DEFAULT NULL,

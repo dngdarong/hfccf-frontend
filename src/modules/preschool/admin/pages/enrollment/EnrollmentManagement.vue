@@ -3,6 +3,9 @@ import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Toast from 'primevue/toast'
+import MainLayout from '@/layouts/MainLayout.vue'
+import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import Button from '@/components/buttons/Button.vue'
 
 import EnrollmentSummaryCards from '@/modules/preschool/admin/components/enrollment/EnrollmentSummaryCards.vue'
 import EnrollmentFilterBar from '@/modules/preschool/admin/components/enrollment/EnrollmentFilterBar.vue'
@@ -272,100 +275,122 @@ async function handleDocumentUpdate({ documentId, payload }) {
 function clearFilters() {
   filters.value = resetFilters()
 }
+
+function refreshData() {
+  loadSummary()
+  loadList()
+}
 </script>
 
 <template>
-  <div class="enr-page">
+  <MainLayout>
     <Toast />
 
-    <!-- Header -->
-    <header class="enr-page__header">
-      <div>
-        <h1 class="enr-page__title">{{ t('preschoolEnrollmentPage.title') }}</h1>
-        <p class="enr-page__subtitle">{{ t('preschoolEnrollmentPage.subtitle') }}</p>
-      </div>
-      <button v-if="canManage" class="enr-page__new-btn" @click="openNew">
-        <i class="pi pi-plus" />
-        {{ t('preschoolEnrollmentPage.actions.newApplication') }}
-      </button>
-    </header>
+    <section class="preschool-enrollment-page">
+      <HeaderSection
+        :title="t('preschoolEnrollmentPage.title')"
+        :subtitle="t('preschoolEnrollmentPage.subtitle')"
+      />
 
-    <div class="enr-page__layout">
-      <div class="enr-page__main">
-        <!-- Summary Cards -->
-        <EnrollmentSummaryCards :summary="summary" :loading="loadingSummary" />
-
-        <!-- Filters -->
-        <EnrollmentFilterBar
-          v-model="filters"
-          :academic-years="academicYears"
-          @clear="clearFilters"
-        />
-
-        <!-- Table -->
-        <EnrollmentApplicationTable
-          :applications="applications"
-          :loading="loadingList"
-          :can-manage="canManage"
-          @view="openView"
-          @edit="openEdit"
-          @action="onTableAction"
-        />
-      </div>
-
-      <!-- Right Sidebar -->
-      <aside class="enr-page__sidebar">
-        <div class="enr-sidebar-card">
-          <h3 class="enr-sidebar-card__title">{{ t('preschoolEnrollmentPage.sidebar.title') || 'Enrollment Status' }}</h3>
-          <div class="enr-sidebar-card__content">
-            <div class="enr-sidebar-stat">
-              <span class="enr-sidebar-stat__label">Total Applications</span>
-              <span class="enr-sidebar-stat__value">{{ summary.total || 0 }}</span>
-            </div>
-            <div class="enr-sidebar-stat">
-              <span class="enr-sidebar-stat__label">Pending Review</span>
-              <span class="enr-sidebar-stat__value enr-sidebar-stat__value--warning">{{ summary.pending || 0 }}</span>
-            </div>
-            <div class="enr-sidebar-stat">
-              <span class="enr-sidebar-stat__label">Approved</span>
-              <span class="enr-sidebar-stat__value enr-sidebar-stat__value--success">{{ summary.approved || 0 }}</span>
-            </div>
-            <div class="enr-sidebar-stat">
-              <span class="enr-sidebar-stat__label">Enrolled</span>
-              <span class="enr-sidebar-stat__value enr-sidebar-stat__value--info">{{ summary.enrolled || 0 }}</span>
-            </div>
-            <div class="enr-sidebar-stat">
-              <span class="enr-sidebar-stat__label">Rejected</span>
-              <span class="enr-sidebar-stat__value enr-sidebar-stat__value--danger">{{ summary.rejected || 0 }}</span>
-            </div>
-          </div>
+      <div class="preschool-enrollment-page__toolbar">
+        <div class="preschool-enrollment-page__toolbar-meta">
+          <p class="preschool-enrollment-page__toolbar-eyebrow">
+            {{ t('preschoolEnrollmentPage.cards.total') }}
+          </p>
+          <p class="preschool-enrollment-page__toolbar-count">
+            {{ summary.total || 0 }}
+          </p>
         </div>
 
-        <div class="enr-sidebar-card">
-          <h3 class="enr-sidebar-card__title">{{ t('preschoolEnrollmentPage.sidebar.checklist') || 'Quick Actions' }}</h3>
-          <div class="enr-sidebar-card__content">
-            <div class="enr-sidebar-action">
-              <i class="pi pi-plus-circle" />
-              <button @click="openNew" class="enr-sidebar-action__btn">
-                New Application
-              </button>
-            </div>
-            <div class="enr-sidebar-action">
-              <i class="pi pi-filter" />
-              <button @click="clearFilters" class="enr-sidebar-action__btn">
-                Clear Filters
-              </button>
-            </div>
-            <div class="enr-sidebar-action">
-              <i class="pi pi-refresh" />
-              <button @click="() => { loadSummary(); loadList() }" class="enr-sidebar-action__btn">
-                Refresh Data
-              </button>
+        <Button
+          v-if="canManage"
+          type="button"
+          variant="primary"
+          size="lg"
+          rounded="xl"
+          class="preschool-enrollment-page__toolbar-action"
+          @click="openNew"
+        >
+          <template #iconLeft>
+            <i class="pi pi-plus" aria-hidden="true" />
+          </template>
+          {{ t('preschoolEnrollmentPage.actions.newApplication') }}
+        </Button>
+      </div>
+
+      <div class="preschool-enrollment-page__layout">
+        <div class="preschool-enrollment-page__main">
+          <EnrollmentSummaryCards :summary="summary" :loading="loadingSummary" />
+
+          <EnrollmentFilterBar
+            v-model="filters"
+            :academic-years="academicYears"
+            @clear="clearFilters"
+          />
+
+          <EnrollmentApplicationTable
+            :applications="applications"
+            :loading="loadingList"
+            :can-manage="canManage"
+            @view="openView"
+            @edit="openEdit"
+            @action="onTableAction"
+          />
+        </div>
+
+        <aside class="preschool-enrollment-page__sidebar">
+          <div class="enr-sidebar-card">
+            <h3 class="enr-sidebar-card__title">{{ t('preschoolEnrollmentPage.sidebar.title') }}</h3>
+            <div class="enr-sidebar-card__content">
+              <div class="enr-sidebar-stat">
+                <span class="enr-sidebar-stat__label">{{ t('preschoolEnrollmentPage.cards.total') }}</span>
+                <span class="enr-sidebar-stat__value">{{ summary.total || 0 }}</span>
+              </div>
+              <div class="enr-sidebar-stat">
+                <span class="enr-sidebar-stat__label">{{ t('preschoolEnrollmentPage.cards.underReview') }}</span>
+                <span class="enr-sidebar-stat__value enr-sidebar-stat__value--warning">{{ summary.pending || 0 }}</span>
+              </div>
+              <div class="enr-sidebar-stat">
+                <span class="enr-sidebar-stat__label">{{ t('preschoolEnrollmentPage.cards.approved') }}</span>
+                <span class="enr-sidebar-stat__value enr-sidebar-stat__value--success">{{ summary.approved || 0 }}</span>
+              </div>
+              <div class="enr-sidebar-stat">
+                <span class="enr-sidebar-stat__label">{{ t('preschoolEnrollmentPage.cards.enrolled') }}</span>
+                <span class="enr-sidebar-stat__value enr-sidebar-stat__value--info">{{ summary.enrolled || 0 }}</span>
+              </div>
+              <div class="enr-sidebar-stat">
+                <span class="enr-sidebar-stat__label">{{ t('preschoolEnrollmentPage.cards.rejected') }}</span>
+                <span class="enr-sidebar-stat__value enr-sidebar-stat__value--danger">{{ summary.rejected || 0 }}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </aside>
-    </div>
+
+          <div class="enr-sidebar-card">
+            <h3 class="enr-sidebar-card__title">{{ t('preschoolEnrollmentPage.sidebar.checklist') }}</h3>
+            <div class="enr-sidebar-card__content">
+              <div class="enr-sidebar-action">
+                <i class="pi pi-plus-circle" aria-hidden="true" />
+                <button type="button" class="enr-sidebar-action__btn" @click="openNew">
+                  {{ t('preschoolEnrollmentPage.actions.newApplication') }}
+                </button>
+              </div>
+              <div class="enr-sidebar-action">
+                <i class="pi pi-filter" aria-hidden="true" />
+                <button type="button" class="enr-sidebar-action__btn" @click="clearFilters">
+                  {{ t('preschoolEnrollmentPage.filters.clearFilters') }}
+                </button>
+              </div>
+              <div class="enr-sidebar-action">
+                <i class="pi pi-refresh" aria-hidden="true" />
+                <button type="button" class="enr-sidebar-action__btn" @click="refreshData">
+                  {{ t('common.refresh') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
 
     <!-- Detail side panel -->
     <Teleport to="body">
@@ -390,7 +415,7 @@ function clearFilters() {
           </div>
 
           <div v-if="loadingDetail" class="enr-detail-panel__loading">
-            <i class="pi pi-spin pi-spinner" /> Loading…
+            <i class="pi pi-spin pi-spinner" /> {{ t('common.loading') }}
           </div>
 
           <div v-else-if="selected" class="enr-detail-panel__body">
@@ -484,10 +509,68 @@ function clearFilters() {
       :loading="decisionLoading"
       @confirm="confirmDecision"
     />
-  </div>
+  </MainLayout>
 </template>
 
 <style scoped>
+.preschool-enrollment-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.preschool-enrollment-page__toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.preschool-enrollment-page__toolbar-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.preschool-enrollment-page__toolbar-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.preschool-enrollment-page__toolbar-count {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.preschool-enrollment-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.95fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.preschool-enrollment-page__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.preschool-enrollment-page__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 1rem;
+}
+
 .enr-page {
   padding: 1.5rem;
   display: flex;
@@ -518,23 +601,21 @@ function clearFilters() {
   color: #64748b;
 }
 
-.enr-page__new-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
-  background: #6366f1;
-  color: #fff;
-  border: none;
-  border-radius: 0.65rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
+.preschool-enrollment-page__toolbar-action {
+  min-width: 15rem;
+  justify-content: space-between;
+  padding-inline: 0.95rem 1rem;
+  box-shadow: 0 20px 36px -24px rgba(99, 102, 241, 0.58);
 }
 
-.enr-page__new-btn:hover { background: #4f46e5; }
+.preschool-enrollment-page__toolbar-action :deep(.p-button-label) {
+  width: 100%;
+}
+
+.preschool-enrollment-page__toolbar-action :deep(.p-button-icon) {
+  margin-right: 0.75rem;
+  font-size: 0.95rem;
+}
 
 /* Detail side panel */
 .enr-detail-overlay {
@@ -672,23 +753,23 @@ function clearFilters() {
 
 .enr-sidebar-card {
   background: #fff;
-  border-radius: 0.75rem;
+  border-radius: 1.125rem;
   border: 1px solid #e2e8f0;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 32px -24px rgba(15, 23, 42, 0.28);
 }
 
 .enr-sidebar-card__title {
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.15rem;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #1e293b;
   border-bottom: 1px solid #e2e8f0;
   margin: 0;
 }
 
 .enr-sidebar-card__content {
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.15rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -700,7 +781,7 @@ function clearFilters() {
   align-items: center;
   padding: 0.75rem;
   background: #f8fafc;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   border-left: 3px solid #e2e8f0;
 }
 
@@ -726,7 +807,7 @@ function clearFilters() {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   border: 1px solid #e2e8f0;
   transition: all 0.2s;
 }
@@ -759,10 +840,12 @@ function clearFilters() {
 }
 
 @media (max-width: 1200px) {
+  .preschool-enrollment-page__layout,
   .enr-page__layout {
     grid-template-columns: 1fr;
   }
 
+  .preschool-enrollment-page__sidebar,
   .enr-page__sidebar {
     grid-column: 1;
     position: static;
@@ -777,6 +860,12 @@ function clearFilters() {
 }
 
 @media (max-width: 768px) {
+  .preschool-enrollment-page__toolbar-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .preschool-enrollment-page__sidebar,
   .enr-page__sidebar {
     flex-direction: column;
   }

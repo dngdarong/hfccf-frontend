@@ -217,7 +217,7 @@ async function onSubmit() {
 
   isSubmitting.value = true
   try {
-    const payload = getFormPayload(form)
+    const payload = getFormPayload(form, isAddMode.value)
 
     if (isEditMode.value && route.query.id) {
       await updateSportCoach(route.query.id, payload)
@@ -288,6 +288,7 @@ onMounted(async () => {
             :role-options="roleOptions"
             :status-options="statusOptions"
             :permissions="form.permissions"
+            :show-password-fields="isAddMode"
             :name="form.name"
             :email="form.email"
             :phone="form.phone"

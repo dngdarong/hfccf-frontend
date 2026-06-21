@@ -395,6 +395,10 @@ export function getCurrentPermissions(user = getCurrentUser()) {
   return []
 }
 
+export function requiresPasswordChange(user = getCurrentUser()) {
+  return Boolean(user?.mustChangePassword)
+}
+
 export function hasPermission(permission, user = getCurrentUser()) {
   const permissions = getCurrentPermissions(user)
 

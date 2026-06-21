@@ -7,6 +7,10 @@ import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { fetchPreschoolDashboard, fetchPreschoolStudents } from '@/modules/preschool/services/preschoolApi'
 import {
+  fetchSeverityLevels,
+  normalizeSeverityLevel,
+} from '@/modules/preschool/services/api/preschoolHealthConfigurationApi'
+import {
   acknowledgeHealthAlert,
   assignHealthAlert,
   closeHealthAlert,
@@ -56,8 +60,24 @@ const loading = ref(false)
 const summaryLoading = ref(false)
 const errorMessage = ref('')
 const alertActionMessage = ref('')
+const severityLevels = ref([])
 
 const selectedStudent = computed(() => students.value.find((student) => String(student.id) === String(selectedStudentId.value)) || null)
+const severityOptions = computed(() => {
+  const configuredLevels = severityLevels.value.length
+    ? severityLevels.value
+    : [
+        { code: 'critical', name: t('preschoolHealthPage.severity.critical') },
+        { code: 'high', name: t('preschoolHealthPage.severity.high') },
+        { code: 'medium', name: t('preschoolHealthPage.severity.medium') },
+        { code: 'low', name: t('preschoolHealthPage.severity.low') },
+      ]
+
+  return configuredLevels.map((level) => ({
+    label: level.name || level.code || '-',
+    value: level.code || '',
+  }))
+})
 
 const summaryCards = computed(() => [
   {
@@ -147,13 +167,15 @@ const studentRows = computed(() => students.value.map((student) => ({
 
 async function loadDashboard() {
   try {
-    const [dashboardPayload, healthPayload] = await Promise.all([
+    const [dashboardPayload, healthPayload, severityPayload] = await Promise.all([
       fetchPreschoolDashboard(),
       fetchHealthDashboardSummary(alertFilters.value),
+      fetchSeverityLevels().catch(() => []),
     ])
 
     dashboard.value = dashboardPayload
     healthAlerts.value = healthPayload
+    severityLevels.value = Array.isArray(severityPayload) ? severityPayload.map(normalizeSeverityLevel) : []
   } catch (error) {
     errorMessage.value = error?.message || t('preschoolHealthPage.messages.loadFailed')
   }
@@ -203,6 +225,17 @@ async function loadSelectedStudentSummary() {
 
 async function refreshHealthAlerts() {
   await loadDashboard()
+}
+
+function severityLabel(code) {
+  const normalizedCode = String(code || 'high').trim()
+  const match = severityLevels.value.find((level) => String(level.code || '').trim() === normalizedCode)
+
+  if (match?.name) {
+    return match.name
+  }
+
+  return t(`preschoolHealthPage.severity.${normalizedCode}`) || normalizedCode
 }
 
 async function acknowledgeAlert(alert) {
@@ -275,6 +308,12 @@ function openStudentProfile(studentId) {
   router.push({ name: 'dashboard-preschool-admin-health-student', params: { id } })
 }
 
+function openStudentCommunications(studentId) {
+  const id = String(studentId || '').trim()
+  if (!id) return
+  router.push({ name: 'dashboard-preschool-admin-guardian-communications', query: { studentId: id } })
+}
+
 watch(search, () => {
   loadStudents()
 })
@@ -320,6 +359,15 @@ onMounted(async () => {
           :disabled="!selectedStudentId"
           @click="openStudentProfile(selectedStudentId)"
         />
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          rounded="xl"
+          :label="t('preschoolGuardianCommunicationPage.title')"
+          :disabled="!selectedStudentId"
+          @click="openStudentCommunications(selectedStudentId)"
+        />
       </div>
 
       <div class="health-dashboard-page__grid">
@@ -355,10 +403,9 @@ onMounted(async () => {
             </select>
             <select v-model="alertFilters.severity" class="health-dashboard-page__filter">
               <option value="all">{{ t('preschoolHealthPage.alerts.filterSeverityLabel') }}</option>
-              <option value="critical">{{ t('preschoolHealthPage.severity.critical') }}</option>
-              <option value="high">{{ t('preschoolHealthPage.severity.high') }}</option>
-              <option value="medium">{{ t('preschoolHealthPage.severity.medium') }}</option>
-              <option value="low">{{ t('preschoolHealthPage.severity.low') }}</option>
+              <option v-for="option in severityOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
             <select v-model="alertFilters.assigned_to" class="health-dashboard-page__filter">
               <option value="all">{{ t('preschoolHealthPage.alerts.filterAssigneeLabel') }}</option>
@@ -393,7 +440,7 @@ onMounted(async () => {
               </div>
               <div class="health-dashboard-page__alert-workflow-badges">
                 <span class="health-dashboard-page__alert-badge" :data-severity="alert.severity || 'high'">
-                  {{ t(`preschoolHealthPage.severity.${alert.severity || 'high'}`) }}
+                  {{ severityLabel(alert.severity || 'high') }}
                 </span>
                 <span class="health-dashboard-page__alert-badge" :data-status="alert.status || 'new'">
                   {{ t(`preschoolHealthPage.alertStatuses.${alert.status || 'new'}`) }}
@@ -489,15 +536,26 @@ onMounted(async () => {
                 {{ selectedStudent?.fullName || t('preschoolHealthPage.dashboard.noStudentSelected') }}
               </h3>
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              rounded="xl"
-              :label="t('preschoolHealthPage.dashboard.viewProfile')"
-              :disabled="!selectedStudentId"
-              @click="openStudentProfile(selectedStudentId)"
-            />
+            <div class="health-dashboard-page__summary-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                rounded="xl"
+                :label="t('preschoolHealthPage.dashboard.viewProfile')"
+                :disabled="!selectedStudentId"
+                @click="openStudentProfile(selectedStudentId)"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                rounded="xl"
+                :label="t('preschoolGuardianCommunicationPage.title')"
+                :disabled="!selectedStudentId"
+                @click="openStudentCommunications(selectedStudentId)"
+              />
+            </div>
           </div>
 
           <div v-if="summaryLoading" class="health-dashboard-page__state">
@@ -527,7 +585,7 @@ onMounted(async () => {
                     </p>
                   </div>
                   <span class="health-dashboard-page__alert-badge" :data-severity="item.severity || 'high'">
-                    {{ t(`preschoolHealthPage.severity.${item.severity || 'high'}`) }}
+                    {{ severityLabel(item.severity || 'high') }}
                   </span>
                 </article>
               </div>
@@ -785,6 +843,13 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 0.9rem;
+}
+
+.health-dashboard-page__summary-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .health-dashboard-page__search {

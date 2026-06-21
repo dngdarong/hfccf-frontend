@@ -70,6 +70,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  showPasswordFields: {
+    type: Boolean,
+    default: true,
+  },
   roleLabel: {
     type: Function,
     required: true,
@@ -144,6 +148,7 @@ const { t } = useLanguage()
     />
 
     <AddAdminPasswordFields
+      v-if="showPasswordFields"
       class="add-teacher-form-fields__field add-teacher-form-fields__field--full"
       :password="password"
       :confirm-password="confirmPassword"

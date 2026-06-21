@@ -1,3 +1,5 @@
+import { defineAppRoute } from '@/router/defineAppRoute'
+
 export const authRoutes = [
   {
     path: '/login',
@@ -11,5 +13,12 @@ export const authRoutes = [
     component: () => import('@/modules/auth/pages/ForgotPassword.vue'),
     meta: { guestOnly: true },
   },
+  defineAppRoute({
+    path: '/change-password',
+    name: 'force-password-change',
+    component: () => import('@/modules/auth/pages/ForcePasswordChange.vue'),
+    access: {
+      requiresAuth: true,
+    },
+  }),
 ]
-

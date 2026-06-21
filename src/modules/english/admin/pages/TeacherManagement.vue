@@ -1,20 +1,27 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
+import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
 import UsersTable from '@/components/data-display/Table.vue'
+import TableActions from '@/components/data-display/components/TableActions.vue'
 import Button from '@/components/buttons/Button.vue'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import { useLanguage } from '@/composables/useLanguage'
+import { useUserStore } from '@/store/userStore'
+import { ROLES, isSuperAdminRole } from '@/constants/roles'
 import {
   createEnglishTeacher,
   deleteEnglishTeacher,
   fetchEnglishTeachers,
+  resetEnglishTeacherPassword,
   updateEnglishTeacher,
 } from '@/modules/english/services/englishApi'
+import ResetTeacherPasswordDialog from '@/modules/english/admin/components/teacher-management/ResetTeacherPasswordDialog.vue'
 
 defineOptions({
   name: 'EnglishTeacherManagementPage',
@@ -35,6 +42,12 @@ const showSuccess = ref(false)
 const successMessage = ref('')
 const deleteTarget = ref(null)
 const deleteOpen = ref(false)
+const resetTarget = ref(null)
+const resetOpen = ref(false)
+const resetLoading = ref(false)
+const resetBackendError = ref('')
+const toast = useToast()
+const userStore = useUserStore()
 const { t, te } = useLanguage()
 
 const form = reactive({
@@ -66,6 +79,12 @@ const statusOptions = computed(() => [
   { value: 'inactive', label: t('english.common.status.inactive') },
   { value: 'suspended', label: t('english.common.status.suspended') },
 ])
+
+const currentUser = computed(() => userStore.currentUser || {})
+const currentUserRole = computed(() => String(currentUser.value?.role || '').trim().toLowerCase())
+const canManageTeacherResets = computed(() =>
+  isSuperAdminRole(currentUser.value?.role) || currentUserRole.value === ROLES.ADMIN_ENGLISH,
+)
 
 const tableColumns = computed(() => [
   { key: 'number', label: t('english.teachers.table.number'), align: 'left' },
@@ -122,6 +141,13 @@ function openEditModal(teacher, mode = 'edit') {
   })
   deleteTarget.value = teacher || null
   modalOpen.value = true
+}
+
+function canResetTeacher(teacher) {
+  return (
+    canManageTeacherResets.value &&
+    String(teacher?.role || '').trim().toLowerCase() === ROLES.TEACHER_ENGLISH
+  )
 }
 
 function closeModal() {
@@ -203,6 +229,14 @@ function onDeleteTeacher(teacher) {
   deleteOpen.value = true
 }
 
+function onResetTeacher(teacher) {
+  if (!canResetTeacher(teacher)) return
+
+  resetTarget.value = teacher || null
+  resetBackendError.value = ''
+  resetOpen.value = true
+}
+
 async function confirmDelete() {
   const id = String(deleteTarget.value?.id || '').trim()
   if (!id) return
@@ -216,6 +250,35 @@ async function confirmDelete() {
     await loadTeachers()
   } catch (error) {
     errorMessage.value = error?.message || t('english.teachers.errorDelete')
+  }
+}
+
+function closeResetDialog() {
+  resetOpen.value = false
+  resetTarget.value = null
+  resetBackendError.value = ''
+}
+
+async function confirmReset(payload) {
+  const id = String(resetTarget.value?.id || '').trim()
+  if (!id) return
+
+  resetLoading.value = true
+  resetBackendError.value = ''
+
+  try {
+    await resetEnglishTeacherPassword(id, payload)
+    toast.add({
+      severity: 'success',
+      summary: t('english.teachers.passwordResetSuccess'),
+      life: 3000,
+    })
+    closeResetDialog()
+    await loadTeachers()
+  } catch (error) {
+    resetBackendError.value = error?.message || t('english.teachers.errorSave')
+  } finally {
+    resetLoading.value = false
   }
 }
 
@@ -263,6 +326,7 @@ onMounted(() => {
 
 <template>
   <MainLayout>
+    <Toast />
     <section class="english-teachers-page">
       <HeaderSection
         :title="pageTitle"
@@ -296,10 +360,21 @@ onMounted(() => {
           :columns="tableColumns"
           :loading="loading"
           :empty-text="emptyText"
-          @view="onViewTeacher"
-          @edit="onEditTeacher"
-          @delete="onDeleteTeacher"
-        />
+        >
+          <template #actions="{ data }">
+            <TableActions
+              :item="data"
+              :show-view-action="true"
+              :show-edit-action="true"
+              :show-delete-action="true"
+              :show-reset-action="canResetTeacher(data)"
+              @view="onViewTeacher"
+              @edit="onEditTeacher"
+              @delete="onDeleteTeacher"
+              @reset="onResetTeacher"
+            />
+          </template>
+        </UsersTable>
 
         <div v-if="pagination.totalPages > 1" class="flex justify-end">
           <Pagination v-model="currentPage" :total-pages="pagination.totalPages" class="mt-2" />
@@ -323,14 +398,14 @@ onMounted(() => {
           <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
         <input
-          v-if="modalMode !== 'view'"
+          v-if="modalMode === 'create'"
           v-model="form.password"
           class="english-teachers-page__input english-teachers-page__dialog-full"
           type="password"
           :placeholder="passwordPlaceholder"
         />
         <input
-          v-if="modalMode !== 'view'"
+          v-if="modalMode === 'create'"
           v-model="form.password_confirmation"
           class="english-teachers-page__input english-teachers-page__dialog-full"
           type="password"
@@ -363,6 +438,14 @@ onMounted(() => {
       :message="successMessage"
       :button-text="successButtonText"
       @close="showSuccess = false"
+    />
+
+    <ResetTeacherPasswordDialog
+      v-model:visible="resetOpen"
+      :loading="resetLoading"
+      :backend-error="resetBackendError"
+      @confirm="confirmReset"
+      @cancel="closeResetDialog"
     />
   </MainLayout>
 </template>

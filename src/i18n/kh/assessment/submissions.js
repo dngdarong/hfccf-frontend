@@ -20,6 +20,7 @@ export default {
       archived: 'បានទុក',
     },
     actions: {
+      back: 'ត្រឡប់ក្រោយ',
       view: 'មើល',
       edit: 'កែសម្រួល',
       submit: 'ដាក់ស្នើ',

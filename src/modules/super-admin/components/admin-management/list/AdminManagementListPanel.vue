@@ -64,6 +64,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  showResetAction: {
+    type: Boolean,
+    default: false,
+  },
   loadingLabel: {
     type: String,
     default: '',
@@ -77,6 +81,7 @@ const emit = defineEmits([
   'view',
   'edit',
   'delete',
+  'reset',
   'refresh',
   'clear',
   'sort',
@@ -126,10 +131,12 @@ const emit = defineEmits([
           :sort-order="sortOrder"
           :server-side="serverSide"
           :empty-text="emptyText"
+          :show-reset-action="showResetAction"
           @sort="emit('sort', $event)"
           @view="emit('view', $event)"
           @edit="emit('edit', $event)"
           @delete="emit('delete', $event)"
+          @reset="emit('reset', $event)"
         />
       </template>
     </div>

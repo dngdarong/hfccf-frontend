@@ -3,6 +3,7 @@ import classes from './classes'
 import students from './students'
 import payments from './payments'
 import health from './health'
+import communications from './communications'
 import scaffold from './scaffold'
 import attendance from './attendance'
 import adminDashboard from './admin-dashboard'
@@ -23,6 +24,7 @@ import governance from './governance'
 import governanceDiff from './governance-diff'
 import governanceCases from './governance-cases'
 import enrollment from './enrollment'
+import reviewWorkflow from './review-workflow'
 
 export default {
   // Keep Preschool copy split by concern so real pages can resolve stable keys
@@ -32,6 +34,7 @@ export default {
   ...students,
   ...payments,
   ...health,
+  ...communications,
   ...scaffold,
   ...attendance,
   ...adminDashboard,
@@ -52,4 +55,5 @@ export default {
   ...governanceDiff,
   ...governanceCases,
   ...enrollment,
+  ...reviewWorkflow,
 }

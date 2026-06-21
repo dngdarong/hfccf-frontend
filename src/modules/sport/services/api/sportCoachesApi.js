@@ -58,3 +58,17 @@ export async function deleteSportCoach(id) {
   await http.delete(`/sport/coaches/${encodeURIComponent(coachId)}`)
   return true
 }
+
+export async function resetSportCoachPassword(id, payload = {}) {
+  const coachId = resolveId(id)
+  if (!coachId) throw new Error('Coach id is required.')
+
+  const response = await http.post(`/users/${encodeURIComponent(coachId)}/reset-password`, {
+    password: payload.password || '',
+    password_confirmation: payload.password_confirmation || payload.confirmPassword || payload.password || '',
+    reason: payload.reason || '',
+  })
+
+  const data = unwrapApiData(response) || {}
+  return normalizeCoachRow(data.coach || data.user || data)
+}

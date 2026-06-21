@@ -20,6 +20,7 @@ export default {
       archived: 'Archived',
     },
     actions: {
+      back: 'Back',
       view: 'View',
       edit: 'Edit',
       submit: 'Submit',

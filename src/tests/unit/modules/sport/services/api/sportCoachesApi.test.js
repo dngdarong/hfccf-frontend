@@ -5,6 +5,7 @@ import {
   createSportCoach,
   updateSportCoach,
   deleteSportCoach,
+  resetSportCoachPassword,
 } from '@/modules/sport/services/api/sportCoachesApi'
 
 const mockHttpGet = vi.fn()
@@ -223,6 +224,35 @@ describe('sportCoachesApi', () => {
       await deleteSportCoach('coach with spaces')
 
       expect(mockHttpDelete).toHaveBeenCalled()
+    })
+  })
+
+  describe('resetSportCoachPassword', () => {
+    it('posts the dedicated password reset payload', async () => {
+      mockHttpPost.mockResolvedValueOnce({
+        data: { user: { id: 'coach-1', name: 'Coach One' } },
+      })
+
+      const result = await resetSportCoachPassword('coach-1', {
+        password: 'coach-pass',
+        password_confirmation: 'coach-pass',
+        reason: 'Audit rotation',
+      })
+
+      expect(mockHttpPost).toHaveBeenCalledWith(
+        '/users/coach-1/reset-password',
+        {
+          password: 'coach-pass',
+          password_confirmation: 'coach-pass',
+          reason: 'Audit rotation',
+        },
+      )
+      expect(result.id).toBe('coach-1')
+    })
+
+    it('throws when coach id is missing', async () => {
+      await expect(resetSportCoachPassword('', {})).rejects.toThrow('Coach id is required.')
+      expect(mockHttpPost).not.toHaveBeenCalled()
     })
   })
 })

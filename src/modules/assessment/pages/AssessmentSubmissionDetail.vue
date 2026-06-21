@@ -177,7 +177,7 @@ watch(selectedPrintTemplateId, () => {
       <HeaderSection :title="t('submissions.title')">
         <template #actions>
           <Button
-            :label="t('common.back')"
+            :label="t('submissions.actions.back')"
             icon="pi pi-arrow-left"
             severity="secondary"
             @click="router.back()"
