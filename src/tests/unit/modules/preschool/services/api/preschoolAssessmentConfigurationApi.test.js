@@ -84,11 +84,13 @@ describe('preschool assessment configuration api', () => {
     })
 
     expect(normalizeReportPeriod({
+      period_type: 'monthly',
       academic_year_id: 9,
       term_id: 3,
       name: 'Term 1',
       is_active: true,
     })).toMatchObject({
+      periodType: 'monthly',
       academicYearId: 9,
       termId: 3,
       name: 'Term 1',
@@ -224,34 +226,37 @@ describe('preschool assessment configuration api', () => {
   it('handles report period CRUD and weight updates', async () => {
     http.get.mockResolvedValueOnce(stubResponse({
       items: [
-        { id: 1, academic_year_id: 3, term_id: 2, name: 'Term 1', is_active: true },
+        { id: 1, period_type: 'term', academic_year_id: 3, term_id: 2, name: 'Term 1', is_active: true },
       ],
     }))
     await expect(fetchReportPeriods()).resolves.toMatchObject({
-      items: [{ academicYearId: 3, termId: 2, name: 'Term 1', isActive: true }],
+      items: [{ periodType: 'term', academicYearId: 3, termId: 2, name: 'Term 1', isActive: true }],
     })
 
     http.post.mockResolvedValueOnce(stubResponse({
-      reportPeriod: { id: 2, academic_year_id: 3, term_id: 2, name: 'Term 2', is_active: true },
+      reportPeriod: { id: 2, period_type: 'annual', academic_year_id: 3, term_id: 2, name: 'Term 2', is_active: true },
     }))
-    await expect(createReportPeriod({ academicYearId: 3, termId: 2, name: 'Term 2' })).resolves.toMatchObject({
+    await expect(createReportPeriod({ periodType: 'annual', academicYearId: 3, termId: 2, name: 'Term 2' })).resolves.toMatchObject({
       id: 2,
+      periodType: 'annual',
       name: 'Term 2',
     })
 
     http.put.mockResolvedValueOnce(stubResponse({
-      period: { id: 2, academic_year_id: 3, term_id: 2, name: 'Term 2 Updated', is_active: true },
+      period: { id: 2, period_type: 'monthly', academic_year_id: 3, term_id: 2, name: 'Term 2 Updated', is_active: true },
     }))
-    await expect(updateReportPeriod(2, { academicYearId: 3, termId: 2, name: 'Term 2 Updated' })).resolves.toMatchObject({
+    await expect(updateReportPeriod(2, { periodType: 'monthly', academicYearId: 3, termId: 2, name: 'Term 2 Updated' })).resolves.toMatchObject({
       id: 2,
+      periodType: 'monthly',
       name: 'Term 2 Updated',
     })
 
     http.post.mockResolvedValueOnce(stubResponse({
-      reportPeriod: { id: 2, academic_year_id: 3, term_id: 2, name: 'Term 2 Updated', is_active: false, status: 'archived' },
+      reportPeriod: { id: 2, period_type: 'monthly', academic_year_id: 3, term_id: 2, name: 'Term 2 Updated', is_active: false, status: 'archived' },
     }))
     await expect(archiveReportPeriod(2)).resolves.toMatchObject({
       id: 2,
+      periodType: 'monthly',
       status: 'archived',
     })
 

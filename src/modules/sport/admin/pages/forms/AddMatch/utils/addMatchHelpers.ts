@@ -1,11 +1,8 @@
 import { COMPETITION_TYPES, DEFAULT_COMPETITION_TYPE, DEFAULT_MATCH_STATUS } from '../constants/addMatchConstants'
+import { formatMatchDateTimeForInput } from '@/modules/sport/services/api/sportApiUtils'
 
 export function parseSchedule(value: string | null | undefined): string {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
-  const [datePart, timePart = ''] = raw.split(/\s+/)
-  if (!datePart || !timePart) return raw
-  return `${datePart}T${timePart.slice(0, 5)}`
+  return formatMatchDateTimeForInput(value)
 }
 
 export function inferCompetitionType(match: any): string {
@@ -14,7 +11,7 @@ export function inferCompetitionType(match: any): string {
 
 export function initializeMatchForm(
   match: any,
-  _setters: {
+  setters: {
     setCompetitionType: (value: string) => void
     setTournamentId: (value: string) => void
     setTournament: (value: string) => void
@@ -25,6 +22,17 @@ export function initializeMatchForm(
     setAwayTeam: (value: string) => void
   },
 ) {
+  const {
+    setCompetitionType,
+    setTournamentId,
+    setTournament,
+    setDateTime,
+    setVenue,
+    setStatus,
+    setHomeTeam,
+    setAwayTeam,
+  } = setters
+
   if (!match) {
     setCompetitionType(DEFAULT_COMPETITION_TYPE)
     setTournamentId('')
@@ -57,6 +65,17 @@ export function resetMatchForm(_setters: {
   setHomeTeam: (value: string) => void
   setAwayTeam: (value: string) => void
 }) {
+  const {
+    setCompetitionType,
+    setTournamentId,
+    setTournament,
+    setDateTime,
+    setVenue,
+    setStatus,
+    setHomeTeam,
+    setAwayTeam,
+  } = _setters
+
   setCompetitionType(DEFAULT_COMPETITION_TYPE)
   setTournamentId('')
   setTournament('')

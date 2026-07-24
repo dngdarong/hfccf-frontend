@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, watch } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Select from 'primevue/select'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -224,3 +224,4 @@ function assignTeam(teamId) {
   }
 }
 </style>
+

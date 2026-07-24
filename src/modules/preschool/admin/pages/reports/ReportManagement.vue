@@ -243,6 +243,7 @@ onMounted(async () => {
             <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th class="px-4 py-3">{{ t('preschoolReportsPage.periodColumns.label') }}</th>
+                <th class="px-4 py-3">{{ t('preschoolReportsPage.periodColumns.type') }}</th>
                 <th class="px-4 py-3">{{ t('preschoolReportsPage.periodColumns.status') }}</th>
                 <th class="px-4 py-3">{{ t('preschoolReportsPage.periodColumns.dates') }}</th>
                 <th class="px-4 py-3">{{ t('preschoolReportsPage.periodColumns.assessments') }}</th>
@@ -253,6 +254,7 @@ onMounted(async () => {
             <tbody class="divide-y divide-slate-100 bg-white">
               <tr v-for="period in reportPeriods" :key="period.label">
                 <td class="px-4 py-3 font-medium text-slate-900">{{ period.label }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ t(`preschoolReportsPage.periodTypes.${period.periodType || 'term'}`) }}</td>
                 <td class="px-4 py-3">
                   <ReportPeriodStatusBadge :status="period.status" />
                 </td>

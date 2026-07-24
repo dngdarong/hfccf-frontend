@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { usePreschoolReports } from '@/modules/preschool/composables/usePreschoolReports'
 
 const mockGetCurrentUser = vi.fn()
@@ -23,6 +24,15 @@ vi.mock('@/modules/preschool/services/api/preschoolReportsApi', () => ({
   fetchStudentReportPeriod: (...args) => mockFetchStudentReportPeriod(...args),
 }))
 
+vi.mock('@/composables/useLanguage', () => ({
+  useLanguage: () => ({
+    t: (key) => key,
+    te: () => false,
+    tm: () => ({}),
+    locale: ref('en'),
+  }),
+}))
+
 // Keep the Preschool student reporting composable covered so finalised-period
 // loading stays scoped to the current role and does not drift back to direct HTTP calls.
 beforeEach(() => {
@@ -36,7 +46,7 @@ beforeEach(() => {
     items: [{ id: 8, fullName: 'Admin Student', studentCode: 'S-008' }],
     pagination: { page: 1, perPage: 100, total: 1, totalPages: 1 },
   })
-  mockFetchReportPeriods.mockResolvedValue([{ label: 'Term 1', assessmentCount: 2 }])
+  mockFetchReportPeriods.mockResolvedValue([{ label: 'Term 1', periodType: 'term', assessmentCount: 2 }])
   mockFetchStudentReports.mockResolvedValue({
     student: { id: 7, fullName: 'Teacher Student', studentCode: 'S-007' },
     periods: [{ label: 'Term 1' }],
@@ -57,13 +67,14 @@ describe('usePreschoolReports', () => {
 
     const reports = usePreschoolReports()
     await reports.loadLookupData()
-    await reports.loadReportPeriodOptions(7)
-    await reports.loadStudentReport(7)
+    await reports.loadReportPeriodOptions(7, 'term')
+    await reports.loadStudentReport(7, 'Term 1', 'term')
 
     expect(mockFetchMyPreschoolStudents).toHaveBeenCalledWith({ page: 1, perPage: 100 })
-    expect(mockFetchReportPeriods).toHaveBeenCalledWith({ studentId: '7' })
-    expect(mockFetchStudentReportPeriod).toHaveBeenCalledWith('7', 'Term 1')
+    expect(mockFetchReportPeriods).toHaveBeenCalledWith({ studentId: '7', periodType: 'term' })
+    expect(mockFetchStudentReportPeriod).toHaveBeenCalledWith('7', 'Term 1', { periodType: 'term' })
     expect(reports.selectedStudentId.value).toBe('7')
+    expect(reports.selectedPeriodType.value).toBe('term')
     expect(reports.reportBundle.value.report.summary.finalizedAssessments).toBe(2)
     expect(reports.reportPeriods.value[0]).toMatchObject({ label: 'Term 1' })
   })
@@ -73,11 +84,12 @@ describe('usePreschoolReports', () => {
 
     const reports = usePreschoolReports()
     await reports.loadLookupData()
-    await reports.loadStudentReport(8, 'Term 1')
+    await reports.loadStudentReport(8, 'Term 1', 'annual')
 
     expect(mockFetchPreschoolStudents).toHaveBeenCalledWith({ page: 1, perPage: 100 })
-    expect(mockFetchStudentReportPeriod).toHaveBeenCalledWith('8', 'Term 1')
+    expect(mockFetchStudentReportPeriod).toHaveBeenCalledWith('8', 'Term 1', { periodType: 'annual' })
     expect(reports.selectedPeriodLabel.value).toBe('Term 1')
+    expect(reports.selectedPeriodType.value).toBe('annual')
     expect(reports.reportBundle.value.student).toMatchObject({ id: 7, studentCode: 'S-007' })
   })
 })

@@ -8,6 +8,9 @@ import {
   fetchClassSchedule,
   fetchMySchedule,
   fetchSchedule,
+  fetchScheduleSessionHistory,
+  fetchScheduleSessions,
+  fetchScheduleTodaySession,
   fetchSchedules,
   fetchTeacherSchedule,
   updateSchedule,
@@ -51,7 +54,7 @@ describe('preschool schedule api', () => {
     )
 
     await expect(
-      fetchSchedules({ page: 2, perPage: 10, search: 'circle', classId: 3, teacherUserId: 'usr_teacher' }),
+      fetchSchedules({ page: 2, perPage: 10, search: 'circle', classId: 3, teacherUserId: 'usr_teacher', dayOfWeek: 1 }),
     ).resolves.toMatchObject({
       items: [
         {
@@ -75,6 +78,25 @@ describe('preschool schedule api', () => {
         search: 'circle',
         class_id: 3,
         teacher_user_id: 'usr_teacher',
+        day_of_week: 1,
+      },
+      signal: undefined,
+    })
+
+    http.get.mockResolvedValueOnce(
+      stubResponse({
+        items: [],
+        pagination: { page: 1, perPage: 100, total: 0, totalPages: 0 },
+      }),
+    )
+
+    await fetchSchedules({ page: 1, perPage: 200, dayOfWeek: 6 })
+
+    expect(http.get).toHaveBeenLastCalledWith('/preschool/schedules', {
+      params: {
+        page: 1,
+        per_page: 100,
+        day_of_week: 6,
       },
       signal: undefined,
     })
@@ -105,6 +127,94 @@ describe('preschool schedule api', () => {
     http.get.mockResolvedValueOnce(stubResponse({ schedule: { id: 21 } }))
     await expect(fetchSchedule(21)).resolves.toMatchObject({ id: 21 })
     expect(http.get).toHaveBeenCalledWith('/preschool/schedules/21', { signal: undefined })
+
+    http.get.mockResolvedValueOnce(
+      stubResponse({
+        items: [
+          {
+            id: 'session-1',
+            schedule_id: 21,
+            class_id: 4,
+            teacher_user_id: 'usr_teacher',
+            attendance_date: '2026-07-01',
+            status: 'open',
+          },
+        ],
+        pagination: { page: 1, perPage: 20, total: 1, totalPages: 1 },
+        summary: { totalSessions: 1, attendanceRate: 80 },
+      }),
+    )
+    await expect(fetchScheduleSessions(21, { page: 1, perPage: 20, status: 'open' })).resolves.toMatchObject({
+      items: [
+        {
+          id: 'session-1',
+          scheduleId: 21,
+          classId: 4,
+          teacherUserId: 'usr_teacher',
+          attendanceDate: '2026-07-01',
+          status: 'open',
+        },
+      ],
+      pagination: { page: 1, perPage: 20, total: 1 },
+      summary: { totalSessions: 1, attendanceRate: 80 },
+    })
+    expect(http.get).toHaveBeenCalledWith('/preschool/schedules/21/sessions', {
+      params: { page: 1, per_page: 20, status: 'open' },
+      signal: undefined,
+    })
+
+    http.get.mockResolvedValueOnce(
+      stubResponse({
+        session: {
+          id: 'today-1',
+          schedule_id: 21,
+          class_id: 4,
+          teacher_user_id: 'usr_teacher',
+          attendance_date: '2026-07-02',
+          status: 'scheduled',
+        },
+      }),
+    )
+    await expect(fetchScheduleTodaySession(21)).resolves.toMatchObject({
+      session: {
+        id: 'today-1',
+        scheduleId: 21,
+        classId: 4,
+        teacherUserId: 'usr_teacher',
+        attendanceDate: '2026-07-02',
+        status: 'scheduled',
+      },
+    })
+    expect(http.get).toHaveBeenCalledWith('/preschool/schedules/21/today-session', { signal: undefined })
+
+    http.get.mockResolvedValueOnce(
+      stubResponse({
+        schedule: { id: 21, class_id: 4, class_name: 'Morning Class' },
+        todaySession: {
+          id: 'today-1',
+          schedule_id: 21,
+          attendance_date: '2026-07-02',
+          status: 'open',
+        },
+        recentSessions: [
+          { id: 'recent-1', schedule_id: 21, attendance_date: '2026-07-01', status: 'completed' },
+        ],
+        summary: { completionRate: 90, attendanceRate: 85 },
+        alerts: [{ id: 'alert-1' }],
+        guardianContacts: [{ id: 'contact-1' }],
+      }),
+    )
+    await expect(fetchScheduleSessionHistory(21)).resolves.toMatchObject({
+      schedule: { id: 21, classId: 4, className: 'Morning Class' },
+      todaySession: { id: 'today-1', scheduleId: 21, status: 'open' },
+      recentSessions: [{ id: 'recent-1', scheduleId: 21, status: 'completed' }],
+      summary: { completionRate: 90, attendanceRate: 85 },
+      alerts: [{ id: 'alert-1' }],
+      guardianContacts: [{ id: 'contact-1' }],
+    })
+    expect(http.get).toHaveBeenLastCalledWith('/preschool/schedules/21/history', {
+      signal: undefined,
+    })
 
     http.patch.mockResolvedValueOnce(stubResponse({ schedule: { id: 21 } }))
     await expect(updateSchedule(21, { notes: 'Updated note' })).resolves.toMatchObject({ id: 21 })

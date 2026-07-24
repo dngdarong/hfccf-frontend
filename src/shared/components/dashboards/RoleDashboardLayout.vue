@@ -45,6 +45,7 @@ const props = defineProps({
         :spotlight-text="props.spotlightText"
         :actions="props.actions"
       />
+      <slot />
     </section>
   </MainLayout>
 </template>
@@ -56,5 +57,4 @@ const props = defineProps({
   gap: 1rem;
 }
 </style>
-
 

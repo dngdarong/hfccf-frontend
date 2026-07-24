@@ -1,0 +1,110 @@
+export default {
+  title: 'របាយការណ៍កីឡា',
+  subtitle: 'បង្កើត និងវិភាគរបាយការណ៍ទិន្នន័យកីឡា',
+
+  filters: {
+    title: 'ម៉ាស៊ីនច្រោះ របាយការណ៍',
+    dateFrom: 'ចាប់ផ្តើមថ្ងៃ',
+    dateTo: 'ថ្ងៃចុងក្រោយ',
+    division: 'ផ្នែក',
+    team: 'ក្រុម',
+    tournament: 'ការប្រកួតប្រជែង',
+    reportType: 'ប្រភេទរបាយការណ៍',
+    selectDate: 'ជ្រើសរើសថ្ងៃ',
+    selectDivision: 'ជ្រើសរើសផ្នែក',
+    selectTeam: 'ជ្រើសរើសក្រុម',
+    selectTournament: 'ជ្រើសរើសការប្រកួតប្រជែង',
+  },
+
+  types: {
+    overview: 'របាយការណ៍ទម្រង់ឯកសារ',
+    matches: 'របាយការណ៍ប្រកួតប្រជែង',
+    standings: 'របាយការណ៍ចំណាត់ថ្នាក់',
+    players: 'ស្ថិតិកីឡាករ',
+    attendance: 'របាយការណ៍ការចូលរួម',
+  },
+
+  actions: {
+    generate: 'បង្កើតរបាយការណ៍',
+    clearFilters: 'ដកចេញម៉ាស៊ីនច្រោះ',
+    export: 'នាំចេញ',
+  },
+
+  report: {
+    from: 'ចាប់ផ្តើម',
+    to: 'ដល់',
+    generatedOn: 'បង្កើតនៅលើ',
+  },
+
+  stats: {
+    totalMatches: 'សរុបការប្រកួតប្រជែង',
+    completedMatches: 'ការប្រកួតប្រជែងដែលបានបញ្ចប់',
+    upcomingMatches: 'ការប្រកួតប្រជែងនឹងមក',
+    totalTeams: 'សរុបក្រុម',
+    totalPlayers: 'សរុបកីឡាករ',
+    averageAttendance: 'ការចូលរួមប្រាកដ',
+    winRate: 'អាចឈ្នះ',
+    drawRate: 'អាចស្មើ',
+    lossRate: 'អាចចាញ់',
+  },
+
+  tabs: {
+    matches: 'ការប្រកួតប្រជែង',
+    standings: 'ចំណាត់ថ្នាក់',
+    players: 'កីឡាករ',
+    attendance: 'ការចូលរួម',
+    summary: 'សង្ខេប',
+  },
+
+  table: {
+    homeTeam: 'ក្រុមផ្ទះ',
+    awayTeam: 'ក្រុមឱ',
+    score: 'ពិន្ទុ',
+    date: 'ថ្ងៃ',
+    status: 'ស្ថានភាព',
+    division: 'ផ្នែក',
+    tournament: 'ការប្រកួតប្រជែង',
+    result: 'លទ្ធផល',
+    attendees: 'អ្នកចូលរួម',
+    venue: 'កន្លែង',
+    position: 'ទីតាំង',
+    team: 'ក្រុម',
+    player: 'កីឡាករ',
+    appearances: 'ការលេចឡើង',
+    goals: 'គោល',
+    assists: 'ការជំនួយ',
+    yellowCards: 'ឧបករណ៍ដែលមានពណ៌លឿង',
+    redCards: 'ឧបករណ៍ដែលមានពណ៌ក្រហម',
+    penaltyGoals: 'គោលពិន័យ',
+    ownGoals: 'គោលផ្ទាល់ខ្លួន',
+    penaltyMisses: 'ការលេចច្រាលនៃពិន័យ',
+    disciplinePoints: 'ពិន្ទុវិន័យ',
+    played: 'លេង',
+    wins: 'ឈ្នះ',
+    draws: 'ស្មើ',
+    losses: 'ចាញ់',
+    goalsFor: 'គោលដល់',
+    goalsAgainst: 'គោលប្រឆាំង',
+    goalDifference: 'ភាពខុសគ្នាគោល',
+    points: 'ពិន្ទុ',
+  },
+
+  export: {
+    pdf: 'នាំចេញជា PDF',
+    excel: 'នាំចេញជា Excel',
+    print: 'បោះពុម្ព របាយការណ៍',
+    exporting: 'ការនាំចេញ...',
+    success: 'របាយការណ៍នាំចេញដោយជោគជ័យ',
+  },
+
+  errors: {
+    loadFailed: 'បរាជ័យក្នុងការផ្ទុកលម្អិតម៉ាស៊ីនច្រោះ',
+    generateFailed: 'បរាជ័យក្នុងការបង្កើតរបាយការណ៍',
+    exportFailed: 'បរាជ័យក្នុងការនាំចេញរបាយការណ៍',
+    invalidDates: 'សូមជ្រើសរើសជួរថ្ងៃដែលមានសុពលភាព',
+  },
+
+  emptyState: 'ជ្រើសរើសម៉ាស៊ីនច្រោះ និងបង្កើតរបាយការណ៍ដើម្បីមើលទិន្នន័យ',
+  noData: 'គ្មានទិន្នន័យដែលមាន',
+  loading: 'កំពុងផ្ទុក...',
+}

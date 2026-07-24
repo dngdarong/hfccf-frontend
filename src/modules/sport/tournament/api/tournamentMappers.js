@@ -1,4 +1,3 @@
-import { createTournamentDraft, normalizeTournamentGroupDraw, normalizeTournamentKnockout } from '../mocks/tournaments.mock'
 import { normalizeTournamentState } from '../composables/useTournamentStateMachine'
 
 function deepClone(value) {
@@ -84,7 +83,7 @@ function normalizeCounts(source = {}, fallback = {}) {
 }
 
 function mergeWithFallback(source, fallback) {
-  const base = fallback ? deepClone(fallback) : createTournamentDraft()
+  const base = fallback ? deepClone(fallback) : {}
   const payload = source && typeof source === 'object' ? deepClone(source) : {}
   const state = normalizeTournamentState(payload.state || payload.status || base.state)
 
@@ -125,14 +124,8 @@ function mergeWithFallback(source, fallback) {
     fixtures: normalizeCollection(payload.fixtures || base.fixtures),
     results: normalizeCollection(payload.results || base.results),
     standings: normalizeCollection(payload.standings || base.standings),
-    groupDraw: normalizeTournamentGroupDraw(payload.groupDraw || payload.group_draw || base.groupDraw, {
-      ...base,
-      ...payload,
-    }),
-    knockout: normalizeTournamentKnockout(payload.knockout || base.knockout, {
-      ...base,
-      ...payload,
-    }),
+    groupDraw: payload.groupDraw || payload.group_draw || base.groupDraw || null,
+    knockout: payload.knockout || base.knockout || null,
     statistics: normalizeStatistics(payload.statistics, base.statistics),
     createdByUserId: normalizeText(payload.createdByUserId || payload.created_by_user_id || base.createdByUserId),
     createdAt: normalizeDateValue(payload.createdAt || payload.created_at || base.createdAt),
@@ -144,7 +137,7 @@ function mergeWithFallback(source, fallback) {
 }
 
 export function normalizeTournamentRecord(source, fallback = null) {
-  return mergeWithFallback(source, fallback || createTournamentDraft())
+  return mergeWithFallback(source, fallback)
 }
 
 export function normalizeTournamentListItems(items = []) {
@@ -181,18 +174,18 @@ export function normalizeTournamentMutationResponse(response, fallback = null) {
 export function buildTournamentRequestPayload(payload = {}) {
   const currentState = normalizeTournamentState(payload.state || payload.status)
 
-  return {
-    tournament_code: normalizeText(payload.tournamentCode || payload.tournament_code),
-    slug: normalizeText(payload.slug),
+  const request = {
+    tournament_code: normalizeText(payload.tournamentCode || payload.tournament_code) || undefined,
+    slug: normalizeText(payload.slug || payload.code) || undefined,
     name: normalizeText(payload.name),
-    season: normalizeText(payload.season),
-    tournament_type: normalizeText(payload.tournamentType || payload.tournament_type || payload.sportType || payload.sport_type),
+    season: normalizeText(payload.season) || undefined,
+    tournament_type: normalizeText(payload.tournamentType || payload.tournament_type || payload.sportType || payload.sport_type) || undefined,
     status: currentState,
     visibility: normalizeVisibility(payload.visibility),
     registration_open_at: normalizeDateValue(payload.registrationOpenAt || payload.registration_open_at),
     registration_close_at: normalizeDateValue(payload.registrationCloseAt || payload.registration_close_at),
     starts_at: normalizeDateValue(payload.startAt || payload.startsAt || payload.starts_at),
-    ends_at: normalizeDateValue(payload.endAt || payload.endsAt || payload.ends_at),
+    ends_at: normalizeDateValue(payload.endAt || payload.endsAt || payload.end_at || payload.ends_at),
     description: normalizeText(payload.description),
     logo_path: normalizeMediaPath(payload.logoPath || payload.logo_path || payload.logo),
     banner_path: normalizeMediaPath(payload.bannerPath || payload.banner_path || payload.banner),
@@ -201,4 +194,6 @@ export function buildTournamentRequestPayload(payload = {}) {
     rules: normalizeRules(payload.rules),
     settings: normalizeSettings(payload.settings),
   }
+
+  return Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined))
 }

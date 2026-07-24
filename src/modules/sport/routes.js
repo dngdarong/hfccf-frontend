@@ -50,6 +50,15 @@ export const sportRoutes = [
     },
   }),
   defineAppRoute({
+    path: '/module/sport-admin/equipment',
+    name: 'dashboard-sport-admin-equipment',
+    component: () => import('@/modules/sport/shared/pages/EquipmentManagement/EquipmentManagement.vue'),
+    access: {
+      domains: [DOMAINS.SPORT],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
     path: '/module/sport-admin/users',
     name: 'dashboard-sport-admin-users',
     component: () => import('@/modules/sport/admin/pages/list/CoachManagement/CoachManagement.vue'),
@@ -212,9 +221,27 @@ export const sportRoutes = [
     },
   }),
   defineAppRoute({
+    path: '/module/sport-coach/equipment',
+    name: 'dashboard-sport-coach-equipment',
+    component: () => import('@/modules/sport/shared/pages/EquipmentManagement/EquipmentManagement.vue'),
+    access: {
+      domains: [DOMAINS.SPORT],
+      scopes: [ACCESS_SCOPES.STAFF],
+    },
+  }),
+  defineAppRoute({
     path: '/module/sport-coach/teams',
     name: 'dashboard-sport-coach-teams',
     component: () => import('@/modules/sport/coach/pages/MyTeams.vue'),
+    access: {
+      domains: [DOMAINS.SPORT],
+      scopes: [ACCESS_SCOPES.STAFF],
+    },
+  }),
+  defineAppRoute({
+    path: '/module/sport-coach/attendance',
+    name: 'dashboard-sport-coach-attendance',
+    component: () => import('@/modules/sport/admin/pages/list/AttendancePlayers/AttendancePlayers.vue'),
     access: {
       domains: [DOMAINS.SPORT],
       scopes: [ACCESS_SCOPES.STAFF],
@@ -323,6 +350,15 @@ export const sportRoutes = [
     path: '/module/sport-admin/matches/:matchId/squad',
     name: 'dashboard-sport-admin-match-squad-review',
     component: () => import('@/modules/sport/admin/pages/approval/MatchSquadReview.vue'),
+    access: {
+      domains: [DOMAINS.SPORT],
+      scopes: [ACCESS_SCOPES.ADMIN],
+    },
+  }),
+  defineAppRoute({
+    path: '/module/sport-admin/reports',
+    name: 'dashboard-sport-admin-reports',
+    component: () => import('@/modules/sport/admin/pages/reports/SportAdminReports.vue'),
     access: {
       domains: [DOMAINS.SPORT],
       scopes: [ACCESS_SCOPES.ADMIN],

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Toast from 'primevue/toast'
@@ -60,6 +61,7 @@ import {
 } from './utils/enrollmentManagementHelpers'
 
 const { t } = useI18n()
+const router = useRouter()
 const toast = useToast()
 // Route access is restricted to ADMIN scope; all users who reach this page are admins.
 const canManage = true
@@ -86,6 +88,7 @@ const showAppDialog = ref(false)
 const appDialogReadonly = ref(false)
 const editingApp = ref(null)
 const savingApp = ref(false)
+const appValidationErrors = ref({})
 
 const showDecision = ref(false)
 const decisionAction = ref('')
@@ -158,14 +161,13 @@ async function openDetail(app) {
 
 // ─── Application form ─────────────────────────────────────────────────────
 function openNew() {
-  editingApp.value = null
-  appDialogReadonly.value = false
-  showAppDialog.value = true
+  router.push({ name: 'dashboard-preschool-admin-enrollments-create' })
 }
 
 function openEdit(app) {
   editingApp.value = app
   appDialogReadonly.value = false
+  appValidationErrors.value = {}
   showAppDialog.value = true
 }
 
@@ -175,6 +177,7 @@ function openView(app) {
 
 async function saveApplication(payload) {
   savingApp.value = true
+  appValidationErrors.value = {}
   try {
     if (editingApp.value) {
       await updateEnrollment(editingApp.value.id, payload)
@@ -186,7 +189,8 @@ async function saveApplication(payload) {
     showAppDialog.value = false
     loadSummary()
     loadList()
-  } catch {
+  } catch (error) {
+    appValidationErrors.value = error?.validationErrors || error?.details?.errors || {}
     toast.add({ severity: 'error', summary: t('preschoolEnrollmentPage.messages.errorSave'), life: 4000 })
   } finally {
     savingApp.value = false
@@ -495,6 +499,7 @@ function refreshData() {
       :terms="terms"
       :classes="classes"
       :loading="savingApp"
+      :validation-errors="appValidationErrors"
       @save="saveApplication"
     />
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { buildBackQrDataUrl } from '@/modules/preschool/admin/pages/attendanceIdCardBack'
+import { buildBackQrDataUrl } from '@/modules/preschool/admin/pages/attendance/attendanceIdCardBack'
 
 // Mock QRCode since it's an external library with DOM dependencies
 vi.mock('qrcode', () => ({

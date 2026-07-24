@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 
 defineOptions({
@@ -54,3 +54,4 @@ defineProps({
     </article>
   </div>
 </template>
+

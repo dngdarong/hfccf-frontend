@@ -44,6 +44,8 @@ defineProps({
 
 .profile-settings-card__title {
   margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
   font-size: 1rem;
   font-weight: 800;
   color: #122f43;
@@ -52,7 +54,8 @@ defineProps({
 .profile-settings-card__tag {
   display: inline-flex;
   align-items: center;
-  max-width: 55%;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid #dbeafe;
   border-radius: 9999px;
   background: #eff6ff;
@@ -61,10 +64,11 @@ defineProps({
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.04em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: right;
+  white-space: normal;
 }
 
 .profile-settings-card__copy {
@@ -72,5 +76,6 @@ defineProps({
   font-size: 0.9rem;
   line-height: 1.65;
   color: #64748b;
+  overflow-wrap: anywhere;
 }
 </style>

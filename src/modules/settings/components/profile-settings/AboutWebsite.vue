@@ -49,10 +49,10 @@ const content = computed(() => ({
         <div
           v-for="item in content.items"
           :key="item.label"
-          class="flex items-center justify-between rounded-xl border border-surface-200 bg-white px-4 py-3"
+          class="flex items-start justify-between gap-3 rounded-xl border border-surface-200 bg-white px-4 py-3"
         >
-          <span class="text-sm font-semibold text-surface-700">{{ item.label }}</span>
-          <span class="text-sm font-bold text-surface-900">{{ item.value }}</span>
+          <span class="min-w-0 flex-1 text-sm font-semibold text-surface-700">{{ item.label }}</span>
+          <span class="min-w-0 break-words text-right text-sm font-bold text-surface-900">{{ item.value }}</span>
         </div>
       </div>
 

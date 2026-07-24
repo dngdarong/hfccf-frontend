@@ -1,4 +1,6 @@
 <script setup>
+import AppButton from '@/components/ui/AppButton.vue'
+
 defineProps({
   value: {
     type: String,
@@ -34,38 +36,51 @@ const emit = defineEmits(['click'])
 </script>
 
 <template>
-  <button
+  <AppButton
     type="button"
+    variant="outline"
+    size="xs"
     class="att-status-btn"
     :class="isActive ? `${activeClass} ${ringClass}` : ''"
     :disabled="disabled"
+    :aria-label="label"
+    :aria-pressed="isActive ? 'true' : 'false'"
     :title="label"
     @click="emit('click')"
   >
     {{ short }}
-  </button>
+  </AppButton>
 </template>
 
 <style scoped>
 .att-status-btn {
-  min-width: 2.15rem;
-  padding: 0.35rem 0.45rem;
-  border-radius: 0.55rem;
-  border: 1px solid #dbe4f0;
-  background: #fff;
-  color: #94a3b8;
-  font-size: 0.75rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 150ms ease-in-out;
+  border-width: 2px;
 }
 
 .att-status-btn:hover:not(:disabled) {
-  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
 }
 
+.att-status-btn:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Enhanced keyboard focus for active state */
+.att-status-btn[aria-pressed="true"]:focus-visible {
+  outline-width: 3px;
+  outline-offset: 3px;
+}
+
+/* Disabled state styling */
 .att-status-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 </style>

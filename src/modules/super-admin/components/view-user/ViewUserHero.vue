@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import RolesBadge from '@/components/badges/RolesBadge.vue'
 
@@ -225,3 +225,4 @@ const bioText = computed(() => String(props.bio || '').trim())
   }
 }
 </style>
+

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import NotificationTypeIcon from '@/modules/notifications/components/NotificationTypeIcon.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -99,3 +99,4 @@ const resolvedActionLabel = computed(() => props.actionLabel || '')
   line-height: 1.6;
 }
 </style>
+

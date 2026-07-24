@@ -12,6 +12,12 @@ import AttendanceHistory from '@/modules/preschool/admin/pages/attendance/Attend
 // wiring, and runtime safety regressions get caught before the UI ships.
 const mockDashboard = vi.fn(() =>
   Promise.resolve({
+    academicYear: {
+      currentAcademicYear: '2026 - 2027',
+    },
+    term: {
+      currentTerm: 'Term 1',
+    },
     summary: {
       students: 20,
       classes: 4,
@@ -19,6 +25,11 @@ const mockDashboard = vi.fn(() =>
       attendanceToday: 18,
       pendingPayments: 2,
       overduePayments: 1,
+      pendingEnrollments: 3,
+      outstandingPayments: 1,
+      healthAlerts: 2,
+      guardianIssues: 1,
+      attendanceExceptions: 1,
     },
     recentAttendance: [
       {
@@ -40,6 +51,72 @@ const mockDashboard = vi.fn(() =>
       pending: 2,
       overdue: 1,
       cancelled: 0,
+    },
+    attendanceAlerts: {
+      total: 2,
+      open: 1,
+      acknowledged: 1,
+      overdue: 1,
+      byClass: [
+        {
+          classId: 'class-1',
+          className: 'Morning Nursery',
+          total: 2,
+          open: 1,
+          acknowledged: 1,
+          overdue: 1,
+        },
+      ],
+      bySeverity: [
+        { severity: 'high', total: 1 },
+        { severity: 'medium', total: 1 },
+      ],
+    },
+    recentAttendanceAlerts: [
+      {
+        id: 'alert-1',
+        studentName: 'Alice Student',
+        className: 'Morning Nursery',
+        guardianName: 'Guardian One',
+        followUpStatus: 'open',
+        createdAt: '2026-05-19T08:00:00Z',
+        alertLabel: 'Repeated Absence',
+      },
+    ],
+  }),
+)
+
+const mockReportsDashboard = vi.fn(() =>
+  Promise.resolve({
+    dashboard: {
+      generatedAt: '2026-06-27T09:30:00+07:00',
+      kpis: {
+        attendanceRate: 96,
+        absenceRate: 4,
+        lateRate: 1,
+        newEnrollments: 5,
+        activeStudents: 20,
+        totalStudents: 20,
+        assessmentCompletion: 88,
+        atRiskStudents: 2,
+        openHealthAlerts: 2,
+        openGuardianIssues: 1,
+        revenue: 1825,
+        outstandingBalances: 250,
+        overdueInvoices: 1,
+        averageScore: 82,
+      },
+      modules: {},
+      executiveHealth: {
+        enrollment: { status: 'warning', value: 3 },
+        attendance: { status: 'warning', value: 96, exceptions: 1 },
+        billing: { status: 'warning', value: 250 },
+        assessment: { status: 'healthy', value: 88 },
+        health: { status: 'warning', value: 2, critical: 0 },
+        guardians: { status: 'warning', value: 1 },
+      },
+      cards: [],
+      risk: {},
     },
   }),
 )
@@ -142,6 +219,10 @@ vi.mock('@/modules/preschool/services/preschoolApi', () => ({
   updatePreschoolClass: vi.fn(() => Promise.resolve({})),
 }))
 
+vi.mock('@/modules/preschool/services/api/preschoolReportingApi', () => ({
+  fetchReportsDashboard: (...args) => mockReportsDashboard(...args),
+}))
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -150,6 +231,8 @@ function baseStubs() {
   return {
     MainLayout: { template: '<div><slot /></div>' },
     HeaderSection: { props: ['title', 'subtitle'], template: '<header><h1>{{ title }}</h1><p>{{ subtitle }}</p></header>' },
+    RouterLink: { props: ['to'], template: '<a><slot /></a>' },
+    StatusBadge: { props: ['status', 'label'], template: '<span class="status-badge-stub">{{ label || status }}</span>' },
     SearchFilterBar: { template: '<div class="search-filter-stub" />' },
     Pagination: { template: '<div class="pagination-stub" />' },
     AlertQuestion: { template: '<div class="alert-question-stub" />' },
@@ -197,9 +280,22 @@ describe('Preschool real pages', () => {
     await flushPromises()
 
     expect(mockDashboard).toHaveBeenCalled()
+    expect(mockReportsDashboard).toHaveBeenCalled()
     expect(wrapper.text()).toContain('Preschool Operations Board')
-    expect(wrapper.text()).toContain('Morning Nursery')
-    expect(wrapper.text()).toContain('•')
+    expect(wrapper.text()).toContain('Active Students')
+    expect(wrapper.text()).toContain('System Health')
+    expect(wrapper.text()).toContain('Operational Summary')
+    expect(wrapper.text()).toContain('Priority Queue')
+    expect(wrapper.text()).toContain('Refresh')
+    expect(wrapper.text()).toContain('No Sessions Today')
+    expect(wrapper.text()).toContain('Attendance alert summary')
+    expect(wrapper.text()).toContain('Open Alerts')
+    expect(wrapper.text()).toContain('Recent repeated absences')
+    expect(wrapper.text().indexOf('Priority Queue')).toBeLessThan(wrapper.text().indexOf('System Health'))
+    expect(wrapper.text()).toContain('Main Insights')
+    expect(wrapper.text()).toContain('Operational Sections')
+    expect(wrapper.text()).toContain('View all')
+    expect(wrapper.text()).toContain('No comparison yet')
     const mojibakeBullet = String.fromCharCode(0x00e2, 0x20ac, 0x00a2)
     // Regression protection: the dashboard note separator must stay a real bullet,
     // not the legacy mojibake sequence that breaks the Khmer locale scan.
@@ -287,8 +383,3 @@ describe('Preschool real pages', () => {
     expect(errorSpy).not.toHaveBeenCalled()
   })
 })
-
-
-
-
-

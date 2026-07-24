@@ -35,6 +35,22 @@ describe('preschool reporting api', () => {
       modules: {
         attendance: { attendance_rate: 95 },
       },
+      analytics: {
+        attendance_today: {
+          current: 96,
+          previous: 94,
+          delta: 2,
+          percent: 2.13,
+          trend: 'up',
+          comparison: 'previous_day',
+        },
+      },
+      executive_health: {
+        attendance: {
+          status: 'healthy',
+          value: 96,
+        },
+      },
     })).toMatchObject({
       report: 'dashboard',
       kpis: {
@@ -45,6 +61,22 @@ describe('preschool reporting api', () => {
       },
       modules: {
         attendance: { attendance_rate: 95 },
+      },
+      analytics: {
+        attendanceToday: {
+          current: 96,
+          previous: 94,
+          delta: 2,
+          percent: 2.13,
+          trend: 'up',
+          comparison: 'previous_day',
+        },
+      },
+      executiveHealth: {
+        attendance: {
+          status: 'healthy',
+          value: 96,
+        },
       },
     })
   })
@@ -134,6 +166,8 @@ describe('preschool reporting api', () => {
       format: 'csv',
       filename: 'preschool-attendance.csv',
       content: 'label,value\nA,1',
+      mimeType: '',
+      encoding: 'utf-8',
     })
 
     expect(http.get).toHaveBeenNthCalledWith(3, '/preschool/reports/export', expect.objectContaining({

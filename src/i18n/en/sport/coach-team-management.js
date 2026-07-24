@@ -38,6 +38,8 @@ export default {
       approve: 'Approve',
       reject: 'Reject',
       saveAssignment: 'Save assignment',
+      updateAssignment: 'Update assignment',
+      cancel: 'Cancel',
       deactivate: 'Deactivate',
     },
     myTeams: {
@@ -64,9 +66,11 @@ export default {
     },
     requests: {
       title: 'My Requests',
-      subtitle: 'Track pending player and match requests you created.',
+      subtitle: 'Track the player and match requests you created.',
       playersTitle: 'Player requests',
       matchesTitle: 'Match requests',
+      emptyPlayers: 'No player requests have been submitted yet.',
+      emptyMatches: 'No match requests have been submitted yet.',
     },
     assignments: {
       title: 'Coach Team Assignments',

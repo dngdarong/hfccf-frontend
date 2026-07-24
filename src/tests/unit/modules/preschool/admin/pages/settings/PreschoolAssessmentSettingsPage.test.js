@@ -98,7 +98,7 @@ beforeEach(() => {
     { id: 3, name: 'Quiz', code: 'QZ', description: 'Short quiz', sortOrder: 1, isActive: true },
   ])
   fetchReportPeriods.mockResolvedValue([
-    { id: 4, academicYearId: 1, termId: 11, name: 'Term 1', startDate: '2026-07-01', endDate: '2026-09-30', isActive: true },
+    { id: 4, periodType: 'term', academicYearId: 1, termId: 11, name: 'Term 1', startDate: '2026-07-01', endDate: '2026-09-30', isActive: true },
   ])
   fetchAssessmentWeights.mockResolvedValue([
     { id: 5, categoryId: 3, percentage: 100 },
@@ -114,9 +114,9 @@ beforeEach(() => {
   createAssessmentCategory.mockResolvedValue({ id: 7, name: 'Assignment', code: 'ASG', isActive: true, sortOrder: 2 })
   updateAssessmentCategory.mockResolvedValue({ id: 7, name: 'Assignment', code: 'ASG2', isActive: true, sortOrder: 2 })
   archiveAssessmentCategory.mockResolvedValue({ id: 7, name: 'Assignment', code: 'ASG2', isActive: false, status: 'archived', sortOrder: 2 })
-  createReportPeriod.mockResolvedValue({ id: 8, name: 'Midterm', academicYearId: 1, termId: 11, isActive: true })
-  updateReportPeriod.mockResolvedValue({ id: 8, name: 'Midterm Updated', academicYearId: 1, termId: 11, isActive: true })
-  archiveReportPeriod.mockResolvedValue({ id: 8, name: 'Midterm Updated', academicYearId: 1, termId: 11, isActive: false, status: 'archived' })
+  createReportPeriod.mockResolvedValue({ id: 8, periodType: 'monthly', name: 'Midterm', academicYearId: 1, termId: 11, isActive: true })
+  updateReportPeriod.mockResolvedValue({ id: 8, periodType: 'monthly', name: 'Midterm Updated', academicYearId: 1, termId: 11, isActive: true })
+  archiveReportPeriod.mockResolvedValue({ id: 8, periodType: 'monthly', name: 'Midterm Updated', academicYearId: 1, termId: 11, isActive: false, status: 'archived' })
   updateAssessmentWeights.mockResolvedValue([
     { id: 5, categoryId: 3, percentage: 100 },
   ])
@@ -137,7 +137,8 @@ describe('PreschoolAssessmentSettingsPage', () => {
     expect(wrapper.text()).toContain('Assessment Categories')
     expect(wrapper.text()).toContain('Report Periods')
     expect(wrapper.text()).toContain('Assessment Weights')
-    expect(wrapper.text()).toContain('60')
+    expect(wrapper.text()).toContain('Period Type')
+    expect(wrapper.findAll('input[type="number"]')[0].element.value).toBe('60')
     expect(wrapper.text()).toContain('Quiz')
   })
 
@@ -188,14 +189,18 @@ describe('PreschoolAssessmentSettingsPage', () => {
     await wrapper.findAll('button').find((button) => button.text().includes('Create Report Period')).trigger('click')
     const reportInputs = wrapper.findAll('input[type="text"]')
     await reportInputs[0].setValue('Midterm')
+    const periodTypeSelect = wrapper.findAll('select').find((select) =>
+      Array.from(select.element.options).some((option) => option.value === 'monthly'))
+    await periodTypeSelect.setValue('monthly')
     const reportDates = wrapper.findAll('input[type="date"]')
     await reportDates[0].setValue('2026-10-01')
     await reportDates[1].setValue('2026-12-31')
     await wrapper.findAll('button').find((button) => button.text().trim() === 'Save').trigger('click')
     expect(createReportPeriod).toHaveBeenCalledWith(expect.objectContaining({
+      periodType: 'monthly',
       name: 'Midterm',
       academicYearId: '1',
-      termId: '11',
+      termId: '',
     }))
 
     const weightInputs = wrapper.findAll('input[type="number"]')

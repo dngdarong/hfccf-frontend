@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -13,7 +13,6 @@ import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import {
-  PLAYER_APPROVAL_STATUS,
   PLAYER_LIFECYCLE_ACTIONS,
   PLAYER_ROSTER_STATUS,
   PLAYER_ROSTER_STATUSES,
@@ -28,8 +27,8 @@ defineOptions({ name: 'SportCoachTeamRosterPage' })
 const { t, language } = useLanguage()
 const route = useRoute()
 const { items: teams, loadTeams } = useCoachTeams()
-const { items: playerPool, loadPlayers, loadHistory, updateStatus } = usePlayerLifecycle()
-const { team, players, memberships, loadRoster, addPlayer, error, loading } = useTeamRoster()
+const { loadHistory, updateStatus } = usePlayerLifecycle()
+const { team, players, memberships, candidates, loadRoster, loadCandidates, addPlayer, error, loading } = useTeamRoster()
 const teamId = ref('')
 const selectedPlayerId = ref('')
 const rosterStatus = ref(PLAYER_ROSTER_STATUS.ACTIVE)
@@ -58,13 +57,7 @@ const rosterStatusOptions = computed(() => PLAYER_ROSTER_STATUSES.filter((value)
     value,
   })))
 
-const addablePlayers = computed(() =>
-  playerPool.value.filter((player) =>
-    [PLAYER_APPROVAL_STATUS.APPROVED, PLAYER_ROSTER_STATUS.ACTIVE].includes(
-      String(player.approvalStatus || '').toLowerCase(),
-    ),
-  ),
-)
+const addablePlayers = computed(() => candidates.value)
 
 function rosterTone(status) {
   return playerStatusTone(status)
@@ -76,7 +69,7 @@ async function refresh() {
   }
 
   await loadRoster(teamId.value)
-  await loadPlayers({ perPage: 200, status: PLAYER_APPROVAL_STATUS.APPROVED })
+  await loadCandidates(teamId.value)
 }
 
 async function handleAddPlayer() {
@@ -150,6 +143,9 @@ watch(
           <p class="mt-3 text-sm text-slate-500">
             {{ t('sportPlayerLifecycle.coachRoster.summary', { players: rosterSummary.players, memberships: rosterSummary.memberships }) }}
           </p>
+          <p v-if="!error && !loading && !addablePlayers.length" class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            {{ t('sportPlayerLifecycle.coachRoster.noCandidates') }}
+          </p>
           <Textarea v-model="notes" class="mt-4 w-full" rows="3" auto-resize :placeholder="t('sportPlayerLifecycle.common.notes')" />
 
           <DataTable :value="players" class="mt-4" data-key="id" striped-rows :loading="loading">
@@ -218,3 +214,4 @@ watch(
     'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
 }
 </style>
+

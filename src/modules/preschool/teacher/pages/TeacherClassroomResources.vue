@@ -5,19 +5,30 @@ import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Table from '@/components/data-display/Table.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { fetchClassroomResources } from '@/modules/preschool/services/preschoolApi'
+import Dialog from 'primevue/dialog'
+import Button from '@/components/buttons/Button.vue'
+import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
+import { useUserStore } from '@/store/userStore'
+import {
+  fetchClassroomResources,
+  fetchClassroomResourceRequests,
+  createClassroomResourceRequest,
+  fetchMyPreschoolClasses,
+} from '@/modules/preschool/services/preschoolApi'
 
 defineOptions({
   name: 'PreschoolTeacherClassroomResourcesPage',
 })
 
 const { t } = useLanguage()
+const userStore = useUserStore()
 
 const searchQuery = ref('')
 const categoryFilter = ref('')
 const conditionFilter = ref('')
 const currentPage = ref(1)
 const pageSize = 20
+const activeTab = ref('resources')
 const loading = ref(false)
 const errorMessage = ref('')
 
@@ -45,6 +56,7 @@ const tableColumns = computed(() => [
   { key: 'quantity', label: t('preschoolClassroomResources.columns.quantity'), align: 'left' },
   { key: 'conditionLabel', label: t('preschoolClassroomResources.columns.condition'), align: 'left' },
   { key: 'notes', label: t('preschoolClassroomResources.columns.notes'), align: 'left' },
+  { key: 'actions', label: t('preschoolClassroomResources.columns.actions'), align: 'left' },
 ])
 
 const mappedResources = computed(() =>
@@ -92,7 +104,123 @@ watch(currentPage, () => {
   loadResources()
 })
 
-onMounted(loadResources)
+onMounted(async () => {
+  await loadResources()
+  await loadRequests()
+  await loadMyClasses()
+})
+
+// Request-related state
+const requests = ref([])
+const requestsLoading = ref(false)
+const requestStatusFilter = ref('')
+const requestActionDialogOpen = ref(false)
+const requestActionMode = ref(null) // 'approve' | 'reject' | null
+const requestActionNotes = ref('')
+const selectedRequestId = ref(null)
+
+// Request submission state
+const myClasses = ref([])
+const classesLoading = ref(false)
+const requestDialogOpen = ref(false)
+const selectedResource = ref(null)
+const selectedClassId = ref('')
+const requestedQuantity = ref(1)
+const requestSubmitting = ref(false)
+const requestSuccess = ref(false)
+const requestSuccessMessage = ref('')
+
+const requestTableColumns = computed(() => [
+  { key: 'resourceName', label: t('preschoolResourceRequests.columns.resource'), align: 'left' },
+  { key: 'className', label: t('preschoolResourceRequests.columns.class'), align: 'left' },
+  { key: 'statusLabel', label: t('preschoolResourceRequests.columns.status'), align: 'left' },
+  { key: 'requestedDateFormatted', label: t('preschoolResourceRequests.columns.requestedDate'), align: 'left' },
+])
+
+const mappedRequests = computed(() =>
+  requests.value
+    .filter((r) => !requestStatusFilter.value || r.status === requestStatusFilter.value)
+    .map((r) => ({
+      ...r,
+      statusLabel: t(`preschoolResourceRequests.statuses.${r.status}`),
+      requestedDateFormatted: new Date(r.requestedDate).toLocaleDateString(),
+    })),
+)
+
+async function loadRequests() {
+  requestsLoading.value = true
+  try {
+    const response = await fetchClassroomResourceRequests({
+      page: 1,
+      perPage: 100,
+    })
+    requests.value = response.items || []
+  } catch (error) {
+    requests.value = []
+    console.error('Failed to load classroom resource requests:', error)
+    if (error?.response?.status === 500) {
+      console.error('Server error - the resource requests endpoint may have a configuration issue')
+    }
+  } finally {
+    requestsLoading.value = false
+  }
+}
+
+watch(requestStatusFilter, () => {
+  // computed already handles filtering, no need to reload
+})
+
+async function loadMyClasses() {
+  classesLoading.value = true
+  try {
+    const response = await fetchMyPreschoolClasses()
+    myClasses.value = Array.isArray(response) ? response : response.items || []
+  } catch (error) {
+    myClasses.value = []
+  } finally {
+    classesLoading.value = false
+  }
+}
+
+function openRequestDialog(resource) {
+  selectedResource.value = resource
+  selectedClassId.value = ''
+  requestDialogOpen.value = true
+}
+
+async function submitRequest() {
+  if (!selectedResource.value || !selectedClassId.value) {
+    requestSuccessMessage.value = t('preschoolResourceRequests.messages.selectClassRequired')
+    return
+  }
+
+  if (!requestedQuantity.value || requestedQuantity.value < 1) {
+    requestSuccessMessage.value = 'Please enter a valid quantity'
+    return
+  }
+
+  requestSubmitting.value = true
+  try {
+    await createClassroomResourceRequest({
+      resource_id: selectedResource.value.id,
+      class_id: selectedClassId.value,
+      quantity: requestedQuantity.value,
+    })
+    requestSuccessMessage.value = t('preschoolResourceRequests.messages.requestSubmitSuccess')
+    requestSuccess.value = true
+    requestDialogOpen.value = false
+
+    setTimeout(() => {
+      requestSuccess.value = false
+    }, 3000)
+
+    await loadRequests()
+  } catch (error) {
+    requestSuccessMessage.value = error?.message || t('preschoolResourceRequests.messages.actionFailed')
+  } finally {
+    requestSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -119,8 +247,26 @@ onMounted(loadResources)
         </div>
       </div>
 
+      <!-- Tab Switcher -->
+      <div class="teacher-resources__tabs">
+        <button
+          class="teacher-resources__tab"
+          :class="{ 'teacher-resources__tab--active': activeTab === 'resources' }"
+          @click="activeTab = 'resources'"
+        >
+          {{ t('preschoolClassroomResources.title') }}
+        </button>
+        <button
+          class="teacher-resources__tab"
+          :class="{ 'teacher-resources__tab--active': activeTab === 'requests' }"
+          @click="activeTab = 'requests'"
+        >
+          {{ t('preschoolResourceRequests.title') }}
+        </button>
+      </div>
+
       <!-- main panel -->
-      <div class="teacher-resources__panel">
+      <div class="teacher-resources__panel" v-if="activeTab === 'resources'">
 
         <!-- filters -->
         <div class="teacher-resources__filters">
@@ -160,12 +306,92 @@ onMounted(loadResources)
           :empty-text="searchQuery || categoryFilter || conditionFilter
             ? t('preschoolClassroomResources.messages.noResults')
             : t('preschoolClassroomResources.messages.empty')"
-        />
+        >
+          <template #actions="{ row }">
+            <Button
+              size="sm"
+              :label="t('preschoolResourceRequests.actions.request')"
+              @click="openRequestDialog(row)"
+            />
+          </template>
+        </Table>
 
         <div v-if="pagination.totalPages > 1" class="flex justify-end">
           <Pagination v-model="currentPage" :total-pages="pagination.totalPages" class="mt-2" />
         </div>
       </div>
+
+      <!-- Requests Panel -->
+      <div class="teacher-resources__panel" v-if="activeTab === 'requests'">
+        <div class="teacher-resources__filters">
+          <select v-model="requestStatusFilter" class="teacher-resources__input">
+            <option value="">All Statuses</option>
+            <option value="pending">{{ t('preschoolResourceRequests.statuses.pending') }}</option>
+            <option value="approved">{{ t('preschoolResourceRequests.statuses.approved') }}</option>
+            <option value="rejected">{{ t('preschoolResourceRequests.statuses.rejected') }}</option>
+          </select>
+        </div>
+
+        <Table
+          :rows="mappedRequests"
+          :columns="requestTableColumns"
+          :loading="requestsLoading"
+          :empty-text="t('preschoolResourceRequests.messages.empty')"
+        />
+      </div>
+
+      <!-- Success Message -->
+      <AlertSuccess v-if="requestSuccess" class="mb-4">
+        {{ requestSuccessMessage }}
+      </AlertSuccess>
+
+      <!-- Request Dialog -->
+      <Dialog
+        v-model:visible="requestDialogOpen"
+        :header="`${t('preschoolResourceRequests.actions.request')}: ${selectedResource?.name || ''}`"
+        modal
+        @update:visible="(val) => { if (!val) selectedResource = null; selectedClassId = '' }"
+      >
+        <div class="flex flex-col gap-4">
+          <div v-if="requestSuccessMessage && !requestSuccess" class="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            {{ requestSuccessMessage }}
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="font-medium text-sm">{{ t('preschoolClassroomResources.columns.class') }}</label>
+            <select v-model="selectedClassId" class="border border-gray-300 rounded px-3 py-2">
+              <option value="">-- Select Class --</option>
+              <option v-for="cls in myClasses" :key="cls.id" :value="cls.id">
+                {{ cls.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="font-medium text-sm">Quantity</label>
+            <input
+              v-model.number="requestedQuantity"
+              type="number"
+              min="1"
+              class="border border-gray-300 rounded px-3 py-2"
+              placeholder="Enter quantity needed"
+            />
+          </div>
+
+          <div class="flex gap-2 justify-end">
+            <Button
+              label="Cancel"
+              variant="secondary"
+              @click="requestDialogOpen = false"
+            />
+            <Button
+              :label="t('preschoolResourceRequests.actions.request')"
+              :loading="requestSubmitting"
+              @click="submitRequest"
+            />
+          </div>
+        </div>
+      </Dialog>
     </section>
   </MainLayout>
 </template>
@@ -283,6 +509,33 @@ onMounted(loadResources)
 .teacher-resources__input:focus {
   border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.teacher-resources__tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid #dce6f2;
+}
+
+.teacher-resources__tab {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.teacher-resources__tab:hover {
+  color: #0f172a;
+}
+
+.teacher-resources__tab--active {
+  color: #7c3aed;
+  border-bottom-color: #7c3aed;
 }
 
 @media (max-width: 768px) {

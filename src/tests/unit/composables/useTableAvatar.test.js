@@ -52,6 +52,11 @@ describe('useTableAvatar', () => {
     expect(avatarSrc({ id: '1', photo: '/uploads/photo.jpg' })).toBe('/uploads/photo.jpg')
   })
 
+  it('uses nested media url when the row only exposes media payloads', () => {
+    const { avatarSrc } = setup()
+    expect(avatarSrc({ id: '1', media: { url: '/uploads/media.jpg' } })).toBe('/uploads/media.jpg')
+  })
+
   // ─── shouldShowImage ──────────────────────────────────────────────────────────
 
   it('returns false when there is no avatar src', () => {

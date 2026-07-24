@@ -14,6 +14,9 @@ import {
   createClassroomResource,
   updateClassroomResource,
   deleteClassroomResource,
+  fetchClassroomResourceRequests,
+  approveClassroomResourceRequest,
+  rejectClassroomResourceRequest,
 } from '@/modules/preschool/services/preschoolApi'
 import {
   PAGE_SIZE,
@@ -65,6 +68,17 @@ const form = reactive({ ...DEFAULT_FORM })
 
 const formError = ref('')
 
+const activeTab = ref('resources')
+const requests = ref([])
+const requestsLoading = ref(false)
+const requestsErrorMessage = ref('')
+const requestStatusFilter = ref('')
+const selectedRequest = ref(null)
+const requestActionDialogOpen = ref(false)
+const requestActionMode = ref('approve')
+const requestActionLoading = ref(false)
+const requestActionNotes = reactive({ notes: '' })
+
 const categoryOptions = computed(() => buildCategoryOptions(t))
 
 const conditionOptions = computed(() => buildConditionOptions(t))
@@ -77,6 +91,25 @@ const summaries = computed(() => calculateSummaries(resources.value))
 const summaryTotal = computed(() => pagination.value.total || summaries.value.total)
 const summaryGood = computed(() => summaries.value.good)
 const summaryAttention = computed(() => summaries.value.attention)
+
+const requestTableColumns = computed(() => [
+  { key: 'number', label: t('preschoolResourceRequests.columns.resource'), align: 'left' },
+  { key: 'resource_name', label: t('preschoolResourceRequests.columns.resource'), align: 'left' },
+  { key: 'teacher_name', label: t('preschoolResourceRequests.columns.teacher'), align: 'left' },
+  { key: 'class_name', label: t('preschoolResourceRequests.columns.class'), align: 'left' },
+  { key: 'statusLabel', label: t('preschoolResourceRequests.columns.status'), align: 'left' },
+  { key: 'requestedAtLabel', label: t('preschoolResourceRequests.columns.requestedDate'), align: 'left' },
+  { key: 'action', label: t('preschoolResourceRequests.columns.action'), align: 'center' },
+])
+
+const mappedRequests = computed(() =>
+  requests.value.map((req, i) => ({
+    ...req,
+    number: i + 1,
+    statusLabel: t(`preschoolResourceRequests.statuses.${req.status}`),
+    requestedAtLabel: req.requested_at ? new Date(req.requested_at).toLocaleDateString() : '—',
+  })),
+)
 
 async function loadResources() {
   loading.value = true
@@ -97,6 +130,79 @@ async function loadResources() {
     errorMessage.value = error?.message || t('preschoolClassroomResources.messages.loadFailed')
   } finally {
     loading.value = false
+  }
+}
+
+async function loadRequests() {
+  requestsLoading.value = true
+  requestsErrorMessage.value = ''
+
+  try {
+    const response = await fetchClassroomResourceRequests({
+      page: 1,
+      perPage: 100,
+      status: requestStatusFilter.value,
+    })
+    requests.value = response.items || []
+  } catch (error) {
+    requests.value = []
+    console.error('Failed to load classroom resource requests:', error)
+    if (error?.response?.status === 500) {
+      console.error('Server error - the resource requests endpoint may have a configuration issue')
+      requestsErrorMessage.value = 'Server error loading requests. Please check the server logs.'
+    } else {
+      requestsErrorMessage.value = error?.message || t('preschoolResourceRequests.messages.actionFailed')
+    }
+  } finally {
+    requestsLoading.value = false
+  }
+}
+
+function openApproveDialog(request) {
+  selectedRequest.value = request
+  requestActionMode.value = 'approve'
+  requestActionNotes.notes = ''
+  requestActionDialogOpen.value = true
+}
+
+function openRejectDialog(request) {
+  selectedRequest.value = request
+  requestActionMode.value = 'reject'
+  requestActionNotes.notes = ''
+  requestActionDialogOpen.value = true
+}
+
+async function submitRequestAction() {
+  if (!selectedRequest.value) return
+
+  requestActionLoading.value = true
+
+  try {
+    if (requestActionMode.value === 'approve') {
+      await approveClassroomResourceRequest(selectedRequest.value.id, {
+        notes: requestActionNotes.notes,
+      })
+      successMessage.value = t('preschoolResourceRequests.messages.approvedSuccess')
+    } else {
+      await rejectClassroomResourceRequest(selectedRequest.value.id, {
+        rejection_reason: requestActionNotes.notes,
+      })
+      successMessage.value = t('preschoolResourceRequests.messages.rejectedSuccess')
+    }
+
+    showSuccess.value = true
+    requestActionDialogOpen.value = false
+    selectedRequest.value = null
+
+    setTimeout(() => {
+      showSuccess.value = false
+    }, 3000)
+
+    await loadRequests()
+  } catch (error) {
+    requestsErrorMessage.value = error?.message || t('preschoolResourceRequests.messages.actionFailed')
+  } finally {
+    requestActionLoading.value = false
   }
 }
 
@@ -186,7 +292,14 @@ watch(currentPage, () => {
   loadResources()
 })
 
-onMounted(loadResources)
+watch(requestStatusFilter, () => {
+  loadRequests()
+})
+
+onMounted(async () => {
+  await loadResources()
+  await loadRequests()
+})
 </script>
 
 <template>
@@ -198,7 +311,7 @@ onMounted(loadResources)
       />
 
       <!-- summary strip -->
-      <div class="classroom-resources__summary">
+      <div v-if="activeTab === 'resources'" class="classroom-resources__summary">
         <div class="classroom-resources__summary-card">
           <span class="classroom-resources__summary-value">{{ summaryTotal }}</span>
           <span class="classroom-resources__summary-label">{{ t('preschoolClassroomResources.summary.total') }}</span>
@@ -213,8 +326,24 @@ onMounted(loadResources)
         </div>
       </div>
 
+      <!-- tabs -->
+      <div class="classroom-resources__tabs">
+        <button
+          :class="['classroom-resources__tab', { 'classroom-resources__tab--active': activeTab === 'resources' }]"
+          @click="activeTab = 'resources'"
+        >
+          {{ t('preschoolClassroomResources.title') }}
+        </button>
+        <button
+          :class="['classroom-resources__tab', { 'classroom-resources__tab--active': activeTab === 'requests' }]"
+          @click="activeTab = 'requests'"
+        >
+          {{ t('preschoolResourceRequests.title') }}
+        </button>
+      </div>
+
       <!-- main panel -->
-      <div class="classroom-resources__panel">
+      <div v-if="activeTab === 'resources'" class="classroom-resources__panel">
 
         <!-- toolbar -->
         <div class="classroom-resources__toolbar">
@@ -275,6 +404,52 @@ onMounted(loadResources)
         <div v-if="pagination.totalPages > 1" class="flex justify-end">
           <Pagination v-model="currentPage" :total-pages="pagination.totalPages" class="mt-2" />
         </div>
+      </div>
+
+      <!-- requests tab panel -->
+      <div v-if="activeTab === 'requests'" class="classroom-resources__panel">
+        <div class="classroom-resources__filters">
+          <select v-model="requestStatusFilter" class="classroom-resources__input">
+            <option value="">{{ t('preschoolResourceRequests.title') }} - All Statuses</option>
+            <option value="pending">{{ t('preschoolResourceRequests.statuses.pending') }}</option>
+            <option value="approved">{{ t('preschoolResourceRequests.statuses.approved') }}</option>
+            <option value="rejected">{{ t('preschoolResourceRequests.statuses.rejected') }}</option>
+          </select>
+        </div>
+
+        <div v-if="requestsErrorMessage" class="classroom-resources__error">
+          {{ requestsErrorMessage }}
+        </div>
+
+        <Table
+          :rows="mappedRequests"
+          :columns="requestTableColumns"
+          :loading="requestsLoading"
+          :empty-text="t('preschoolResourceRequests.messages.empty')"
+        >
+          <template #action="{ row }">
+            <div v-if="row.status === 'pending'" class="flex gap-2">
+              <Button
+                size="sm"
+                variant="success"
+                :label="t('preschoolResourceRequests.actions.approve')"
+                @click="openApproveDialog(row)"
+              />
+              <Button
+                size="sm"
+                variant="danger"
+                :label="t('preschoolResourceRequests.actions.reject')"
+                @click="openRejectDialog(row)"
+              />
+            </div>
+            <span v-else class="text-sm font-semibold" :class="{
+              'text-green-600': row.status === 'approved',
+              'text-red-600': row.status === 'rejected'
+            }">
+              {{ row.statusLabel }}
+            </span>
+          </template>
+        </Table>
       </div>
     </section>
 
@@ -375,6 +550,46 @@ onMounted(loadResources)
       :button-text="t('preschoolClassroomResources.alerts.close')"
       @close="showSuccess = false"
     />
+
+    <!-- request action dialog -->
+    <Dialog
+      v-model:visible="requestActionDialogOpen"
+      :header="requestActionMode === 'approve' ? t('preschoolResourceRequests.dialogs.approveTitle') : t('preschoolResourceRequests.dialogs.rejectTitle')"
+      modal
+      :closable="true"
+    >
+      <div v-if="selectedRequest" class="space-y-4">
+        <p><strong>{{ t('preschoolResourceRequests.columns.resource') }}:</strong> {{ selectedRequest.resource_name }}</p>
+        <p><strong>{{ t('preschoolResourceRequests.columns.teacher') }}:</strong> {{ selectedRequest.teacher_name }}</p>
+        <p><strong>{{ t('preschoolResourceRequests.columns.class') }}:</strong> {{ selectedRequest.class_name }}</p>
+
+        <div class="space-y-2">
+          <label class="block font-semibold text-sm">
+            {{ requestActionMode === 'approve' ? t('preschoolResourceRequests.dialogs.approvalNotes') : t('preschoolResourceRequests.dialogs.rejectionReason') }}
+          </label>
+          <textarea
+            v-model="requestActionNotes.notes"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+            rows="3"
+            :placeholder="requestActionMode === 'approve' ? 'Optional notes...' : 'Please provide a reason...'"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          :label="t('common.cancel')"
+          variant="secondary"
+          @click="requestActionDialogOpen = false"
+        />
+        <Button
+          :label="requestActionMode === 'approve' ? t('preschoolResourceRequests.actions.approve') : t('preschoolResourceRequests.actions.reject')"
+          :variant="requestActionMode === 'approve' ? 'success' : 'danger'"
+          :loading="requestActionLoading"
+          @click="submitRequestAction"
+        />
+      </template>
+    </Dialog>
   </MainLayout>
 </template>
 
@@ -539,6 +754,35 @@ onMounted(loadResources)
   font-size: 0.8rem;
   color: #e11d48;
   margin: 0;
+}
+
+.classroom-resources__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #dce6f2;
+  margin: 0;
+  padding: 0;
+}
+
+.classroom-resources__tab {
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.classroom-resources__tab:hover {
+  color: #0f172a;
+}
+
+.classroom-resources__tab--active {
+  color: #0f172a;
+  border-bottom-color: #7c3aed;
 }
 
 @media (max-width: 768px) {

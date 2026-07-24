@@ -22,9 +22,11 @@ vi.mock('@/modules/sport/coach/composables/useTeamRoster', () => ({
     team: ref({ id: 'team-1', name: 'Assigned FC' }),
     players: ref([{ id: 'player-1', name: 'Player One', jerseyNumber: 7, primaryPosition: 'Forward', approvalStatus: 'approved', rosterStatus: 'active' }]),
     memberships: ref([{ id: 'membership-1', status: 'active' }]),
+    candidates: ref([{ id: 'candidate-1', name: 'Candidate One', approvalStatus: 'approved' }]),
     loading: ref(false),
     error: ref(''),
     loadRoster,
+    loadCandidates: vi.fn(),
     addPlayer,
     loadHistory,
     updateMembership: vi.fn(),
@@ -177,7 +179,6 @@ describe('player lifecycle pages', () => {
     expect(wrapper.text()).toContain('Assigned FC')
     expect(wrapper.text()).toContain('Player One')
     expect(loadTeams).toHaveBeenCalled()
-    expect(loadPlayers).toHaveBeenCalled()
     expect(loadHistory).not.toHaveBeenCalled()
   })
 

@@ -20,6 +20,7 @@ import PlayerChecklist from '@/modules/sport/admin/components/add-player/PlayerC
 import { useProfileImage } from './composables/useProfileImage'
 import {
   playerStatusLabel,
+  getRegistrationStatusLabel,
   validate,
   getFormPayload,
   initializeFormFromPlayer,
@@ -51,6 +52,7 @@ const {
 
 const teamRows = ref([])
 const divisions = ref([])
+const loadFailedMessage = computed(() => t('sportAddPlayer.validation.loadFailed'))
 
 const form = reactive({
   name: '',
@@ -120,13 +122,14 @@ const selectedTeamLabel = computed(() => form.team || t('sportAddPlayer.teamPlac
 const selectedDivisionLabel = computed(() => form.division || t('sportAddPlayer.divisionPlaceholder'))
 const selectedStatusLabel = computed(() => playerStatusLabel(form.status, t, te))
 const selectedRegistrationStatusLabel = computed(() =>
-  playerStatusLabel(form.registrationStatus, t, te),
+  getRegistrationStatusLabel(form.registrationStatus, t, te),
 )
 
 const positionOptions = POSITION_OPTIONS
 const preferredFootOptions = PREFERRED_FOOT_OPTIONS
 const bloodTypeOptions = BLOOD_TYPE_OPTIONS
 const statusOptions = STATUS_OPTIONS
+const registrationStatusOptions = REGISTRATION_STATUS_OPTIONS
 
 const checklistItems = computed(() => [
   {
@@ -165,6 +168,11 @@ function getPlayerStatusLabel(status) {
 function resetFeedback() {
   errorMessage.value = ''
   showError.value = false
+}
+
+function showLoadError() {
+  errorMessage.value = loadFailedMessage.value
+  showError.value = true
 }
 
 async function onProfileImageChange(event) {
@@ -228,16 +236,23 @@ function onErrorClose() {
 }
 
 onMounted(async () => {
-  try {
-    const [teamsResponse, divisionsResponse] = await Promise.all([
-      fetchSportTeams({ perPage: 100 }),
-      fetchSportDivisions({ perPage: 100 }),
-    ])
-    teamRows.value = teamsResponse.items || []
-    divisions.value = divisionsResponse.items || []
-  } catch {
+  const [teamsResult, divisionsResult] = await Promise.allSettled([
+    fetchSportTeams({ perPage: 100 }),
+    fetchSportDivisions({ perPage: 100 }),
+  ])
+
+  if (teamsResult.status === 'fulfilled') {
+    teamRows.value = teamsResult.value.items || []
+  } else {
     teamRows.value = []
+    showLoadError()
+  }
+
+  if (divisionsResult.status === 'fulfilled') {
+    divisions.value = divisionsResult.value.items || []
+  } else {
     divisions.value = []
+    showLoadError()
   }
 
   const id = String(route.query.id || '').trim()
@@ -249,7 +264,7 @@ onMounted(async () => {
     initializeFormFromPlayer(found, form)
     setImagePreview(getProfileImagePreview(found))
   } catch {
-    // Handle error silently
+    showLoadError()
   }
 })
 </script>

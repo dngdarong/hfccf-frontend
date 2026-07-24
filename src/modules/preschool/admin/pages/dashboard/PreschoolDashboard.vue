@@ -1,180 +1,65 @@
 <script setup>
-// Keep Preschool dashboard copy in the locale layer so the page stays stable
-// across EN/KH switches and does not regress to hardcoded English labels.
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
-import HeaderSection from '@/components/navigation/HeaderSection.vue'
-import Button from '@/components/buttons/Button.vue'
-import PreschoolDashboardSummary from '@/modules/preschool/admin/components/dashboard/PreschoolDashboardSummary.vue'
-import PreschoolDashboardSpotlight from '@/modules/preschool/admin/components/dashboard/PreschoolDashboardSpotlight.vue'
-import PreschoolDashboardActionList from '@/modules/preschool/admin/components/dashboard/PreschoolDashboardActionList.vue'
-import PreschoolDashboardActivity from '@/modules/preschool/admin/components/dashboard/PreschoolDashboardActivity.vue'
+import AppStatusChip from '@/components/ui/AppStatusChip.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { fetchPreschoolDashboard } from '@/modules/preschool/services/preschoolApi'
-import { fetchReportsDashboard } from '@/modules/preschool/services/api/preschoolReportingApi'
+import DashboardHeroSection from '@/modules/preschool/admin/pages/dashboard/sections/DashboardHeroSection.vue'
+import DashboardSummarySection from '@/modules/preschool/admin/pages/dashboard/sections/DashboardSummarySection.vue'
+import DashboardPrioritySection from '@/modules/preschool/admin/pages/dashboard/sections/DashboardPrioritySection.vue'
+import { useDashboardData } from '@/modules/preschool/admin/pages/dashboard/composables/useDashboardData'
+import { useDashboardActions } from '@/modules/preschool/admin/pages/dashboard/composables/useDashboardActions'
+import './preschool-dashboard.css'
 
 defineOptions({
   name: 'PreschoolDashboardPage',
 })
 
 const { t } = useLanguage()
-const router = useRouter()
+const {
+  academicYear,
+  academicTerm,
+  lastUpdated,
+  spotlightTitle,
+  spotlightText,
+  summaryCards,
+  todayScheduleItemsForView,
+  attendanceProgressCards,
+  todayMissingSessionCount,
+  priorityItems,
+  loading,
+  errorMessage,
+  loadDashboard,
+} = useDashboardData()
 
-const dashboard = ref({
-  summary: {
-    students: 0,
-    classes: 0,
-    teachers: 0,
-    attendanceToday: 0,
-    pendingPayments: 0,
-    overduePayments: 0,
-  },
-  recentAttendance: [],
-  upcomingClasses: [],
-  paymentSummary: {
-    paid: 0,
-    pending: 0,
-    overdue: 0,
-    cancelled: 0,
-  },
-})
-const reportsDashboard = ref({
-  kpis: {},
-  modules: {},
-  cards: [],
-  risk: {},
-})
-const loading = ref(false)
-const errorMessage = ref('')
+const { toolbarMenuItems, goToScheduleManagement } = useDashboardActions()
 
-async function loadDashboard() {
-  loading.value = true
-  errorMessage.value = ''
-
-  try {
-    const [coreDashboard, reportsPayload] = await Promise.all([
-      fetchPreschoolDashboard(),
-      fetchReportsDashboard(),
-    ])
-
-    dashboard.value = coreDashboard
-    reportsDashboard.value = reportsPayload.dashboard || reportsDashboard.value
-  } catch (error) {
-    errorMessage.value = error?.message || t('preschoolDashboardPage.errors.loadFailed')
-  } finally {
-    loading.value = false
-  }
-}
-
-const cards = computed(() => [
-  {
-    title: t('preschoolDashboardPage.cards.students.title'),
-    value: dashboard.value.summary.students || 0,
-    label: t('preschoolDashboardPage.cards.students.label'),
-    status: 'success',
-  },
-  {
-    title: t('preschoolDashboardPage.cards.classes.title'),
-    value: dashboard.value.summary.classes || 0,
-    label: t('preschoolDashboardPage.cards.classes.label'),
-    status: 'info',
-  },
-  {
-    title: t('preschoolDashboardPage.cards.teachers.title'),
-    value: dashboard.value.summary.teachers || 0,
-    label: t('preschoolDashboardPage.cards.teachers.label'),
-    status: 'warning',
-  },
-  {
-    title: t('preschoolDashboardPage.cards.attendance.title'),
-    value: dashboard.value.summary.attendanceToday || 0,
-    label: t('preschoolDashboardPage.cards.attendance.label'),
-    status: 'error',
-  },
-])
-
-const actions = computed(() => [
-  t('preschoolDashboardPage.actions.pendingPayments', { count: dashboard.value.summary.pendingPayments || 0 }),
-  t('preschoolDashboardPage.actions.overduePayments', { count: dashboard.value.summary.overduePayments || 0 }),
-  t('preschoolDashboardPage.actions.paidPayments', { count: dashboard.value.paymentSummary?.paid || 0 }),
-  t('preschoolDashboardPage.actions.upcomingClasses', { count: dashboard.value.upcomingClasses.length || 0 }),
-])
-
-const reportsCard = computed(() => [
-  {
-    title: t('preschoolDashboardPage.cards.reports.title'),
-    value: reportsDashboard.value.kpis?.attendanceRate || 0,
-    label: t('preschoolDashboardPage.cards.reports.label'),
-    status: 'success',
-  },
-  {
-    title: t('preschoolDashboardPage.cards.reports.revenue'),
-    value: reportsDashboard.value.kpis?.revenue || 0,
-    label: t('preschoolDashboardPage.cards.reports.revenueLabel'),
-    status: 'info',
-  },
-  {
-    title: t('preschoolDashboardPage.cards.reports.health'),
-    value: reportsDashboard.value.kpis?.openHealthAlerts || 0,
-    label: t('preschoolDashboardPage.cards.reports.healthLabel'),
-    status: 'error',
-  },
-  {
-    title: t('preschoolDashboardPage.cards.reports.assessments'),
-    value: reportsDashboard.value.kpis?.assessmentCompletion || 0,
-    label: t('preschoolDashboardPage.cards.reports.assessmentsLabel'),
-    status: 'warning',
-  },
-])
-
-const notes = computed(() =>
-  (dashboard.value.recentAttendance || []).slice(0, 5).map((item) => ({
-    title: `${item.studentName || t('preschoolDashboardPage.cards.students.title')} - ${item.className || t('preschoolDashboardPage.cards.classes.title')}`,
-    text: `${item.attendanceDate || '-'} • ${item.status || '-'}`,
-  })),
-)
-
-const spotlightTitle = computed(() =>
-  dashboard.value.upcomingClasses[0]
-    ? `${dashboard.value.upcomingClasses[0].name} ${t('preschoolDashboardPage.nextClassSuffix')}`
-    : t('preschoolDashboardPage.noUpcomingClasses'),
-)
-
-const spotlightText = computed(() =>
-  dashboard.value.upcomingClasses[0]
-    ? `${dashboard.value.upcomingClasses[0].teacherDisplayName || t('preschoolDashboardPage.assignedTeacher')} has ${dashboard.value.upcomingClasses[0].studentsCount || 0} enrolled students.`
-    : t('preschoolDashboardPage.populateText'),
-)
-
-function goToScheduleManagement() {
-  // Keep the timetable entry point on the dashboard so Preschool admins can
-  // reach schedules without relying on a sidebar structure change.
-  router.push({ name: 'dashboard-preschool-admin-schedules' })
-}
-
-onMounted(() => {
-  loadDashboard()
-})
+onMounted(loadDashboard)
 </script>
 
 <template>
   <MainLayout>
     <section class="preschool-dashboard-page">
-      <HeaderSection
+      <DashboardHeroSection
         :title="t('preschoolDashboardPage.title')"
         :subtitle="t('preschoolDashboardPage.subtitle')"
+        :academic-year="academicYear"
+        :academic-term="academicTerm"
+        :last-updated="lastUpdated"
+        :spotlight-title="spotlightTitle"
+        :spotlight-text="spotlightText"
+        :loading="loading"
+        :primary-label="t('preschoolDashboardPage.header.scheduleManagement')"
+        :menu-label="t('common.actions.menu')"
+        :refresh-label="t('preschoolDashboardPage.header.refresh')"
+        :menu-items="toolbarMenuItems"
+        @refresh="loadDashboard"
+        @primary="goToScheduleManagement"
       />
-
-      <div class="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="primary" size="md" rounded="xl" @click="goToScheduleManagement">
-          {{ t('preschoolDashboardPage.actions.scheduleManagement') }}
-        </Button>
-      </div>
 
       <div
         v-if="errorMessage"
-        class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
       >
         {{ errorMessage }}
       </div>
@@ -182,57 +67,95 @@ onMounted(() => {
       <div
         v-if="loading"
         class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500"
+        data-testid="dashboard-loading"
       >
         {{ t('preschoolDashboardPage.loading') }}
       </div>
 
-      <PreschoolDashboardSummary :cards="cards" />
+      <DashboardSummarySection :cards="summaryCards" />
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="space-y-1">
-            <h3 class="text-sm font-semibold text-slate-900">{{ t('preschoolDashboardPage.cards.reports.title') }}</h3>
-            <p class="text-sm text-slate-500">{{ t('preschoolDashboardPage.cards.reports.subtitle') }}</p>
+      <section class="preschool-dashboard-page__section">
+        <div class="preschool-dashboard-page__section-header">
+          <div>
+            <h2 class="preschool-dashboard-page__section-title">
+              {{ t('preschoolDashboardPage.operationalSummary.title') }}
+            </h2>
+            <p class="preschool-dashboard-page__section-subtitle">
+              {{ t('preschoolDashboardPage.operationalSummary.subtitle') }}
+            </p>
           </div>
-          <Button type="button" variant="primary" size="md" rounded="xl" @click="router.push({ name: 'dashboard-preschool-admin-reports' })">
-            {{ t('preschoolDashboardPage.cards.reports.action') }}
-          </Button>
         </div>
-        <div class="mt-4">
-          <PreschoolDashboardSummary :cards="reportsCard" />
+
+        <div class="grid gap-4 xl:grid-cols-2">
+          <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900">
+                  {{ t('preschoolDashboardPage.operationalSummary.todaySchedule.title') }}
+                </h3>
+                <p class="text-sm text-slate-500">
+                  {{ t('preschoolDashboardPage.operationalSummary.todaySchedule.subtitle') }}
+                </p>
+              </div>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {{ todayMissingSessionCount }}
+              </span>
+            </div>
+
+            <div v-if="todayScheduleItemsForView.length === 0" class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+              {{ t('preschoolDashboardPage.operationalSummary.noSessionsToday') }}
+            </div>
+
+            <div v-else class="mt-4 space-y-3">
+              <article
+                v-for="item in todayScheduleItemsForView"
+                :key="item.id"
+                class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-slate-900">
+                      {{ item.title }}
+                    </p>
+                    <p class="mt-1 text-sm text-slate-500">
+                      {{ item.text || t('preschoolDashboardPage.operationalSummary.noSessionGenerated') }}
+                    </p>
+                  </div>
+                  <AppStatusChip
+                    :status="item.hasSession ? item.status : 'warning'"
+                    :label="item.hasSession ? item.statusLabel : t('preschoolDashboardPage.operationalSummary.noSessionGenerated')"
+                    :translate-label="false"
+                    size="xs"
+                  />
+                </div>
+              </article>
+            </div>
+          </article>
         </div>
-      </div>
 
-      <div class="preschool-dashboard-page__grid">
-        <PreschoolDashboardSpotlight
-          :title="spotlightTitle"
-          :text="spotlightText"
-        />
-        <PreschoolDashboardActionList :title="t('preschoolDashboardPage.actions.queueTitle')" :items="actions" />
-      </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <article
+            v-for="card in attendanceProgressCards"
+            :key="card.label"
+            class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ card.label }}
+            </p>
+            <p class="mt-2 text-2xl font-bold text-slate-900">
+              {{ card.value }}
+            </p>
+          </article>
+        </div>
+      </section>
 
-      <PreschoolDashboardActivity :items="notes" />
+      <DashboardPrioritySection
+        :title="t('preschoolDashboardPage.priority.title')"
+        :subtitle="t('preschoolDashboardPage.priority.subtitle')"
+        :card-title="t('preschoolDashboardPage.priority.cardTitle')"
+        :items="priorityItems"
+        :empty-text="t('preschoolDashboardPage.priority.empty')"
+      />
     </section>
   </MainLayout>
 </template>
-
-<style scoped>
-.preschool-dashboard-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.preschool-dashboard-page__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-@media (max-width: 980px) {
-  .preschool-dashboard-page__grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

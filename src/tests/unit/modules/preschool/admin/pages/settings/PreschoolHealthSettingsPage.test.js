@@ -26,6 +26,18 @@ import {
 
 const toastAdd = vi.fn()
 
+function listResponse(items = []) {
+  return {
+    items,
+    pagination: {
+      page: 1,
+      perPage: Math.max(items.length, 1),
+      total: items.length,
+      totalPages: items.length > 0 ? 1 : 0,
+    },
+  }
+}
+
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({
     add: toastAdd,
@@ -81,18 +93,18 @@ beforeEach(() => {
     overdueVaccinationAlertDays: 21,
     medicationReminderMinutesBefore: 45,
   })
-  fetchSeverityLevels.mockResolvedValue([
+  fetchSeverityLevels.mockResolvedValue(listResponse([
     { id: 1, name: 'Critical', code: 'critical', priority: 1, color: '#ef4444', requiresAcknowledgment: true, triggersNotification: true, isActive: true },
-  ])
-  fetchIncidentCategories.mockResolvedValue([
+  ]))
+  fetchIncidentCategories.mockResolvedValue(listResponse([
     { id: 2, name: 'Fever', code: 'fever', defaultSeverityCode: 'high', isActive: true },
-  ])
-  fetchVaccinationCategories.mockResolvedValue([
+  ]))
+  fetchVaccinationCategories.mockResolvedValue(listResponse([
     { id: 3, name: 'MMR', code: 'mmr', recommendedAgeMonths: 12, isRequired: true, isActive: true },
-  ])
-  fetchHealthCheckCategories.mockResolvedValue([
+  ]))
+  fetchHealthCheckCategories.mockResolvedValue(listResponse([
     { id: 4, name: 'Temperature', code: 'temperature', isActive: true },
-  ])
+  ]))
 
   updateHealthSettings.mockResolvedValue({
     criticalAlertEnabled: false,
@@ -135,6 +147,25 @@ describe('PreschoolHealthSettingsPage', () => {
     expect(wrapper.text()).toContain('Health Check Categories')
     expect(wrapper.text()).toContain('Critical')
     expect(wrapper.text()).toContain('Fever')
+  })
+
+  it('renders empty health catalog states without crashing when list responses are empty envelopes', async () => {
+    fetchSeverityLevels.mockResolvedValue(listResponse())
+    fetchIncidentCategories.mockResolvedValue(listResponse())
+    fetchVaccinationCategories.mockResolvedValue(listResponse())
+    fetchHealthCheckCategories.mockResolvedValue(listResponse())
+
+    const wrapper = mountWithPlugins(PreschoolHealthSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="health-severity-table"]').text()).toContain('No severity levels configured yet.')
+    expect(wrapper.find('[data-testid="health-incident-table"]').text()).toContain('No incident categories configured yet.')
+    expect(wrapper.find('[data-testid="health-vaccination-table"]').text()).toContain('No vaccination categories configured yet.')
+    expect(wrapper.find('[data-testid="health-check-table"]').text()).toContain('No health check categories configured yet.')
   })
 
   it('sends the health settings payload when saving', async () => {
@@ -299,5 +330,24 @@ describe('PreschoolHealthSettingsPage', () => {
     await flushPromises()
     await checkButtons[1].trigger('click')
     expect(archiveHealthCheckCategory).toHaveBeenCalledWith(8)
+  })
+
+  it('shows a safe error state when the health bootstrap rejects', async () => {
+    fetchHealthSettings.mockRejectedValueOnce(new Error('API endpoint not found.'))
+    fetchSeverityLevels.mockResolvedValue(listResponse())
+    fetchIncidentCategories.mockResolvedValue(listResponse())
+    fetchVaccinationCategories.mockResolvedValue(listResponse())
+    fetchHealthCheckCategories.mockResolvedValue(listResponse())
+
+    const wrapper = mountWithPlugins(PreschoolHealthSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="health-settings-error"]').text()).toContain('API endpoint not found.')
+    expect(wrapper.find('[data-testid="health-severity-table"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="health-severity-table"]').text()).toContain('No severity levels configured yet.')
   })
 })

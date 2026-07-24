@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import AlertError from '@/components/alerts/AlertError.vue'
+import { useLanguage } from '@/composables/useLanguage'
 import { createSportDivision, fetchSportDivision, updateSportDivision } from '@/modules/sport/services/sportApi'
 
 defineOptions({
@@ -11,16 +13,17 @@ defineOptions({
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useLanguage()
 
 const isEditMode = computed(() => route.query.mode === 'edit' || !!route.params.id)
 const divisionId = computed(() => route.params.id)
 const pageTitle = computed(() =>
-  isEditMode.value ? 'Edit Division' : 'Create New Division',
+  isEditMode.value ? t('sportDivisionManagement.form.editTitle') : t('sportDivisionManagement.form.createTitle'),
 )
 const pageSubtitle = computed(() =>
   isEditMode.value
-    ? 'Update division details'
-    : 'Add a new division to organize teams',
+    ? t('sportDivisionManagement.form.editSubtitle')
+    : t('sportDivisionManagement.form.createSubtitle'),
 )
 
 const form = ref({
@@ -31,16 +34,18 @@ const form = ref({
 
 const errors = ref({})
 const isSubmitting = ref(false)
+const submitError = ref('')
+const loadError = ref('')
 
 function validateForm() {
   errors.value = {}
 
   if (!form.value.name?.trim()) {
-    errors.value.name = 'Division name is required'
+    errors.value.name = t('sportDivisionManagement.form.nameRequired')
   }
 
   if (form.value.name && form.value.name.length > 100) {
-    errors.value.name = 'Division name must be 100 characters or less'
+    errors.value.name = t('sportDivisionManagement.form.nameTooLong')
   }
 
   return Object.keys(errors.value).length === 0
@@ -61,9 +66,8 @@ async function handleSubmit() {
     }
 
     await router.push({ name: 'dashboard-sport-admin-divisions' })
-  } catch (error) {
-    console.error('Error saving division:', error)
-    alert('Failed to save division')
+  } catch {
+    submitError.value = t('sportDivisionManagement.form.saveFailed')
   } finally {
     isSubmitting.value = false
   }
@@ -82,9 +86,8 @@ onMounted(async () => {
         description: division.description,
         status: division.status,
       }
-    } catch (error) {
-      console.error('Error loading division:', error)
-      alert('Failed to load division')
+    } catch {
+      loadError.value = t('sportDivisionManagement.form.loadFailed')
     }
   }
 })
@@ -95,15 +98,29 @@ onMounted(async () => {
     <section class="add-division-page">
       <HeaderSection :title="pageTitle" :subtitle="pageSubtitle" />
 
+      <AlertError
+        v-if="loadError"
+        :show="true"
+        :message="loadError"
+        @close="loadError = ''"
+      />
+
+      <AlertError
+        v-if="submitError"
+        :show="true"
+        :message="submitError"
+        @close="submitError = ''"
+      />
+
       <div class="form-container">
         <form @submit.prevent="handleSubmit" class="division-form">
           <div class="form-group">
-            <label for="name" class="form-label">Division Name *</label>
+            <label for="name" class="form-label">{{ t('sportDivisionManagement.form.name') }} *</label>
             <input
               id="name"
               v-model="form.name"
               type="text"
-              placeholder="e.g., Division A, Premier League"
+              :placeholder="t('sportDivisionManagement.form.namePlaceholder')"
               class="form-input"
               :class="{ 'form-input--error': errors.name }"
               maxlength="100"
@@ -112,11 +129,11 @@ onMounted(async () => {
           </div>
 
           <div class="form-group">
-            <label for="description" class="form-label">Description</label>
+            <label for="description" class="form-label">{{ t('sportDivisionManagement.form.description') }}</label>
             <textarea
               id="description"
               v-model="form.description"
-              placeholder="Enter division description (optional)"
+              :placeholder="t('sportDivisionManagement.form.descriptionPlaceholder')"
               class="form-textarea"
               rows="4"
               maxlength="500"
@@ -125,19 +142,19 @@ onMounted(async () => {
           </div>
 
           <div class="form-group">
-            <label for="status" class="form-label">Status</label>
+            <label for="status" class="form-label">{{ t('sportDivisionManagement.form.status') }}</label>
             <select v-model="form.status" id="status" class="form-select">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{{ t('sportDivisionManagement.form.active') }}</option>
+              <option value="inactive">{{ t('sportDivisionManagement.form.inactive') }}</option>
             </select>
           </div>
 
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="isSubmitting">
-              {{ isSubmitting ? 'Saving...' : isEditMode ? 'Update Division' : 'Create Division' }}
+              {{ isSubmitting ? t('sportDivisionManagement.form.saving') : isEditMode ? t('sportDivisionManagement.form.update') : t('sportDivisionManagement.form.create') }}
             </button>
             <button type="button" class="btn-secondary" @click="handleCancel">
-              Cancel
+              {{ t('sportDivisionManagement.form.cancel') }}
             </button>
           </div>
         </form>

@@ -84,6 +84,7 @@ const tournamentOptions = computed(() =>
 )
 
 const statusOptions = computed(() => [
+  { value: 'draft', label: t('sportMatchesManagement.status.draft') },
   { value: MATCH_STATUS.SCHEDULED, label: t('sportMatchesManagement.status.scheduled') },
   { value: MATCH_STATUS.LIVE, label: t('sportMatchesManagement.status.live') },
   { value: MATCH_STATUS.COMPLETED, label: t('sportMatchesManagement.status.completed') },

@@ -26,6 +26,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  showBack: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const emit = defineEmits(['update:teamId', 'update:date', 'shift-date', 'go-today', 'go-back'])
@@ -97,10 +101,10 @@ function handleGoBack() {
     </label>
 
     <Button type="button" variant="ghost" size="md" rounded="xl" :disabled="loading" @click="handleGoToday">
-      Today
+      {{ t('common.today') }}
     </Button>
 
-    <Button type="button" variant="ghost" size="md" rounded="xl" @click="handleGoBack">
+    <Button v-if="showBack" type="button" variant="ghost" size="md" rounded="xl" @click="handleGoBack">
       {{ t('sportAdminPlayerAttendancePage.actions.back') }}
     </Button>
   </div>
@@ -110,13 +114,13 @@ function handleGoBack() {
 .att-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.9rem;
+  gap: 0.75rem;
   align-items: end;
-  padding: 1rem 1.15rem;
-  border-radius: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 1.2rem;
   border: 1px solid #dce6f2;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
-  box-shadow: 0 20px 54px -42px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 18px 48px -40px rgba(15, 23, 42, 0.4);
 }
 
 .att-toolbar__field {

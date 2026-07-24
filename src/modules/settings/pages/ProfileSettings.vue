@@ -149,14 +149,19 @@ const overviewSections = computed(() => {
 
 .profile-settings-layout {
   display: grid;
-  grid-template-columns: 20rem 1fr;
+  grid-template-columns: minmax(18rem, 21rem) minmax(0, 1fr);
   align-items: start;
   gap: 1.25rem;
 }
 
 .profile-settings-layout__sidebar {
+  min-width: 0;
   position: sticky;
   top: 1rem;
+}
+
+.profile-settings-layout__content {
+  min-width: 0;
 }
 
 .profile-settings-layout__content-grid {

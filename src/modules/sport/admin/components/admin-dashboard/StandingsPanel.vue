@@ -108,7 +108,7 @@ function teamCode(standing) {
 .standings__card {
   border: 1px solid #e8edf3;
   border-radius: 0.95rem;
-  padding: 1.25rem;
+  padding: 1.1rem;
   background: linear-gradient(160deg, #ffffff 0%, #f6fff6 100%);
   box-shadow: 0 12px 24px rgba(4, 52, 80, 0.05);
   border-left: 4px solid var(--hope-lime);
@@ -119,7 +119,7 @@ function teamCode(standing) {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.15rem;
+  margin-bottom: 0.95rem;
 }
 
 .standings__title {

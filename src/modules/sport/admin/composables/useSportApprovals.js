@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import {
   approvePendingMatch,
   approvePendingPlayer,
+  createCoachTeamAssignment,
   deactivateCoachTeamAssignment,
   fetchPendingMatches,
   fetchPendingPlayers,
@@ -9,6 +10,7 @@ import {
   rejectPendingMatch,
   rejectPendingPlayer,
   saveCoachTeamAssignment,
+  updateCoachTeamAssignment,
 } from '@/modules/sport/services/api/sportApprovalsApi'
 
 export function useSportApprovals() {
@@ -46,6 +48,7 @@ export function useSportApprovals() {
   return {
     approvePendingMatch,
     approvePendingPlayer,
+    createCoachTeamAssignment,
     deactivateCoachTeamAssignment,
     error,
     loadPendingMatches,
@@ -55,5 +58,6 @@ export function useSportApprovals() {
     rejectPendingMatch,
     rejectPendingPlayer,
     saveCoachTeamAssignment,
+    updateCoachTeamAssignment,
   }
 }

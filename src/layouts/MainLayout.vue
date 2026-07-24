@@ -252,29 +252,22 @@ onBeforeUnmount(() => {
       </slot>
     </aside>
 
-    <button
-      v-if="isMobileViewport && !isSidebarOpen"
-      type="button"
-      class="fixed left-0 z-[65] flex h-14 w-5 items-center justify-center rounded-r-xl border border-l-0 border-surface-200 bg-white/95 text-surface-500 shadow-[0_12px_28px_-20px_rgba(15,23,42,0.28)] backdrop-blur transition-all hover:w-6 hover:border-brand-300 hover:text-surface-900 min-[769px]:hidden top-[calc(60px+38vh)] max-[600px]:top-[calc(56px+38vh)] max-[480px]:top-[calc(52px+38vh)] max-[420px]:top-[calc(50px+38vh)]"
-      :aria-label="t('common.navigation.openSidebar')"
-      @click="openSidebar"
-    >
-      <i class="pi pi-angle-right text-sm" />
-    </button>
 
     <Drawer
       v-model:visible="isSidebarOpen"
       position="left"
-      :show-close-icon="false"
+      :show-close-icon="true"
       :modal="true"
       class="main-layout-drawer min-[769px]:hidden"
+      @hide="closeSidebar"
       :pt="{
         root: {
           class:
-            'w-[min(88vw,300px)] mt-[60px] border-r border-surface-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,251,255,1)_100%)] shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] max-[600px]:mt-14 max-[600px]:w-[min(90vw,290px)] max-[480px]:mt-[52px] max-[480px]:w-[min(92vw,270px)] max-[420px]:mt-[50px] max-[420px]:w-[min(94vw,250px)]',
+            'w-[min(90vw,320px)] mt-[60px] border-r border-surface-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,251,255,1)_100%)] shadow-[0_28px_48px_-16px_rgba(15,23,42,0.4)] max-[600px]:mt-14 max-[600px]:w-[min(92vw,300px)] max-[480px]:mt-[52px] max-[480px]:w-[min(94vw,280px)] max-[420px]:mt-[50px] max-[420px]:w-[min(96vw,260px)]',
         },
-        content: { class: 'p-0' },
-        mask: { class: 'min-[769px]:hidden bg-slate-950/20 backdrop-blur-[2px]' },
+        content: { class: 'p-0 h-full flex flex-col' },
+        mask: { class: 'min-[769px]:hidden bg-slate-950/30 backdrop-blur-sm' },
+        closeIcon: { class: 'text-surface-600 hover:text-surface-900' },
       }"
     >
       <slot
@@ -285,7 +278,7 @@ onBeforeUnmount(() => {
         :is-desktop-collapsed="false"
         :is-sidebar-open="isSidebarOpen"
       >
-        <Sidebar :collapsed="false" @toggle-sidebar="toggleSidebar" @logout="onSidebarLogout" />
+        <Sidebar :collapsed="false" :is-mobile="true" @toggle-sidebar="toggleSidebar" @logout="onSidebarLogout" />
       </slot>
     </Drawer>
 

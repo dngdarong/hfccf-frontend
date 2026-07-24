@@ -12,6 +12,13 @@ const mockHttpGet = vi.fn()
 const mockHttpPost = vi.fn()
 const mockHttpDelete = vi.fn()
 
+function formDataToEntries(formData) {
+  return Array.from(formData.entries()).reduce((acc, [key, value]) => {
+    acc[key] = value instanceof File ? value.name : value
+    return acc
+  }, {})
+}
+
 vi.mock('@/services/http', () => ({
   default: {
     get: (...args) => mockHttpGet(...args),
@@ -151,10 +158,34 @@ describe('sportCoachesApi', () => {
         data: { coach: { id: 'new-coach', name: 'New Coach', status: 'active' } },
       })
 
-      const payload = { name: 'New Coach', email: 'new@example.com' }
+      const avatar = new File(['avatar'], 'coach.png', { type: 'image/png' })
+      const payload = {
+        name: 'New Coach',
+        email: 'new@example.com',
+        phone: '+855 12 345 678',
+        status: 'active',
+        password: 'secret-pass',
+        confirmPassword: 'secret-pass',
+        profileImage: avatar,
+        removeAvatar: false,
+      }
       const result = await createSportCoach(payload)
 
-      expect(mockHttpPost).toHaveBeenCalledWith('/sport/coaches', expect.any(Object))
+      expect(mockHttpPost).toHaveBeenCalledWith('/sport/coaches', expect.any(FormData))
+      const formData = mockHttpPost.mock.calls[0][1]
+      expect(formDataToEntries(formData)).toEqual(expect.objectContaining({
+        name: 'New Coach',
+        first_name: 'New',
+        last_name: 'Coach',
+        username: 'New Coach',
+        email: 'new@example.com',
+        phone: '+855 12 345 678',
+        status: 'active',
+        password: 'secret-pass',
+        password_confirmation: 'secret-pass',
+      }))
+      expect(formData.get('avatar')).toBe(avatar)
+      expect(formData.has('remove_avatar')).toBe(false)
       expect(result.id).toBe('new-coach')
     })
 

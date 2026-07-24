@@ -12,6 +12,12 @@ import {
   fetchReportPeriods,
 } from '@/modules/preschool/services/api/preschoolReportsApi'
 
+export const PRESCHOOL_CLASSROOM_REPORT_PERIOD_TYPE_OPTIONS = [
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Term', value: 'term' },
+  { label: 'Annual', value: 'annual' },
+]
+
 function normalizeText(value) {
   return String(value ?? '').trim()
 }
@@ -34,10 +40,13 @@ export function usePreschoolClassroomReports() {
   const classOptions = ref([])
   const reportPeriods = ref([])
   const selectedClassId = ref('')
+  const selectedPeriodType = ref('term')
   const selectedPeriodLabel = ref('')
   const reportBundle = ref({ class: null, periods: [], period: null, report: null })
   const selectedReportPeriod = computed(() =>
-    reportPeriods.value.find((period) => String(period.label || '') === String(selectedPeriodLabel.value || '')) || null,
+    reportPeriods.value.find((period) =>
+      String(period.label || '') === String(selectedPeriodLabel.value || '')
+      && String(period.periodType || 'term') === String(selectedPeriodType.value || 'term')) || null,
   )
 
   const isReportPeriodLocked = computed(() => ['finalized', 'locked', 'archived'].includes(String(selectedReportPeriod.value?.status || '').toLowerCase()))
@@ -79,19 +88,24 @@ export function usePreschoolClassroomReports() {
     }
   }
 
-  async function loadReportPeriodOptions(classId = '') {
+  async function loadReportPeriodOptions(classId = selectedClassId.value, periodType = selectedPeriodType.value) {
     const resolvedClassId = String(classId || '').trim()
+    const resolvedPeriodType = String(periodType || '').trim() || 'term'
 
     loading.value = true
     errorMessage.value = ''
 
     try {
+      selectedPeriodType.value = resolvedPeriodType
       reportPeriods.value = await fetchReportPeriods(
-        resolvedClassId ? { classId: resolvedClassId } : {},
+        resolvedClassId
+          ? { classId: resolvedClassId, periodType: resolvedPeriodType }
+          : { periodType: resolvedPeriodType },
       )
 
-      if (!selectedPeriodLabel.value) {
-        selectedPeriodLabel.value = String(reportPeriods.value[0]?.label || '').trim()
+      const matched = reportPeriods.value.find((period) => String(period.periodType || 'term') === resolvedPeriodType)
+      if (!selectedPeriodLabel.value || !reportPeriods.value.some((period) => String(period.label || '') === selectedPeriodLabel.value && String(period.periodType || 'term') === resolvedPeriodType)) {
+        selectedPeriodLabel.value = String(matched?.label || reportPeriods.value[0]?.label || '').trim()
       }
     } catch (error) {
       reportPeriods.value = []
@@ -101,7 +115,7 @@ export function usePreschoolClassroomReports() {
     }
   }
 
-  async function loadClassroomReport(classId = selectedClassId.value, periodLabel = selectedPeriodLabel.value) {
+  async function loadClassroomReport(classId = selectedClassId.value, periodLabel = selectedPeriodLabel.value, periodType = selectedPeriodType.value) {
     const resolvedClassId = String(classId || '').trim()
     if (!resolvedClassId) return null
 
@@ -110,11 +124,19 @@ export function usePreschoolClassroomReports() {
 
     try {
       const normalizedPeriodLabel = String(periodLabel || '').trim()
-      const bundle = await fetchClassroomReport(resolvedClassId, normalizedPeriodLabel)
+      const normalizedPeriodType = String(periodType || selectedPeriodType.value || 'term').trim() || 'term'
+      const bundle = normalizedPeriodLabel
+        ? await fetchClassroomReport(resolvedClassId, normalizedPeriodLabel, {
+          periodType: normalizedPeriodType,
+        })
+        : await fetchClassroomReport(resolvedClassId, '', {
+          periodType: normalizedPeriodType,
+        })
 
       reportBundle.value = bundle
       reportPeriods.value = bundle.periods || reportPeriods.value
       selectedClassId.value = resolvedClassId
+      selectedPeriodType.value = bundle.period?.periodType || bundle.periods?.find((period) => period.label === selectedPeriodLabel.value)?.periodType || normalizedPeriodType
       selectedPeriodLabel.value = bundle.period?.label || bundle.periods?.[0]?.label || normalizedPeriodLabel
       return bundle
     } catch (error) {
@@ -134,6 +156,10 @@ export function usePreschoolClassroomReports() {
     selectedPeriodLabel.value = String(periodLabel || '').trim()
   }
 
+  function setSelectedPeriodType(periodType) {
+    selectedPeriodType.value = String(periodType || '').trim() || 'term'
+  }
+
   return {
     classOptions,
     errorMessage,
@@ -148,8 +174,10 @@ export function usePreschoolClassroomReports() {
     isReportPeriodLocked,
     selectedClassId,
     selectedPeriodLabel,
+    selectedPeriodType,
     selectedReportPeriod,
     setSelectedClassId,
     setSelectedPeriodLabel,
+    setSelectedPeriodType,
   }
 }

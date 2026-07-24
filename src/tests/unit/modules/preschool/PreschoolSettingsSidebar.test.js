@@ -22,6 +22,7 @@ describe('preschool settings sidebar', () => {
     const routeNames = sections.flatMap((section) => section.items.map((item) => item.routeName))
 
     expect(routeNames).toContain('dashboard-preschool-admin-settings')
+    expect(routeNames).toContain('dashboard-preschool-admin-invoices')
   })
 
   it('shows the settings route in the super-admin Preschool section', () => {
@@ -30,6 +31,7 @@ describe('preschool settings sidebar', () => {
     const routeNames = preschoolSection.items.map((item) => item.routeName)
 
     expect(routeNames).toContain('dashboard-preschool-admin-settings')
+    expect(routeNames).toContain('dashboard-preschool-admin-invoices')
   })
 
   it('keeps the settings route out of the teacher workspace', () => {
@@ -37,5 +39,19 @@ describe('preschool settings sidebar', () => {
     const routeNames = sections.flatMap((section) => section.items.map((item) => item.routeName))
 
     expect(routeNames).not.toContain('dashboard-preschool-admin-settings')
+  })
+
+  it('hides the enrollments route from the Preschool sidebar', () => {
+    const preschoolSection = preschoolSidebar.sections.find((section) => section.id === 'preschool')
+    const routeNames = preschoolSection.items.map((item) => item.routeName)
+
+    expect(routeNames).not.toContain('dashboard-preschool-admin-enrollments')
+  })
+
+  it('hides the forms route from the built Preschool sidebar', () => {
+    const sections = buildFor(makeAdminPreschool())
+    const routeNames = sections.flatMap((section) => section.items.map((item) => item.routeName))
+
+    expect(routeNames).not.toContain('dashboard-preschool-admin-forms')
   })
 })

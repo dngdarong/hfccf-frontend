@@ -1,7 +1,7 @@
 <script setup>
 import CalendarDayCell from '@/modules/dashboard/components/calendar/CalendarDayCell.vue'
 
-defineEmits(['select-event', 'add-event'])
+defineEmits([])
 
 defineProps({
   days: {
@@ -17,8 +17,6 @@ defineProps({
       v-for="day in days"
       :key="day.key"
       :day="day"
-      @select-event="$emit('select-event', $event)"
-      @add-event="$emit('add-event', $event)"
     />
   </div>
 </template>

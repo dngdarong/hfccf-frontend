@@ -93,17 +93,26 @@ function onResults(match) {
         </div>
       </template>
 
-      <Column field="id" :header="t('sportMatchesManagement.table.id')">
+      <Column
+        field="rowNumber"
+        :header="t('sportMatchesManagement.table.number')"
+        header-class="matches-table__id-column"
+      >
         <template #body="{ data }">
           <span class="text-[12px] font-semibold text-surface-700 sm:text-sm">
-            {{ data.id }}
+            {{ data.rowNumber }}
           </span>
         </template>
       </Column>
 
       <Column field="homeTeam" :header="t('sportMatchesManagement.table.homeTeam')" />
 
-      <Column field="score" :header="t('sportMatchesManagement.table.score')" header-class="text-center">
+      <Column
+        field="score"
+        :header="t('sportMatchesManagement.table.score')"
+        header-class="matches-table__score-column text-center"
+        body-class="matches-table__score-column text-center"
+      >
         <template #body="{ data }">
           <div class="flex justify-center">
             <span class="rounded-lg bg-slate-50 px-3 py-1 text-sm font-extrabold text-slate-800">
@@ -117,7 +126,12 @@ function onResults(match) {
       <Column field="schedule" :header="t('sportMatchesManagement.table.schedule')" />
       <Column field="venue" :header="t('sportMatchesManagement.table.venue')" />
 
-      <Column field="status" :header="t('sportMatchesManagement.table.status')">
+      <Column
+        field="status"
+        :header="t('sportMatchesManagement.table.status')"
+        header-class="matches-table__status-column"
+        body-class="matches-table__status-column"
+      >
         <template #body="{ data }">
           <!-- Label is already localized by this table (`sportMatchesManagement.status.*`). -->
           <StatusBadge
@@ -132,7 +146,8 @@ function onResults(match) {
       <Column
         field="actions"
         :header="t('sportMatchesManagement.table.actions')"
-        header-class="text-right"
+        header-class="matches-table__actions-column text-right"
+        body-class="matches-table__actions-column text-right"
       >
         <template #body="{ data }">
           <div class="flex justify-end">
@@ -151,3 +166,29 @@ function onResults(match) {
     </DataTable>
   </div>
 </template>
+
+<style scoped>
+.matches-table :deep(.matches-table__id-column),
+.matches-table :deep(.matches-table__score-column) {
+  width: 7rem;
+  min-width: 7rem;
+}
+
+.matches-table :deep(.matches-table__score-column) {
+  text-align: center;
+}
+
+.matches-table :deep(.matches-table__status-column) {
+  width: 9rem;
+  min-width: 9rem;
+}
+
+.matches-table :deep(.matches-table__actions-column) {
+  width: 7rem;
+  min-width: 7rem;
+}
+
+.matches-table :deep(.p-datatable-tbody > tr > td) {
+  vertical-align: middle;
+}
+</style>

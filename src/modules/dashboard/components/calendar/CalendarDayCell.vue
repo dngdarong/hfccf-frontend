@@ -1,9 +1,7 @@
 <script setup>
 import CalendarEventPill from '@/modules/dashboard/components/calendar/CalendarEventPill.vue'
 
-defineEmits(['select-event', 'add-event'])
-
-const props = defineProps({
+defineProps({
   day: {
     type: Object,
     required: true,
@@ -20,21 +18,12 @@ const MAX_VISIBLE_EVENTS = 3
       'calendar-day-cell--muted': !day.inCurrentMonth,
       'calendar-day-cell--today': day.isToday,
     }"
-    @dblclick="$emit('add-event', props.day.isoDate)"
   >
     <div class="calendar-day-cell__header">
       <span class="calendar-day-cell__date" :class="{ 'calendar-day-cell__date--today': day.isToday }">
         {{ day.dayNumber }}
       </span>
 
-      <button
-        type="button"
-        class="calendar-day-cell__add"
-        aria-label="Add event"
-        @click="$emit('add-event', props.day.isoDate)"
-      >
-        <i class="pi pi-plus" aria-hidden="true" />
-      </button>
     </div>
 
     <div class="calendar-day-cell__events">
@@ -42,7 +31,6 @@ const MAX_VISIBLE_EVENTS = 3
         v-for="item in day.events.slice(0, MAX_VISIBLE_EVENTS)"
         :key="item.id"
         :event="item"
-        @select="$emit('select-event', item)"
       />
 
       <span v-if="day.events.length > MAX_VISIBLE_EVENTS" class="calendar-day-cell__more">
@@ -110,26 +98,6 @@ const MAX_VISIBLE_EVENTS = 3
 
 .calendar-day-cell--muted .calendar-day-cell__date:not(.calendar-day-cell__date--today) {
   color: #94a3b8;
-}
-
-.calendar-day-cell__add {
-  width: 1.85rem;
-  height: 1.85rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 9999px;
-  background: transparent;
-  color: #94a3b8;
-  transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
-}
-
-.calendar-day-cell__add:hover {
-  background: #f0f9ff;
-  color: #00aeef;
 }
 
 .calendar-day-cell__events {

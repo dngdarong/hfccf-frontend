@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Button from '@/components/buttons/Button.vue'
+import Pagination from '@/components/data-display/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { fetchPreschoolDashboard, fetchPreschoolStudents } from '@/modules/preschool/services/preschoolApi'
 import {
@@ -51,10 +52,18 @@ const students = ref([])
 const selectedStudentId = ref('')
 const selectedStudentSummary = ref(null)
 const search = ref('')
+const currentPage = ref(1)
+const PAGE_SIZE = 10
 const alertFilters = ref({
   severity: 'all',
   status: 'all',
   assigned_to: 'all',
+})
+const pagination = ref({
+  page: 1,
+  perPage: PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
 })
 const loading = ref(false)
 const summaryLoading = ref(false)
@@ -165,6 +174,8 @@ const studentRows = computed(() => students.value.map((student) => ({
     : student.className || student.class?.name || student.class?.code || '-',
 })))
 
+const hasStudentPages = computed(() => Number(pagination.value.totalPages || 1) > 1)
+
 async function loadDashboard() {
   try {
     const [dashboardPayload, healthPayload, severityPayload] = await Promise.all([
@@ -187,18 +198,35 @@ async function loadStudents() {
 
   try {
     const response = await fetchPreschoolStudents({
-      page: 1,
-      perPage: 100,
+      page: currentPage.value,
+      perPage: PAGE_SIZE,
       search: search.value,
       status: 'active',
     })
 
     students.value = response.items || []
-    if (!selectedStudentId.value && students.value.length) {
+
+    pagination.value = {
+      page: response.pagination?.page || currentPage.value,
+      perPage: response.pagination?.perPage || PAGE_SIZE,
+      total: response.pagination?.total || students.value.length || 0,
+      totalPages: Math.max(Number(response.pagination?.totalPages || 1), 1),
+    }
+
+    const selectedStudentExists = students.value.some((student) => String(student.id) === String(selectedStudentId.value))
+    if (!students.value.length) {
+      selectedStudentId.value = ''
+    } else if (!selectedStudentId.value || !selectedStudentExists) {
       selectedStudentId.value = String(students.value[0].id)
     }
   } catch (error) {
     students.value = []
+    pagination.value = {
+      page: currentPage.value,
+      perPage: PAGE_SIZE,
+      total: 0,
+      totalPages: 1,
+    }
     errorMessage.value = error?.message || t('preschoolHealthPage.messages.loadFailed')
   } finally {
     loading.value = false
@@ -315,6 +343,15 @@ function openStudentCommunications(studentId) {
 }
 
 watch(search, () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1
+    return
+  }
+
+  loadStudents()
+})
+
+watch(currentPage, () => {
   loadStudents()
 })
 
@@ -525,6 +562,10 @@ onMounted(async () => {
 
               <span class="health-dashboard-page__student-arrow">-&gt;</span>
             </button>
+          </div>
+
+          <div v-if="hasStudentPages" class="health-dashboard-page__pagination">
+            <Pagination v-model="currentPage" :total-pages="pagination.totalPages" />
           </div>
         </div>
 
@@ -857,6 +898,12 @@ onMounted(async () => {
   border-radius: 0.9rem;
   border: 1px solid #cbd5e1;
   padding: 0.65rem 0.85rem;
+}
+
+.health-dashboard-page__pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
 }
 
 .health-dashboard-page__student-list {

@@ -5,12 +5,19 @@ export default {
     title: 'របាយការណ៍សិស្ស',
     subtitle: 'ពិនិត្យការវាយតម្លៃ វត្តមាន និងកំណត់សម្គាល់ដែលបានបញ្ចប់របស់សិស្ស។',
     filters: {
+      periodType: 'ប្រភេទរយៈពេល',
       student: 'សិស្ស',
       period: 'រយៈពេលរបាយការណ៍',
     },
     placeholders: {
+      periodType: 'ជ្រើសប្រភេទរយៈពេល',
       student: 'ជ្រើសសិស្ស',
       period: 'ជ្រើសរយៈពេល',
+    },
+    periodTypes: {
+      monthly: 'ប្រចាំខែ',
+      term: 'តាម term',
+      annual: 'ប្រចាំឆ្នាំ',
     },
     actions: {
       back: 'ត្រឡប់',

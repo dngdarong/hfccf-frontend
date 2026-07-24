@@ -4,7 +4,7 @@ import CalendarLegend from '@/modules/dashboard/components/calendar/CalendarLege
 import CalendarMonthControls from '@/modules/dashboard/components/calendar/CalendarMonthControls.vue'
 import CalendarWeekHeader from '@/modules/dashboard/components/calendar/CalendarWeekHeader.vue'
 
-defineEmits(['previous', 'next', 'today', 'select-event', 'add-event'])
+defineEmits(['previous', 'next', 'today'])
 
 defineProps({
   monthLabel: {
@@ -59,8 +59,6 @@ defineProps({
       <CalendarWeekHeader :weekdays="weekdays" />
       <CalendarGrid
         :days="days"
-        @select-event="$emit('select-event', $event)"
-        @add-event="$emit('add-event', $event)"
       />
     </div>
 

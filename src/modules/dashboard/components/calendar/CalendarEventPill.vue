@@ -1,6 +1,4 @@
 <script setup>
-const emit = defineEmits(['select'])
-
 defineProps({
   event: {
     type: Object,
@@ -10,15 +8,13 @@ defineProps({
 </script>
 
 <template>
-  <button
-    type="button"
+  <div
     class="calendar-event-pill"
     :class="`calendar-event-pill--${event.type}`"
-    @click.stop="emit('select')"
   >
     <span class="calendar-event-pill__time">{{ event.time }}</span>
     <span class="calendar-event-pill__title">{{ event.title }}</span>
-  </button>
+  </div>
 </template>
 
 <style scoped>

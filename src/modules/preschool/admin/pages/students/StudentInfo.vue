@@ -1,7 +1,7 @@
 <script setup>
 // Keep student management text locale-driven so EN/KH parity is testable and
 // hardcoded English labels do not reappear in a production page.
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { resolveAvatarSource } from '@/utils/avatar'
 import MainLayout from '@/layouts/MainLayout.vue'
@@ -41,6 +41,7 @@ const showSuccess = ref(false)
 const successMessage = ref('')
 const deleteTarget = ref(null)
 const deleteOpen = ref(false)
+const isResettingFilters = ref(false)
 
 const genderOptions = computed(() => [
   { label: t('preschoolStudentInfoPage.options.male'), value: 'male' },
@@ -55,6 +56,15 @@ const statusOptions = computed(() => [
   { label: t('preschoolStudentInfoPage.options.graduated'), value: 'graduated' },
 ])
 
+const hasActiveFilters = computed(() =>
+  Boolean(
+    searchQuery.value.trim()
+    || statusFilter.value
+    || genderFilter.value
+    || classFilter.value,
+  ),
+)
+
 const tableColumns = computed(() => [
   { key: 'number', label: t('preschoolStudentInfoPage.columns.no'), align: 'left' },
   { key: 'student', label: t('preschoolStudentInfoPage.columns.student'), align: 'left' },
@@ -65,6 +75,59 @@ const tableColumns = computed(() => [
   { key: 'guardianPhone', label: t('preschoolStudentInfoPage.columns.guardianPhone'), align: 'left' },
   { key: 'actions', label: t('preschoolStudentInfoPage.columns.actions'), align: 'right' },
 ])
+
+function resolveClassName(student) {
+  const fallbackLabel = t('preschoolStudentInfoPage.messages.noClassAssigned')
+  const classNames = Array.isArray(student?.classes)
+    ? student.classes
+        .map((item) => String(item?.name || item?.code || '').trim())
+        .filter(Boolean)
+    : []
+  const directClassName = String(
+    student?.className ||
+      student?.class?.name ||
+      student?.class?.code ||
+      '',
+  ).trim()
+
+  if (classNames.length > 1) {
+    return {
+      className: classNames[0],
+      classNames,
+      classCount: classNames.length,
+      extraClassCount: classNames.length - 1,
+      classTooltip: classNames.join(', '),
+    }
+  }
+
+  if (classNames.length === 1) {
+    return {
+      className: classNames[0],
+      classNames,
+      classCount: 1,
+      extraClassCount: 0,
+      classTooltip: classNames[0],
+    }
+  }
+
+  if (directClassName) {
+    return {
+      className: directClassName,
+      classNames: [directClassName],
+      classCount: 1,
+      extraClassCount: 0,
+      classTooltip: directClassName,
+    }
+  }
+
+  return {
+    className: fallbackLabel,
+    classNames: [],
+    classCount: 0,
+    extraClassCount: 0,
+    classTooltip: fallbackLabel,
+  }
+}
 
 const mappedStudents = computed(() =>
   students.value.map((student) => {
@@ -79,12 +142,7 @@ const mappedStudents = computed(() =>
       name: fullName,
       avatarUrl: resolveAvatarSource(student.avatarUrl || ''),
       dateOfBirth: student.dateOfBirth || '-',
-      className: Array.isArray(student.classes) && student.classes.length
-        ? student.classes
-            .map((item) => item?.name || item?.code || '')
-            .filter(Boolean)
-            .join(', ')
-        : student.className || student.class?.name || student.class?.code || '-',
+      ...resolveClassName(student),
       guardianPhone: student.guardianPhone || '-',
     }
   }),
@@ -147,6 +205,22 @@ function onDeleteStudent(student) {
   deleteOpen.value = true
 }
 
+async function clearFilters() {
+  if (!hasActiveFilters.value) return
+
+  isResettingFilters.value = true
+  searchQuery.value = ''
+  statusFilter.value = ''
+  genderFilter.value = ''
+  classFilter.value = ''
+  currentPage.value = 1
+
+  await nextTick()
+
+  isResettingFilters.value = false
+  await loadStudents()
+}
+
 async function confirmDelete() {
   const id = String(deleteTarget.value?.id || '').trim()
   if (!id) return
@@ -164,11 +238,13 @@ async function confirmDelete() {
 }
 
 watch([searchQuery, statusFilter, genderFilter, classFilter], () => {
+  if (isResettingFilters.value) return
   currentPage.value = 1
   loadStudents()
 })
 
 watch(currentPage, () => {
+  if (isResettingFilters.value) return
   loadStudents()
 })
 
@@ -246,6 +322,19 @@ onMounted(async () => {
               {{ opt.label }}
             </option>
           </select>
+
+          <div class="student-info-page__filters-action">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              rounded="xl"
+              :disabled="!hasActiveFilters"
+              @click="clearFilters"
+            >
+              {{ t('preschoolStudentInfoPage.filters.clear') }}
+            </Button>
+          </div>
         </div>
 
         <div v-if="errorMessage" class="student-info-page__state student-info-page__state--error">
@@ -335,8 +424,9 @@ onMounted(async () => {
 
 .student-info-page__filters {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto;
   gap: 0.85rem;
+  align-items: end;
 }
 
 .student-info-page__search-wrap {
@@ -377,6 +467,11 @@ onMounted(async () => {
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
 }
 
+.student-info-page__filters-action {
+  display: flex;
+  align-items: stretch;
+}
+
 .student-info-page__state {
   padding: 1rem 1.1rem;
   border-radius: 1rem;
@@ -406,6 +501,10 @@ onMounted(async () => {
 
   .student-info-page__filters {
     grid-template-columns: 1fr;
+  }
+
+  .student-info-page__filters-action {
+    width: 100%;
   }
 }
 </style>

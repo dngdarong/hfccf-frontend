@@ -12,6 +12,8 @@ describe('sport coach team management locale parity', () => {
     'sportCoachTeamManagement.playerRequest.title',
     'sportCoachTeamManagement.matchRequest.title',
     'sportCoachTeamManagement.requests.title',
+    'sportCoachTeamManagement.requests.emptyPlayers',
+    'sportCoachTeamManagement.requests.emptyMatches',
     'sportCoachTeamManagement.assignments.title',
     'sportCoachTeamManagement.approvals.playersTitle',
   ]

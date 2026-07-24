@@ -1,4 +1,12 @@
-import { createTournamentGroupDrawDraft, normalizeTournamentGroupDraw } from '../mocks/tournaments.mock'
+function createTournamentGroupDrawDraft() {
+  return { settings: { groupCount: 1, teamsPerGroup: 1, qualificationCount: 1, seededMode: true, autoFixtureGeneration: true }, groups: [], locked: false }
+}
+
+function normalizeTournamentGroupDraw(value = {}, fallback = {}) {
+  const source = value && typeof value === 'object' ? value : {}
+  const base = fallback?.groupDraw || createTournamentGroupDrawDraft()
+  return { ...base, ...source, settings: { ...base.settings, ...source.settings }, groups: Array.isArray(source.groups) ? source.groups : (base.groups || []) }
+}
 
 function deepClone(value) {
   if (typeof structuredClone === 'function') {
@@ -178,4 +186,3 @@ export function mergeTournamentGroupSnapshot(tournament = null, groupDraw = null
     groupDraw: normalizedGroupDraw,
   }
 }
-

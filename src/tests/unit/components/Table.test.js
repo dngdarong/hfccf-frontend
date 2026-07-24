@@ -120,7 +120,7 @@ const sharedStubs = {
   },
   ActionsButton: {
     name: 'ActionsButton',
-    props: ['item', 'showView', 'showEdit', 'showDelete'],
+    props: ['item', 'showView', 'showEdit', 'showDelete', 'showReset'],
     emits: ['view', 'edit', 'delete'],
     template: '<div data-testid="actions-menu" />',
   },
@@ -367,6 +367,69 @@ describe('Table', () => {
     expect(wrapper.find('[data-testid="cell"]').text()).toContain('-')
   })
 
+  // ─── column: className ──────────────────────────────────────────────────────
+
+  it('renders only the class name with a tooltip in the className column', () => {
+    const wrapper = mountTable({
+      rows: [{ id: 1, className: 'Morning Stars' }],
+      columns: [{ key: 'className', label: 'Class Name' }],
+    })
+
+    const classCell = wrapper.find('[data-col="className"] [title="Morning Stars"]')
+    expect(classCell.text()).toBe('Morning Stars')
+    expect(classCell.attributes('title')).toBe('Morning Stars')
+    expect(classCell.find('span').classes()).toContain('truncate')
+    expect(wrapper.findComponent({ name: 'AppBadge' }).exists()).toBe(false)
+  })
+
+  it('renders a compact count badge when className metadata includes multiple classes', () => {
+    const wrapper = mountTable({
+      rows: [{
+        id: 1,
+        className: 'Morning Stars',
+        classCount: 3,
+        extraClassCount: 2,
+        classTooltip: 'Morning Stars, Extra Class, Morning Class',
+      }],
+      columns: [{ key: 'className', label: 'Class Name' }],
+    })
+
+    const classCell = wrapper.find('[data-col="className"] [title="Morning Stars, Extra Class, Morning Class"]')
+    expect(classCell.text()).toContain('Morning Stars')
+    expect(classCell.text()).toContain('+2')
+    expect(classCell.attributes('title')).toBe('Morning Stars, Extra Class, Morning Class')
+    expect(wrapper.findComponent({ name: 'AppBadge' }).exists()).toBe(true)
+  })
+
+  it('shows the localized no-class fallback when the className is missing', () => {
+    const wrapper = mountTable({
+      rows: [{ id: 1, className: 'No class assigned' }],
+      columns: [{ key: 'className', label: 'Class Name' }],
+    })
+
+    const classCell = wrapper.find('[data-col="className"] [title="No class assigned"]')
+    expect(classCell.text()).toBe('No class assigned')
+    expect(classCell.attributes('title')).toBe('No class assigned')
+  })
+
+  it('applies truncation styles to long class names', () => {
+    const wrapper = mountTable({
+      rows: [{
+        id: 1,
+        className: 'Room113',
+        classCount: 3,
+        extraClassCount: 2,
+        classTooltip: 'Room113, បន្ទប់ខៀវ, មត្តេយ្យកម្រិត...',
+      }],
+      columns: [{ key: 'className', label: 'Class Name' }],
+    })
+
+    const classCell = wrapper.find('[data-col="className"] [title="Room113, បន្ទប់ខៀវ, មត្តេយ្យកម្រិត..."]')
+    expect(classCell.classes()).toContain('max-w-[14rem]')
+    expect(classCell.find('span').classes()).toContain('truncate')
+    expect(classCell.attributes('title')).toBe('Room113, បន្ទប់ខៀវ, មត្តេយ្យកម្រិត...')
+  })
+
   // ─── actions: menu style (default) ───────────────────────────────────────────
 
   it('renders ActionsButton by default (actionStyle="menu")', () => {
@@ -384,102 +447,6 @@ describe('Table', () => {
       actionStyle: 'menu',
     })
     expect(wrapper.findAll('button')).toHaveLength(0)
-  })
-
-  // ─── actions: buttons style ───────────────────────────────────────────────────
-
-  it('renders inline action buttons when actionStyle="buttons"', () => {
-    const wrapper = mountTable({
-      rows: [makeUser({ id: 1 })],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-    })
-    expect(wrapper.findAll('button').length).toBeGreaterThan(0)
-  })
-
-  it('renders View, Edit, Delete buttons by default', () => {
-    const wrapper = mountTable({
-      rows: [makeUser({ id: 1 })],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-    })
-    const labels = wrapper.findAll('button').map(b => b.attributes('aria-label'))
-    expect(labels).toContain('View')
-    expect(labels).toContain('Edit')
-    expect(labels).toContain('Delete')
-  })
-
-  it('hides the View button when showViewAction=false', () => {
-    const wrapper = mountTable({
-      rows: [makeUser({ id: 1 })],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-      showViewAction: false,
-    })
-    const labels = wrapper.findAll('button').map(b => b.attributes('aria-label'))
-    expect(labels).not.toContain('View')
-    expect(labels).toContain('Edit')
-    expect(labels).toContain('Delete')
-  })
-
-  it('hides the Edit button when showEditAction=false', () => {
-    const wrapper = mountTable({
-      rows: [makeUser({ id: 1 })],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-      showEditAction: false,
-    })
-    const labels = wrapper.findAll('button').map(b => b.attributes('aria-label'))
-    expect(labels).not.toContain('Edit')
-  })
-
-  it('hides the Delete button when showDeleteAction=false', () => {
-    const wrapper = mountTable({
-      rows: [makeUser({ id: 1 })],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-      showDeleteAction: false,
-    })
-    const labels = wrapper.findAll('button').map(b => b.attributes('aria-label'))
-    expect(labels).not.toContain('Delete')
-  })
-
-  // ─── events emitted by inline buttons ────────────────────────────────────────
-
-  it('emits "view" with row data when the View button is clicked', async () => {
-    const row = makeUser({ id: 1 })
-    const wrapper = mountTable({
-      rows: [row],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-    })
-    await wrapper.find('[aria-label="View"]').trigger('click')
-    expect(wrapper.emitted('view')).toBeTruthy()
-    expect(wrapper.emitted('view')[0][0]).toMatchObject({ id: 1 })
-  })
-
-  it('emits "edit" with row data when the Edit button is clicked', async () => {
-    const row = makeUser({ id: 2 })
-    const wrapper = mountTable({
-      rows: [row],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-    })
-    await wrapper.find('[aria-label="Edit"]').trigger('click')
-    expect(wrapper.emitted('edit')).toBeTruthy()
-    expect(wrapper.emitted('edit')[0][0]).toMatchObject({ id: 2 })
-  })
-
-  it('emits "delete" with row data when the Delete button is clicked', async () => {
-    const row = makeUser({ id: 3 })
-    const wrapper = mountTable({
-      rows: [row],
-      columns: [{ key: 'actions', label: 'Actions' }],
-      actionStyle: 'buttons',
-    })
-    await wrapper.find('[aria-label="Delete"]').trigger('click')
-    expect(wrapper.emitted('delete')).toBeTruthy()
-    expect(wrapper.emitted('delete')[0][0]).toMatchObject({ id: 3 })
   })
 
   // ─── events emitted via ActionsButton (menu style) ───────────────────────────
@@ -518,6 +485,23 @@ describe('Table', () => {
     const actionsButton = wrapper.findComponent({ name: 'ActionsButton' })
     await actionsButton.vm.$emit('delete', row)
     expect(wrapper.emitted('delete')).toBeTruthy()
+  })
+
+  it('passes row action visibility props through to ActionsButton', () => {
+    const wrapper = mountTable({
+      rows: [makeUser({ id: 1 })],
+      columns: [{ key: 'actions', label: 'Actions' }],
+      showViewAction: false,
+      showEditAction: false,
+      showDeleteAction: false,
+      showResetAction: true,
+    })
+
+    const actionsButton = wrapper.findComponent({ name: 'ActionsButton' })
+    expect(actionsButton.props('showView')).toBe(false)
+    expect(actionsButton.props('showEdit')).toBe(false)
+    expect(actionsButton.props('showDelete')).toBe(false)
+    expect(actionsButton.props('showReset')).toBe(true)
   })
 
   // ─── sorting ─────────────────────────────────────────────────────────────────
@@ -570,10 +554,10 @@ describe('Table', () => {
         emptyText: 'empty',
         columns: [],
         rowKey: 'id',
-        actionStyle: 'menu',
         showViewAction: true,
         showEditAction: true,
         showDeleteAction: true,
+        showResetAction: false,
         sortField: 'name',
         sortOrder: 1,
         serverSide: false,

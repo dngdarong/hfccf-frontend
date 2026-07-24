@@ -6,6 +6,7 @@ import {
   deleteTournament,
   getTournament,
   listTournaments,
+  fetchTournamentKnockout,
   updateTournament,
 } from '@/modules/sport/tournament/api/tournamentApi'
 
@@ -125,5 +126,22 @@ describe('tournament api', () => {
     http.delete.mockResolvedValueOnce(stubResponse(null))
     await expect(archiveTournament(6)).resolves.toBe(true)
     expect(http.delete).toHaveBeenCalledWith('/sport/tournaments/6')
+  })
+
+  it('normalizes empty and generated knockout responses without fabricating future teams', async () => {
+    http.get.mockResolvedValueOnce(stubResponse({ tournamentId: 7, qualifiers: [], rounds: [] }))
+    const empty = await fetchTournamentKnockout(7)
+    expect(empty.knockout.rounds).toEqual([])
+
+    http.get.mockResolvedValueOnce(stubResponse({
+      tournamentId: 7,
+      qualifiers: [{ teamId: 1, teamName: 'A' }],
+      rounds: [{ id: 11, name: 'Semifinal', position: 1, status: 'scheduled' }],
+      matches: [{ id: 21, knockoutRoundId: 11, homeTeamId: null, awayTeamId: null, status: 'scheduled' }],
+    }))
+    const generated = await fetchTournamentKnockout(7)
+    expect(generated.knockout.rounds[0]).toMatchObject({ id: '11', roundName: 'Semifinal', order: 1 })
+    expect(generated.knockout.rounds[0].matches[0]).toMatchObject({ id: '21', homeTeamId: '', awayTeamId: '' })
+    expect(generated.knockout.rounds[0].matches[0].homeTeamName).toBe('')
   })
 })

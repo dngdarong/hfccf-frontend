@@ -70,6 +70,25 @@ function normalizeText(value) {
   return String(value ?? '').trim()
 }
 
+function normalizeClassLevelCode(value) {
+  const rawValue = value && typeof value === 'object'
+    ? value.code || value.classLevelCode || value.class_level_code || value.nameEn || value.name_en || value.name || value.label || ''
+    : value
+  const normalized = normalizeText(rawValue).toLowerCase()
+
+  if (!normalized) return ''
+  if (normalized === 'nursery' || normalized === 'nur') return 'NUR'
+  if (normalized === 'kindergarten a' || normalized === 'kindergarten-1' || normalized === 'kindergarten_1' || normalized === 'kga') {
+    return 'KGA'
+  }
+  if (normalized === 'kindergarten b' || normalized === 'kindergarten-2' || normalized === 'kindergarten_2' || normalized === 'kgb') {
+    return 'KGB'
+  }
+  if (normalized === 'prep' || normalized === 'pre') return 'PRE'
+
+  return normalized.toUpperCase()
+}
+
 export function createDefaultAcademicYear() {
   return {
     currentAcademicYear: '2025 - 2026',
@@ -105,7 +124,7 @@ export function createDefaultTerm(id = 'term-1', name = 'Term 1', startDate = cr
 export function createDefaultClassConfiguration(id = 'class-1', classLevel = 'nursery', capacity = 18, assignedTeacher = 'lead-teacher', room = 'Room A', status = 'active') {
   return {
     id,
-    classLevel,
+    classLevel: normalizeClassLevelCode(classLevel),
     capacity,
     assignedTeacher,
     room,
@@ -302,7 +321,7 @@ function normalizeSettingsForForm(settings = {}) {
     classConfigurations: Array.isArray(settings.classConfigurations) && settings.classConfigurations.length
       ? settings.classConfigurations.map((item, index) => ({
         id: normalizeText(item.id || item.key || `class-${index + 1}`),
-        classLevel: normalizeText(item.classLevel || item.class_level || 'nursery'),
+        classLevel: normalizeClassLevelCode(item.classLevel || item.class_level || 'nursery'),
         capacity: Number(item.capacity ?? 0),
         assignedTeacher: normalizeText(item.assignedTeacher || item.assigned_teacher || 'lead-teacher'),
         room: normalizeText(item.room || ''),
@@ -377,7 +396,7 @@ function serializeSettingsForSave(settings = {}) {
     })),
     classConfigurations: (settings.classConfigurations || []).map((item, index) => ({
       id: normalizeText(item.id || `class-${index + 1}`),
-      classLevel: normalizeText(item.classLevel),
+      classLevel: normalizeClassLevelCode(item.classLevel),
       capacity: Number(item.capacity ?? 0),
       assignedTeacher: normalizeText(item.assignedTeacher),
       room: normalizeText(item.room),

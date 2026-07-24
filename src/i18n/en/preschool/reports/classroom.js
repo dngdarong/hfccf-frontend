@@ -5,12 +5,19 @@ export default {
     title: 'Classroom Reports',
     subtitle: 'Review classroom-wide progress, attendance, and observations.',
     filters: {
+      periodType: 'Period Type',
       class: 'Class',
       period: 'Reporting Period',
     },
     placeholders: {
+      periodType: 'Select period type',
       class: 'Select a class',
       period: 'Select a report period',
+    },
+    periodTypes: {
+      monthly: 'Monthly',
+      term: 'Term',
+      annual: 'Annual',
     },
     actions: {
       back: 'Back to Overview',

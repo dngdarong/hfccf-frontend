@@ -11,7 +11,7 @@ import TeamsToolbar from './components/TeamsToolbar.vue'
 import TeamsHighlights from './components/TeamsHighlights.vue'
 import TeamsTable from './components/TeamsTable.vue'
 import { normalize } from './utils/teamHelpers'
-import { deleteSportTeam, fetchSportTeams } from '@/modules/sport/services/sportApi'
+import { deleteSportTeam, fetchSportTeams } from '@/modules/sport/services/api/sportTeamsApi'
 
 defineOptions({
   name: 'SportTeamsManagementPage',
@@ -23,7 +23,7 @@ const searchQuery = ref('')
 const statusFilter = ref('')
 const currentPage = ref(1)
 
-const pageSize = 8
+const pageSize = 5
 const isKh = computed(() => language.value === 'KH')
 const statusOptions = ['active', 'pending', 'inactive']
 
@@ -36,6 +36,8 @@ const toolbarEyebrow = computed(() => t('sportTeamsManagement.toolbarEyebrow'))
 const spotlightLabel = computed(() => t('sportTeamsManagement.spotlightLabel'))
 
 const teams = ref([])
+const loading = ref(false)
+const errorMessage = ref('')
 
 async function goToAddTeam() {
   await router.push({ name: 'dashboard-sport-admin-teams-add' })
@@ -64,8 +66,13 @@ function onEditTeam(team) {
 async function onDeleteTeam(team) {
   const id = String(team?.id || '').trim()
   if (!id) return
-  await deleteSportTeam(id).catch(() => null)
-  teams.value = teams.value.filter((item) => item.id !== id)
+  try {
+    await deleteSportTeam(id)
+    teams.value = teams.value.filter((item) => item.id !== id)
+    errorMessage.value = ''
+  } catch {
+    errorMessage.value = t('common.error')
+  }
 }
 
 const filteredTeams = computed(() => {
@@ -74,12 +81,12 @@ const filteredTeams = computed(() => {
   return teams.value.filter((team) => {
     let isMatch = true
 
-    if (query) {
-      const haystack = normalize(
-        `${team.name} ${team.division} ${team.coach} ${team.captain} ${team.venue}`,
-      )
-      isMatch = haystack.includes(query)
-    }
+      if (query) {
+        const haystack = normalize(
+          `${team.name} ${team.division} ${team.coach} ${team.captainName} ${team.venue}`,
+        )
+        isMatch = haystack.includes(query)
+      }
 
     if (isMatch && statusFilter.value) {
       isMatch = normalize(team.status) === normalize(statusFilter.value)
@@ -227,12 +234,18 @@ watch(
 )
 
 onMounted(() => {
+  loading.value = true
   fetchSportTeams({ perPage: 100 })
     .then((response) => {
       teams.value = response.items || []
+      errorMessage.value = ''
     })
     .catch(() => {
       teams.value = []
+      errorMessage.value = t('common.error')
+    })
+    .finally(() => {
+      loading.value = false
     })
 })
 </script>
@@ -275,10 +288,15 @@ onMounted(() => {
         <TeamsTable
           :teams="paginatedTeams"
           :empty-text="tableEmptyText"
+          :loading="loading"
           @view="onViewTeam"
           @edit="onEditTeam"
           @delete="onDeleteTeam"
         />
+
+        <p v-if="errorMessage" class="text-sm text-red-600">
+          {{ errorMessage }}
+        </p>
 
         <div v-if="totalPages > 1" class="flex justify-end">
           <Pagination v-model="currentPage" :total-pages="totalPages" class="mt-2" />

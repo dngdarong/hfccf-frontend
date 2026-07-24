@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -89,3 +89,4 @@ const resolvedRetryLabel = computed(() => props.retryLabel || t('common.notifica
   line-height: 1.6;
 }
 </style>
+

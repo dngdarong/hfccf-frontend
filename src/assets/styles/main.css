@@ -65,6 +65,14 @@
   --brand-surface-900: #0f172a;
   --brand-surface-950: #020617;
 
+  /* Shared UI control tokens */
+  --ui-control-radius: 0.75rem;
+  --ui-control-radius-sm: 0.625rem;
+  --ui-pill-radius: 999px;
+  --ui-focus-ring: 0 0 0 3px color-mix(in srgb, var(--brand-primary-200) 66%, white);
+  --ui-button-shadow: 0 10px 22px -16px rgba(15, 23, 42, 0.24);
+  --ui-button-shadow-strong: 0 12px 24px -16px rgba(15, 23, 42, 0.28);
+
   /* Base tokens */
   --color-base: var(--hope-cyan);
   --color-text: var(--hope-tagline-dark);
@@ -135,7 +143,6 @@ body,
 }
 
 html[lang='kh'] :where(
-  .p-button .p-button-label,
   .p-select .p-select-label,
   .p-inputtext,
   .p-textarea,
@@ -159,7 +166,6 @@ html[lang='kh'] :where(
 }
 
 html[lang='kh'] :where(
-  .p-button .p-button-label,
   .p-select .p-select-label,
   .p-inputtext,
   .p-textarea,
@@ -181,7 +187,6 @@ html[lang='kh'] :where(
   line-height: 1.45;
 }
 
-html[lang='kh'] .p-button .p-button-label,
 html[lang='kh'] .p-select .p-select-label,
 html[lang='kh'] .sidebar-section__label,
 html[lang='kh'] .sidebar-section__caption,

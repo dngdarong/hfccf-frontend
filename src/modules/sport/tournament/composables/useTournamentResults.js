@@ -11,9 +11,8 @@ import {
 } from '../services/normalizeMatchEvents'
 import { sortMatchTimeline } from '../services/sortMatchTimeline'
 import { validateMatchEvents } from '../services/validateMatchEvents'
-import { calculateTournamentStandings, normalizeScoreValue } from '../services/calculateStandings'
-import { calculateTournamentStats } from '../services/statistics/calculateTournamentStats'
-import { normalizeTournamentState } from './useTournamentStateMachine'
+import { normalizeScoreValue } from '../services/calculateStandings'
+import { addTournamentMatchEvent, updateTournamentResult } from '../api/tournamentApi'
 
 const EVENT_TYPE_KEYS = [
   'goal',
@@ -108,6 +107,8 @@ export function useTournamentResults(tournament, actions = {}) {
   const selectedFixtureId = ref('')
   const resultDraft = ref(createFixtureResultDraft())
   const eventDraft = ref(createDefaultEventDraft())
+  const isSaving = ref(false)
+  const isAddingEvent = ref(false)
 
   const fixtures = computed(() => {
     const source = Array.isArray(tournament?.value?.fixtures) ? tournament.value.fixtures : []
@@ -221,7 +222,8 @@ export function useTournamentResults(tournament, actions = {}) {
     eventDraft.value = createDefaultEventDraft(fixture)
   }
 
-  function addEvent(event = eventDraft.value) {
+  async function addEvent(event = eventDraft.value) {
+    if (isAddingEvent.value) return null
     const currentFixture = selectedFixture.value
     if (!currentFixture?.id) {
       return null
@@ -243,17 +245,26 @@ export function useTournamentResults(tournament, actions = {}) {
       return validation
     }
 
-    const nextEvents = sortMatchTimeline(
-      [...resultDraft.value.events, nextEvent],
-      currentFixture,
-    )
+    if (typeof actions.reloadTournament !== 'function') return null
 
-    updateDraft({
-      events: nextEvents,
-    })
-    resetEventDraft(currentFixture)
-
-    return nextEvent
+    isAddingEvent.value = true
+    try {
+      const response = await addTournamentMatchEvent(currentTournamentId(), currentFixture.id, {
+        team_id: nextEvent.teamId,
+        player_id: nextEvent.playerId || null,
+        event_type: nextEvent.type || nextEvent.eventType,
+        minute: nextEvent.minute,
+        stoppage_minute: nextEvent.stoppageMinute || null,
+        side: nextEvent.side || null,
+        description: nextEvent.description || null,
+        metadata: nextEvent.metadata || {},
+      })
+      await actions.reloadTournament()
+      resetEventDraft(currentFixture)
+      return response.event || nextEvent
+    } finally {
+      isAddingEvent.value = false
+    }
   }
 
   function removeEvent(eventId) {
@@ -265,13 +276,12 @@ export function useTournamentResults(tournament, actions = {}) {
     })
   }
 
-  function saveResult() {
-    const updateTournament = actions.updateTournament
-    const transitionTournament = actions.transitionTournament
+  async function saveResult() {
+    if (isSaving.value) return null
     const currentTournament = tournament?.value || {}
     const currentFixture = selectedFixture.value
 
-    if (typeof updateTournament !== 'function' || typeof transitionTournament !== 'function') {
+    if (typeof actions.reloadTournament !== 'function') {
       return null
     }
 
@@ -279,66 +289,23 @@ export function useTournamentResults(tournament, actions = {}) {
       return null
     }
 
-    const normalizedEvents = sortMatchTimeline(resultDraft.value.events, currentFixture)
-    const eventScore = calculateMatchScore({
-      match: currentFixture,
-      events: normalizedEvents,
-    })
-
-    const nextFixtures = fixtures.value.map((fixture) =>
-      fixture.id !== currentFixture.id
-        ? fixture
-        : {
-            ...fixture,
-            status: normalizeMatchStatus(resultDraft.value.status),
-            score: normalizeFixtureScore(resultDraft.value.score),
-            eventScore,
-            venue: normalizeText(resultDraft.value.venue || fixture.venue),
-            dateTime: normalizeText(resultDraft.value.dateTime || fixture.dateTime),
-            notes: normalizeText(resultDraft.value.notes || fixture.notes),
-            events: normalizedEvents,
-            completedAt:
-              normalizeMatchStatus(resultDraft.value.status) === 'completed'
-                ? new Date().toISOString()
-                : normalizeText(fixture.completedAt || ''),
-          },
-    )
-
-    const nextStandings = calculateTournamentStandings({
-      tournament: {
-        ...currentTournament,
-        fixtures: nextFixtures,
-      },
-    }).groups
-    const nextStatistics = calculateTournamentStats({
-      tournament: {
-        ...currentTournament,
-        fixtures: nextFixtures,
-        standings: nextStandings,
-      },
-    })
-
-    const completedMatches = nextFixtures.filter((fixture) => fixture.status === 'completed').length
-    const anyScored = eventScore.hasScoringEvents || (Number.isFinite(resultDraft.value.score.home) && Number.isFinite(resultDraft.value.score.away))
-    const updated = updateTournament(currentTournament.id, {
-      fixtures: nextFixtures,
-      results: nextFixtures.filter((fixture) => fixture.status === 'completed'),
-      standings: nextStandings,
-      statistics: {
-        ...currentTournament.statistics,
-        fixturesGenerated: nextFixtures.length,
-        matches: nextFixtures.length,
-        completedMatches,
-        summary: nextStatistics.summary,
-        analytics: nextStatistics,
-      },
-    })
-
-    if (updated?.id && normalizeTournamentState(currentTournament.state) === 'fixtures_generated' && (anyScored || resultDraft.value.status === 'completed')) {
-      transitionTournament(updated.id, 'active')
+    isSaving.value = true
+    try {
+      const updated = await updateTournamentResult(currentTournament.id, currentFixture.id, {
+        homeScore: resultDraft.value.score.home,
+        awayScore: resultDraft.value.score.away,
+        status: resultDraft.value.status,
+        notes: resultDraft.value.notes,
+      })
+      await actions.reloadTournament()
+      return { id: currentTournament.id, ...updated }
+    } finally {
+      isSaving.value = false
     }
+  }
 
-    return updated
+  function currentTournamentId() {
+    return String(tournament?.value?.id || '').trim()
   }
 
   return {
@@ -361,6 +328,8 @@ export function useTournamentResults(tournament, actions = {}) {
     removeEvent,
     resetEventDraft,
     saveResult,
+    isSaving,
+    isAddingEvent,
   }
 }
 

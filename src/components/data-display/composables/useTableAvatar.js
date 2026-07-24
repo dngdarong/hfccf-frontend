@@ -19,13 +19,24 @@ export function useTableAvatar(rowsRef) {
     if (key && avatarStates.value[key]?.error) return ''
 
     return resolveAvatarSource(
+      row?.avatarUrl ||
       row?.avatar ||
-        row?.avatar_url ||
-        row?.avatarUrl ||
-        row?.profile_photo_url ||
-        row?.profilePhotoUrl ||
-        row?.profileImage ||
-        row?.photo,
+      row?.avatar_url ||
+      row?.profile_photo_url ||
+      row?.profilePhotoUrl ||
+      row?.profile_image_url ||
+      row?.profileImageUrl ||
+      row?.photo_url ||
+      row?.photoUrl ||
+      row?.image_url ||
+      row?.imageUrl ||
+      row?.profileImage ||
+      row?.profile_image ||
+      row?.photo ||
+      row?.image ||
+      row?.thumbnail ||
+      row?.media?.url ||
+      row?.media?.path,
     )
   }
 

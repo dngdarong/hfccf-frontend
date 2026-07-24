@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import http from '@/services/http'
 import {
   archiveHealthCheckCategory,
   archiveIncidentCategory,
@@ -26,20 +25,9 @@ import {
   updateVaccinationCategory,
 } from '@/modules/preschool/services/api/preschoolHealthConfigurationApi'
 
-vi.mock('@/services/http', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-  },
-}))
-
-function stubResponse(data) {
-  return { data: { success: true, message: 'ok', data } }
-}
-
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.restoreAllMocks()
+  window.localStorage.clear()
 })
 
 describe('preschool health configuration api', () => {
@@ -112,31 +100,11 @@ describe('preschool health configuration api', () => {
     })
   })
 
-  it('fetches and updates the health settings payload', async () => {
-    http.get.mockResolvedValueOnce(stubResponse({
-      settings: {
-        critical_alert_enabled: true,
-        guardian_notification_enabled: true,
-        teacher_notification_enabled: false,
-        admin_notification_enabled: true,
-        medication_reminder_enabled: true,
-        vaccination_reminder_enabled: true,
-        overdue_vaccination_alert_days: 21,
-        medication_reminder_minutes_before: 60,
-      },
-    }))
-
+  it('stores and reads the health settings locally', async () => {
     await expect(fetchHealthSettings()).resolves.toMatchObject({
       criticalAlertEnabled: true,
-      medicationReminderMinutesBefore: 60,
+      medicationReminderMinutesBefore: 30,
     })
-
-    http.put.mockResolvedValueOnce(stubResponse({
-      settings: {
-        critical_alert_enabled: false,
-        overdue_vaccination_alert_days: 30,
-      },
-    }))
 
     await expect(updateHealthSettings({
       criticalAlertEnabled: false,
@@ -152,150 +120,73 @@ describe('preschool health configuration api', () => {
       overdueVaccinationAlertDays: 30,
     })
 
-    expect(http.put).toHaveBeenCalledWith('/preschool/settings/health', expect.objectContaining({
-      critical_alert_enabled: false,
-      overdue_vaccination_alert_days: 30,
-    }))
+    await expect(fetchHealthSettings()).resolves.toMatchObject({
+      criticalAlertEnabled: false,
+      overdueVaccinationAlertDays: 30,
+      medicationReminderMinutesBefore: 45,
+    })
   })
 
-  it('handles severity level CRUD endpoints', async () => {
-    http.get.mockResolvedValueOnce(stubResponse({
-      items: [
-        { id: 1, name: 'Critical', code: 'critical', priority: 1, is_active: true },
-      ],
-    }))
-
-    await expect(fetchSeverityLevels()).resolves.toMatchObject([
-      { id: 1, code: 'critical', isActive: true },
-    ])
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      severity: { id: 2, name: 'High', code: 'high', priority: 2, is_active: true },
-    }))
-    await expect(createSeverityLevel({ name: 'High', code: 'high', priority: 2 })).resolves.toMatchObject({
-      id: 2,
-      code: 'high',
+  it('stores severity levels locally', async () => {
+    await expect(fetchSeverityLevels()).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({ code: 'critical' }),
+        expect.objectContaining({ code: 'high' }),
+      ]),
     })
 
-    http.put.mockResolvedValueOnce(stubResponse({
-      severityLevel: { id: 2, name: 'High', code: 'high', priority: 3, is_active: true },
-    }))
-    await expect(updateSeverityLevel(2, { name: 'High', code: 'high', priority: 3 })).resolves.toMatchObject({
-      id: 2,
-      priority: 3,
+    await expect(createSeverityLevel({ name: 'Severe', code: 'severe', priority: 5 })).resolves.toMatchObject({
+      code: 'severe',
     })
 
-    http.post.mockResolvedValueOnce(stubResponse({
-      severity: { id: 2, name: 'High', code: 'high', is_active: false, status: 'archived' },
-    }))
-    await expect(archiveSeverityLevel(2)).resolves.toMatchObject({
-      id: 2,
+    await expect(updateSeverityLevel('severe', { name: 'Severe+', code: 'severe_plus', priority: 4 })).resolves.toMatchObject({
+      code: 'severe_plus',
+    })
+
+    await expect(archiveSeverityLevel('severe')).resolves.toMatchObject({
       status: 'archived',
     })
-    expect(http.post).toHaveBeenCalledWith('/preschool/settings/health/severity-levels/2/archive')
   })
 
-  it('handles category CRUD and archive endpoints', async () => {
-    http.get.mockResolvedValueOnce(stubResponse({
-      items: [
-        { id: 3, name: 'Fever', code: 'fever', is_active: true },
-      ],
-    }))
-    await expect(fetchIncidentCategories()).resolves.toMatchObject([
-      { id: 3, name: 'Fever', code: 'fever', isActive: true },
-    ])
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      category: { id: 4, name: 'Injury', code: 'injury', is_active: true },
-    }))
-    await expect(createIncidentCategory({ name: 'Injury', code: 'injury' })).resolves.toMatchObject({
-      id: 4,
-      name: 'Injury',
+  it('stores categories locally', async () => {
+    await expect(fetchIncidentCategories()).resolves.toMatchObject({
+      items: [],
     })
 
-    http.put.mockResolvedValueOnce(stubResponse({
-      incidentCategory: { id: 4, name: 'Injury', code: 'injury-2', is_active: true },
-    }))
-    await expect(updateIncidentCategory(4, { name: 'Injury', code: 'injury-2' })).resolves.toMatchObject({
-      id: 4,
-      code: 'injury-2',
+    await expect(createIncidentCategory({ name: 'Fever', code: 'fever' })).resolves.toMatchObject({
+      code: 'fever',
     })
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      category: { id: 4, name: 'Injury', is_active: false, status: 'archived' },
-    }))
-    await expect(archiveIncidentCategory(4)).resolves.toMatchObject({
-      id: 4,
+    await expect(updateIncidentCategory('fever', { name: 'Fever+', code: 'fever_plus' })).resolves.toMatchObject({
+      code: 'fever_plus',
+    })
+    await expect(archiveIncidentCategory('fever')).resolves.toMatchObject({
       status: 'archived',
     })
-    expect(http.post).toHaveBeenCalledWith('/preschool/settings/health/incident-categories/4/archive')
 
-    http.get.mockResolvedValueOnce(stubResponse({
-      items: [
-        { id: 5, name: 'MMR', code: 'mmr', is_active: true },
-      ],
-    }))
-    await expect(fetchVaccinationCategories()).resolves.toMatchObject([
-      { id: 5, code: 'mmr', isActive: true },
-    ])
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      category: { id: 6, name: 'Polio', code: 'polio', is_active: true },
-    }))
-    await expect(createVaccinationCategory({ name: 'Polio', code: 'polio' })).resolves.toMatchObject({
-      id: 6,
-      name: 'Polio',
+    await expect(fetchVaccinationCategories()).resolves.toMatchObject({
+      items: [],
     })
-
-    http.put.mockResolvedValueOnce(stubResponse({
-      vaccinationCategory: { id: 6, name: 'Polio', code: 'polio-2', is_active: true },
-    }))
-    await expect(updateVaccinationCategory(6, { name: 'Polio', code: 'polio-2' })).resolves.toMatchObject({
-      id: 6,
-      code: 'polio-2',
+    await expect(createVaccinationCategory({ name: 'MMR', code: 'mmr' })).resolves.toMatchObject({
+      code: 'mmr',
     })
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      category: { id: 6, name: 'Polio', is_active: false, status: 'archived' },
-    }))
-    await expect(archiveVaccinationCategory(6)).resolves.toMatchObject({
-      id: 6,
+    await expect(updateVaccinationCategory('mmr', { name: 'MMR+', code: 'mmr_plus' })).resolves.toMatchObject({
+      code: 'mmr_plus',
+    })
+    await expect(archiveVaccinationCategory('mmr')).resolves.toMatchObject({
       status: 'archived',
     })
-    expect(http.post).toHaveBeenCalledWith('/preschool/settings/health/vaccination-categories/6/archive')
 
-    http.get.mockResolvedValueOnce(stubResponse({
-      items: [
-        { id: 7, name: 'Temperature', code: 'temperature', is_active: true },
-      ],
-    }))
-    await expect(fetchHealthCheckCategories()).resolves.toMatchObject([
-      { id: 7, code: 'temperature', isActive: true },
-    ])
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      category: { id: 8, name: 'Vision', code: 'vision', is_active: true },
-    }))
+    await expect(fetchHealthCheckCategories()).resolves.toMatchObject({
+      items: [],
+    })
     await expect(createHealthCheckCategory({ name: 'Vision', code: 'vision' })).resolves.toMatchObject({
-      id: 8,
-      name: 'Vision',
+      code: 'vision',
     })
-
-    http.put.mockResolvedValueOnce(stubResponse({
-      healthCheckCategory: { id: 8, name: 'Vision', code: 'vision-2', is_active: true },
-    }))
-    await expect(updateHealthCheckCategory(8, { name: 'Vision', code: 'vision-2' })).resolves.toMatchObject({
-      id: 8,
-      code: 'vision-2',
+    await expect(updateHealthCheckCategory('vision', { name: 'Vision+', code: 'vision_plus' })).resolves.toMatchObject({
+      code: 'vision_plus',
     })
-
-    http.post.mockResolvedValueOnce(stubResponse({
-      category: { id: 8, name: 'Vision', is_active: false, status: 'archived' },
-    }))
-    await expect(archiveHealthCheckCategory(8)).resolves.toMatchObject({
-      id: 8,
+    await expect(archiveHealthCheckCategory('vision')).resolves.toMatchObject({
       status: 'archived',
     })
-    expect(http.post).toHaveBeenCalledWith('/preschool/settings/health/check-categories/8/archive')
   })
 })

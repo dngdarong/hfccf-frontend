@@ -8,6 +8,7 @@ describe('sport player lifecycle locale parity', () => {
     'sportPlayerLifecycle.coachRoster.subtitle',
     'sportPlayerLifecycle.coachRoster.panelTitle',
     'sportPlayerLifecycle.coachRoster.summary',
+    'sportPlayerLifecycle.coachRoster.noCandidates',
     'sportPlayerLifecycle.adminLifecycle.title',
     'sportPlayerLifecycle.adminLifecycle.subtitle',
     'sportPlayerLifecycle.adminLifecycle.panelTitle',

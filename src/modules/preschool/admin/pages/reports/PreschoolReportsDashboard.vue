@@ -1,173 +1,124 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
-import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { fetchReportsDashboard } from '@/modules/preschool/services/api/preschoolReportingApi'
-import ReportFilterBar from '@/modules/preschool/shared/components/report/ReportFilterBar.vue'
-import ReportSummaryCards from '@/modules/preschool/shared/components/report/ReportSummaryCards.vue'
-import EmptyReportState from '@/modules/preschool/shared/components/report/EmptyReportState.vue'
+import AttendanceReportPanel from './components/AttendanceReportPanel.vue'
+import StudentSummaryReportPanel from './components/StudentSummaryReportPanel.vue'
 
-defineOptions({
-  name: 'PreschoolReportsDashboardPage',
-})
+defineOptions({ name: 'PreschoolReportsDashboardPage' })
 
 const { t } = useLanguage()
-const router = useRouter()
 
-const loading = ref(false)
-const errorMessage = ref('')
-const filters = ref({
-  academicYearId: '',
-  termId: '',
-  dateFrom: '',
-  dateTo: '',
-  classId: '',
-  teacherId: '',
-  status: '',
-})
-const dashboard = ref({
-  kpis: {},
-  cards: [],
-  modules: {},
-  risk: {},
-})
+const selectedReport = ref(null)
 
-async function loadDashboard() {
-  loading.value = true
-  errorMessage.value = ''
+const REPORT_TYPES = [
+  {
+    key: 'attendance',
+    icon: 'pi-calendar-check',
+    accent: 'card--emerald',
+  },
+  {
+    key: 'student-summary',
+    icon: 'pi-user-check',
+    accent: 'card--blue',
+  },
+]
 
-  try {
-    const payload = await fetchReportsDashboard(filters.value)
-    dashboard.value = payload.dashboard || dashboard.value
-  } catch (error) {
-    errorMessage.value = error?.message || t('preschoolReportsCenterPage.messages.loadFailed')
-  } finally {
-    loading.value = false
-  }
+const reportTypeOptions = computed(() =>
+  REPORT_TYPES.map(type => ({
+    ...type,
+    label: t(`preschoolReportsPage.reportTypes.${type.key}`) || type.key,
+    description: t(`preschoolReportsPage.reportTypeDesc.${type.key}`) || '',
+  })),
+)
+
+function selectReport(reportKey) {
+  selectedReport.value = selectedReport.value === reportKey ? null : reportKey
 }
-
-const kpiCards = computed(() => [
-  { title: t('preschoolReportsCenterPage.dashboard.cards.attendanceRate'), value: `${dashboard.value.kpis.attendanceRate || 0}%`, caption: t('preschoolReportsCenterPage.dashboard.summaryCards.totalStudents'), tone: 'success' },
-  { title: t('preschoolReportsCenterPage.dashboard.cards.revenue'), value: dashboard.value.kpis.revenue || 0, caption: t('preschoolReportsCenterPage.dashboard.summaryCards.activeStudents'), tone: 'info' },
-  { title: t('preschoolReportsCenterPage.dashboard.cards.openHealthAlerts'), value: dashboard.value.kpis.openHealthAlerts || 0, caption: t('preschoolReportsCenterPage.dashboard.summaryCards.atRiskStudents'), tone: 'error' },
-  { title: t('preschoolReportsCenterPage.dashboard.cards.assessmentCompletion'), value: `${dashboard.value.kpis.assessmentCompletion || 0}%`, caption: t('preschoolReportsCenterPage.dashboard.summaryCards.newEnrollments'), tone: 'warning' },
-])
-
-const moduleCards = computed(() => [
-  { title: t('preschoolReportsCenterPage.dashboard.moduleCards.attendance'), value: dashboard.value.modules?.attendance?.attendance_rate || 0, caption: t('preschoolReportsCenterPage.dashboard.actions.attendance') },
-  { title: t('preschoolReportsCenterPage.dashboard.moduleCards.assessments'), value: dashboard.value.modules?.assessments?.completion_rate || 0, caption: t('preschoolReportsCenterPage.dashboard.actions.assessments') },
-  { title: t('preschoolReportsCenterPage.dashboard.moduleCards.health'), value: dashboard.value.modules?.health?.open_alerts || 0, caption: t('preschoolReportsCenterPage.dashboard.actions.health') },
-  { title: t('preschoolReportsCenterPage.dashboard.moduleCards.payments'), value: dashboard.value.modules?.payments?.revenue || 0, caption: t('preschoolReportsCenterPage.dashboard.actions.payments') },
-  { title: t('preschoolReportsCenterPage.dashboard.moduleCards.enrollments'), value: dashboard.value.modules?.enrollments?.new_enrollments || 0, caption: t('preschoolReportsCenterPage.dashboard.actions.enrollments') },
-  { title: t('preschoolReportsCenterPage.dashboard.moduleCards.guardians'), value: dashboard.value.modules?.guardians?.open_issues || 0, caption: t('preschoolReportsCenterPage.dashboard.actions.guardians') },
-])
-
-function goToReport(name) {
-  router.push({ name })
-}
-
-function openAttendance() {
-  goToReport('dashboard-preschool-admin-reports-attendance')
-}
-
-function openAssessments() {
-  goToReport('dashboard-preschool-admin-reports-assessments')
-}
-
-function openHealth() {
-  goToReport('dashboard-preschool-admin-reports-health')
-}
-
-function openPayments() {
-  goToReport('dashboard-preschool-admin-reports-payments')
-}
-
-function openEnrollments() {
-  goToReport('dashboard-preschool-admin-reports-enrollments')
-}
-
-function openGuardians() {
-  goToReport('dashboard-preschool-admin-reports-guardians')
-}
-
-onMounted(() => {
-  loadDashboard()
-})
 </script>
 
 <template>
   <MainLayout>
-    <section class="space-y-4">
+    <section class="space-y-5">
       <HeaderSection
-        :title="t('preschoolReportsCenterPage.pageTitle')"
-        :subtitle="t('preschoolReportsCenterPage.pageSubtitle')"
+        :title="t('preschoolReportsPage.title')"
+        :subtitle="t('preschoolReportsPage.subtitle')"
       />
 
-      <ReportFilterBar
-        v-model="filters"
-        :loading="loading"
-        :labels="{
-          academicYear: t('preschoolReportsCenterPage.filters.academicYear'),
-          term: t('preschoolReportsCenterPage.filters.term'),
-          dateFrom: t('preschoolReportsCenterPage.filters.dateFrom'),
-          dateTo: t('preschoolReportsCenterPage.filters.dateTo'),
-          class: t('preschoolReportsCenterPage.filters.class'),
-          teacher: t('preschoolReportsCenterPage.filters.teacher'),
-          status: t('preschoolReportsCenterPage.filters.status'),
-          apply: t('preschoolReportsCenterPage.filters.apply'),
-          reset: t('preschoolReportsCenterPage.filters.reset'),
-        }"
-        @apply="loadDashboard"
-        @reset="loadDashboard"
-      />
-
-      <ReportSummaryCards :cards="kpiCards" />
-
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article
-          v-for="card in moduleCards"
-          :key="card.title"
-          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+        <button
+          v-for="reportType in reportTypeOptions"
+          :key="reportType.key"
+          type="button"
+          class="report-card"
+          :class="[reportType.accent, { 'report-card--active': selectedReport === reportType.key }]"
+          @click="selectReport(reportType.key)"
         >
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ card.title }}</p>
-          <div class="mt-2 text-3xl font-semibold text-slate-900">{{ card.value }}</div>
-          <p class="mt-2 text-sm text-slate-500">{{ card.caption }}</p>
-        </article>
+          <div class="report-card__icon-wrap">
+            <i :class="['pi', reportType.icon]" aria-hidden="true" />
+          </div>
+          <div class="report-card__body">
+            <h3 class="report-card__title">{{ reportType.label }}</h3>
+            <p class="report-card__desc">{{ reportType.description }}</p>
+          </div>
+          <i class="pi pi-arrow-right report-card__arrow" aria-hidden="true" />
+        </button>
       </div>
 
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <Button type="button" variant="primary" size="md" rounded="xl" @click="openAttendance">
-          {{ t('preschoolReportsCenterPage.sections.attendance.title') }}
-        </Button>
-        <Button type="button" variant="secondary" size="md" rounded="xl" @click="openAssessments">
-          {{ t('preschoolReportsCenterPage.sections.assessments.title') }}
-        </Button>
-        <Button type="button" variant="secondary" size="md" rounded="xl" @click="openHealth">
-          {{ t('preschoolReportsCenterPage.sections.health.title') }}
-        </Button>
-        <Button type="button" variant="ghost" size="md" rounded="xl" @click="openPayments">
-          {{ t('preschoolReportsCenterPage.sections.payments.title') }}
-        </Button>
-        <Button type="button" variant="ghost" size="md" rounded="xl" @click="openEnrollments">
-          {{ t('preschoolReportsCenterPage.sections.enrollments.title') }}
-        </Button>
-        <Button type="button" variant="ghost" size="md" rounded="xl" @click="openGuardians">
-          {{ t('preschoolReportsCenterPage.sections.guardians.title') }}
-        </Button>
-      </div>
-
-      <EmptyReportState
-        v-if="!loading && !moduleCards.length"
-        :title="t('preschoolReportsCenterPage.emptyStates.dashboard')"
-        :subtitle="t('preschoolReportsCenterPage.dashboard.emptyState')"
-      />
-
-      <div v-if="errorMessage" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-        {{ errorMessage }}
-      </div>
+      <!-- Report Panels -->
+      <AttendanceReportPanel v-if="selectedReport === 'attendance'" />
+      <StudentSummaryReportPanel v-if="selectedReport === 'student-summary'" />
     </section>
   </MainLayout>
 </template>
+
+<style scoped>
+.report-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1.1rem;
+  border-radius: 1.15rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 12px 32px -24px rgba(15, 23, 42, 0.3);
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+  cursor: pointer;
+}
+
+.report-card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.38); }
+
+.report-card--active {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.38);
+  transform: translateY(-2px);
+}
+
+.report-card__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.75rem;
+  flex-shrink: 0;
+  font-size: 1.05rem;
+}
+
+.report-card__body { flex: 1; min-width: 0; }
+.report-card__title { margin: 0 0 0.25rem; font-size: 0.9rem; font-weight: 700; color: #0f172a; }
+.report-card__desc { margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.5; }
+.report-card__arrow { font-size: 0.75rem; color: #cbd5e1; align-self: center; flex-shrink: 0; transition: transform 0.14s; }
+.report-card:hover .report-card__arrow { transform: translateX(3px); color: #94a3b8; }
+
+.card--emerald .report-card__icon-wrap { background: #d1fae5; color: #065f46; }
+.card--emerald:hover { border-color: #6ee7b7; }
+.card--emerald.report-card--active { border-color: #6ee7b7; }
+.card--blue .report-card__icon-wrap { background: #dbeafe; color: #1e40af; }
+.card--blue:hover { border-color: #93c5fd; }
+.card--blue.report-card--active { border-color: #93c5fd; }
+</style>

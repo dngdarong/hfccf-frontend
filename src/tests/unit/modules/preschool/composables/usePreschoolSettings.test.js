@@ -1,13 +1,50 @@
 import { nextTick } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createDefaultClassConfiguration,
   createEmptyTermDraft,
   createDefaultPreschoolSettings,
   usePreschoolSettings,
-  validatePreschoolSettings,
   validatePreschoolTermDraft,
 } from '@/modules/preschool/composables/usePreschoolSettings'
+
+vi.mock('@/modules/preschool/services/preschoolApi', () => ({
+  fetchPreschoolSettingsBackbone: vi.fn().mockResolvedValue({
+    settings: {
+      academicYear: {
+        currentAcademicYear: '2025 - 2026',
+        startDate: '2025-06-30',
+        endDate: '2026-04-29',
+        status: 'active',
+      },
+      terms: [],
+      classConfigurations: [],
+      attendance: {},
+      assessment: {},
+      schedule: {},
+      enrollment: {},
+      payment: {},
+    },
+  }),
+  fetchReportPeriods: vi.fn().mockResolvedValue([]),
+  updatePreschoolSettingsBackbone: vi.fn().mockResolvedValue({
+    settings: {
+      academicYear: {
+        currentAcademicYear: '2025 - 2026',
+        startDate: '2025-06-30',
+        endDate: '2026-04-29',
+        status: 'active',
+      },
+      terms: [],
+      classConfigurations: [],
+      attendance: {},
+      assessment: {},
+      schedule: {},
+      enrollment: {},
+      payment: {},
+    },
+  }),
+}))
 
 // Keep the settings composable covered so the validation rules and local draft
 // mutations do not drift away from the page contract.
@@ -85,13 +122,15 @@ describe('usePreschoolSettings', () => {
     removeClassConfiguration(3)
     expect(settings.value.classConfigurations).toHaveLength(3)
 
-    const saveResult = saveSettings()
+    const saveResult = await saveSettings()
     expect(saveResult.ok).toBe(true)
     expect(validationErrors.value.academicYear.currentAcademicYear).toBeUndefined()
 
     const invalidSettings = createDefaultPreschoolSettings()
     invalidSettings.payment.dueDay = 32
-    expect(validatePreschoolSettings(invalidSettings).isValid).toBe(false)
+    settings.value = invalidSettings
+    await nextTick()
+    expect(validationErrors.value.payment.dueDay).toBe('range')
 
     resetSettings()
     await nextTick()

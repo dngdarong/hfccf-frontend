@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -65,3 +65,4 @@ function isActive(value) {
   white-space: nowrap;
 }
 </style>
+

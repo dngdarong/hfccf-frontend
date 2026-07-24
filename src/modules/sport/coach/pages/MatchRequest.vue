@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -11,7 +11,7 @@ import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useCoachMatchRequests } from '../composables/useCoachMatchRequests'
 import { useCoachTeams } from '../composables/useCoachTeams'
-import { fetchSportTeams } from '@/modules/sport/services/sportApi'
+import { fetchCoachOpponentTeams } from '@/modules/sport/services/api/sportCoachTeamsApi'
 
 defineOptions({ name: 'SportCoachMatchRequestPage' })
 
@@ -21,6 +21,8 @@ const { t, language } = useLanguage()
 const { items: teams, loadTeams } = useCoachTeams()
 const { createRequest, loading, error } = useCoachMatchRequests()
 const opponentTeams = ref([])
+const opponentLoading = ref(false)
+const opponentError = ref('')
 const isKh = computed(() => language.value === 'KH')
 
 const form = reactive({
@@ -51,11 +53,17 @@ onMounted(async () => {
   await loadTeams({ perPage: 100 })
   form.teamId = String(route.query.teamId || teams.value[0]?.id || '')
 
-  fetchSportTeams({ perPage: 100 }).then((response) => {
+  opponentLoading.value = true
+  opponentError.value = ''
+  try {
+    const response = await fetchCoachOpponentTeams()
     opponentTeams.value = response.items || []
-  }).catch(() => {
+  } catch (exception) {
     opponentTeams.value = []
-  })
+    opponentError.value = exception?.message || t('sportCoachTeamManagement.common.loadError')
+  } finally {
+    opponentLoading.value = false
+  }
 })
 </script>
 
@@ -71,10 +79,20 @@ onMounted(async () => {
         <template #content>
           <div class="grid gap-4 md:grid-cols-2">
             <Select v-model="form.teamId" :options="teams" option-label="name" option-value="id" :placeholder="t('sportCoachTeamManagement.common.selectTeam')" />
-            <Select v-model="form.opponentTeamId" :options="opponentTeams" option-label="name" option-value="id" :placeholder="t('sportCoachTeamManagement.common.selectOpponent')" />
+            <Select
+              v-model="form.opponentTeamId"
+              :options="opponentTeams"
+              option-label="name"
+              option-value="id"
+              :placeholder="t('sportCoachTeamManagement.common.selectOpponent')"
+              :loading="opponentLoading"
+            />
             <Select v-model="form.matchType" :options="[{ label: t('sportCoachTeamManagement.common.trainingMatch'), value: 'training' }, { label: t('sportCoachTeamManagement.common.friendlyMatch'), value: 'friendly' }]" option-label="label" option-value="value" :placeholder="t('sportCoachTeamManagement.common.matchType')" />
-            <InputText v-model="form.scheduledAt" :placeholder="t('sportCoachTeamManagement.common.scheduledAt')" />
+            <InputText v-model="form.scheduledAt" type="datetime-local" :placeholder="t('sportCoachTeamManagement.common.scheduledAt')" />
           </div>
+          <p v-if="opponentError" class="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ opponentError }}
+          </p>
           <Textarea v-model="form.notes" class="mt-4 w-full" auto-resize rows="4" :placeholder="t('sportCoachTeamManagement.common.notes')" />
           <InputText v-model="form.venue" class="mt-4 w-full" :placeholder="t('sportCoachTeamManagement.common.venue')" />
           <div class="mt-4 flex items-center justify-between gap-3">
@@ -105,3 +123,4 @@ onMounted(async () => {
     'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
 }
 </style>
+

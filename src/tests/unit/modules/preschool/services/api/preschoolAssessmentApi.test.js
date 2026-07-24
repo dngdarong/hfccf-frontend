@@ -137,7 +137,7 @@ describe('preschool assessment api', () => {
         isActive: true,
       },
     ])
-    expect(http.get).toHaveBeenCalledWith('/preschool/settings/assessments/categories', { signal: undefined })
+    expect(http.get).toHaveBeenCalledWith('/preschool/assessment-categories', { signal: undefined })
 
     http.get.mockResolvedValueOnce(
       stubResponse({

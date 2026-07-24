@@ -42,7 +42,7 @@ function createManualChunks(id) {
     id.includes('/primevue/iconfield/') ||
     id.includes('/primevue/inputicon/')
   ) {
-    return 'vendor-primevue-forms'
+    return 'vendor-primevue-interactive'
   }
 
   if (
@@ -53,7 +53,7 @@ function createManualChunks(id) {
     id.includes('/primevue/blockui/') ||
     id.includes('/primevue/scrollpanel/')
   ) {
-    return 'vendor-primevue-overlays'
+    return 'vendor-primevue-interactive'
   }
 
   if (
@@ -81,6 +81,7 @@ function createManualChunks(id) {
 
   if (
     id.includes('/vue/') ||
+    id.includes('/@vue/') ||
     id.includes('/vue-router/') ||
     id.includes('/vue-i18n/') ||
     id.includes('/pinia/')
@@ -88,7 +89,13 @@ function createManualChunks(id) {
     return 'vendor-core'
   }
 
-  return 'vendor-other'
+  if (id.includes('/axios/')) return 'vendor-http'
+  if (id.includes('/jspdf/')) return 'vendor-pdf'
+  if (id.includes('/html-to-image/')) return 'vendor-image-export'
+  if (id.includes('/qrcode/')) return 'vendor-qrcode'
+
+  // Let Rollup keep unclassified dependencies with the lazy route that uses them.
+  return undefined
 }
 
 function securityHeadersPlugin() {

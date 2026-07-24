@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { createSportPlayingStyle } from '@/modules/sport/services/sportApi'
+import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
   name: 'AddPlayingStyleModal',
@@ -14,6 +15,7 @@ defineProps({
 })
 
 const emit = defineEmits(['close', 'created'])
+const { t } = useLanguage()
 
 const form = ref({
   name: '',
@@ -39,11 +41,11 @@ function validateForm() {
   errors.value = {}
 
   if (!form.value.name?.trim()) {
-    errors.value.name = 'Playing style name is required'
+    errors.value.name = t('sportPlayingStyleManagement.form.nameRequired')
   }
 
   if (form.value.name && form.value.name.length > 100) {
-    errors.value.name = 'Playing style name must be 100 characters or less'
+    errors.value.name = t('sportPlayingStyleManagement.form.nameTooLong')
   }
 
   return Object.keys(errors.value).length === 0
@@ -76,7 +78,7 @@ async function handleSubmit() {
     }, 1500)
   } catch (error) {
     console.error('Error creating playing style:', error)
-    errors.value.submit = 'Failed to create playing style'
+    errors.value.submit = t('sportPlayingStyleManagement.form.createFailed')
   } finally {
     isSubmitting.value = false
   }
@@ -106,9 +108,9 @@ function handleBackdropClick(event) {
       <div class="modal-container">
         <!-- Header -->
         <div class="modal-header">
-          <h2 class="modal-title">Create New Playing Style</h2>
-          <p class="modal-subtitle">Define a tactical approach for team classification</p>
-          <button class="modal-close" @click="handleClose" aria-label="Close">×</button>
+          <h2 class="modal-title">{{ t('sportPlayingStyleManagement.form.createTitle') }}</h2>
+          <p class="modal-subtitle">{{ t('sportPlayingStyleManagement.form.createSubtitle') }}</p>
+          <button type="button" class="modal-close" @click="handleClose" :aria-label="t('common.close')">×</button>
         </div>
 
         <!-- Form -->
@@ -118,14 +120,14 @@ function handleBackdropClick(event) {
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: `${formCompletion}%` }" />
             </div>
-            <p class="progress-text">{{ formCompletion }}% Complete</p>
+            <p class="progress-text">{{ formCompletion }}%</p>
           </div>
 
           <!-- Name Field -->
           <div class="form-group">
             <div class="form-label-wrapper">
               <label for="style-name" class="form-label">
-                <span class="label-text">Playing Style Name</span>
+                <span class="label-text">{{ t('sportPlayingStyleManagement.form.styleName') }}</span>
                 <span class="label-required">*</span>
               </label>
               <span class="char-count">{{ nameLength }}/100</span>
@@ -134,7 +136,7 @@ function handleBackdropClick(event) {
               id="style-name"
               v-model="form.name"
               type="text"
-              placeholder="e.g., Defensive, Attacking, Balanced"
+              :placeholder="t('sportPlayingStyleManagement.form.styleNamePlaceholder')"
               class="form-input"
               :class="{ 'form-input--error': errors.name, 'form-input--valid': form.name && !errors.name }"
               maxlength="100"
@@ -148,15 +150,15 @@ function handleBackdropClick(event) {
           <div class="form-group">
             <div class="form-label-wrapper">
               <label for="style-description" class="form-label">
-                <span class="label-text">Description</span>
-                <span class="label-optional">(Optional)</span>
+                <span class="label-text">{{ t('sportPlayingStyleManagement.form.description') }}</span>
+                <span class="label-optional">{{ t('sportPlayingStyleManagement.form.optional') }}</span>
               </label>
               <span class="char-count">{{ descriptionLength }}/500</span>
             </div>
             <textarea
               id="style-description"
               v-model="form.description"
-              placeholder="Describe the tactical approach..."
+              :placeholder="t('sportPlayingStyleManagement.form.descriptionPlaceholder')"
               class="form-textarea"
               rows="3"
               maxlength="500"
@@ -166,7 +168,7 @@ function handleBackdropClick(event) {
           <!-- Status Field -->
           <div class="form-group">
             <label class="form-label">
-              <span class="label-text">Status</span>
+              <span class="label-text">{{ t('sportPlayingStyleManagement.form.status') }}</span>
               <span class="label-required">*</span>
             </label>
             <div class="status-selector">
@@ -186,7 +188,7 @@ function handleBackdropClick(event) {
                 />
                 <label :for="`style-status-${option}`" class="status-label">
                   <span class="status-dot" :class="`status-dot--${option}`" />
-                  <span class="status-text">{{ option === 'active' ? 'Active' : 'Inactive' }}</span>
+                  <span class="status-text">{{ option === 'active' ? t('sportPlayingStyleManagement.form.active') : t('sportPlayingStyleManagement.form.inactive') }}</span>
                 </label>
               </div>
             </div>
@@ -202,7 +204,7 @@ function handleBackdropClick(event) {
           <transition name="fade">
             <div v-if="showSuccess" class="success-message">
               <span class="success-icon">✓</span>
-              <span>Playing style created successfully!</span>
+              <span>{{ t('sportPlayingStyleManagement.form.created') }}</span>
             </div>
           </transition>
 
@@ -215,7 +217,7 @@ function handleBackdropClick(event) {
               :class="{ 'btn-loading': isSubmitting }"
             >
               <span v-if="isSubmitting" class="btn-spinner" />
-              {{ isSubmitting ? 'Creating...' : 'Create Style' }}
+              {{ isSubmitting ? t('sportPlayingStyleManagement.form.creating') : t('sportPlayingStyleManagement.form.create') }}
             </button>
             <button
               type="button"
@@ -223,7 +225,7 @@ function handleBackdropClick(event) {
               @click="handleClose"
               :disabled="isSubmitting"
             >
-              Cancel
+              {{ t('sportPlayingStyleManagement.form.cancel') }}
             </button>
           </div>
         </form>

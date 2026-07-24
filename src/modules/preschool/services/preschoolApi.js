@@ -24,9 +24,48 @@ import {
   updateAttendanceSettings,
   updateCalendarEvent,
 } from '@/modules/preschool/services/api/preschoolAttendanceConfigurationApi'
+import { saveAttendanceSessionRecord } from '@/modules/preschool/services/api/preschoolAttendanceSessionApi'
 
 function normalizeText(value) {
   return String(value ?? '').trim()
+}
+
+function firstNonEmpty(...values) {
+  const value = values.find((item) => {
+    if (item === null || item === undefined) return false
+    return String(item).trim() !== ''
+  })
+
+  return value === undefined ? '' : value
+}
+
+function resolveStudentAvatarUrl(row = {}) {
+  const media = row.media || {}
+  const nestedMediaUrl = Array.isArray(media)
+    ? firstNonEmpty(media[0]?.url, media[0]?.path)
+    : firstNonEmpty(media.url, media.path)
+
+  return normalizeText(firstNonEmpty(
+    row.avatarUrl,
+    row.avatar_url,
+    row.profilePhotoUrl,
+    row.profile_photo_url,
+    row.profileImageUrl,
+    row.profile_image_url,
+    row.profilePhoto,
+    row.profile_photo,
+    row.photoUrl,
+    row.photo_url,
+    row.imageUrl,
+    row.image_url,
+    row.avatar,
+    row.profileImage,
+    row.profile_image,
+    row.photo,
+    row.image,
+    row.thumbnail,
+    nestedMediaUrl,
+  ))
 }
 
 function normalizeClassAssignmentRow(row = {}) {
@@ -89,6 +128,8 @@ function normalizeClassRow(row = {}) {
     teacher: normalizeText(
       row.teacherDisplayName || row.teacher_display_name || row.teacher || row.teacherName,
     ),
+    classLevelId: row.classLevelId ?? row.class_level_id ?? row.classLevel?.id ?? '',
+    classLevel: row.classLevel || row.class_level || null,
     level: normalizeText(row.level || row.grade),
     schedule: normalizeText(row.schedule || row.time),
     studentsCount: Number(row.studentsCount ?? row.students_count ?? studentAssignments.filter((item) => item.status === 'active').length ?? row.students ?? row.studentCount ?? 0),
@@ -114,6 +155,15 @@ function normalizeStudentRow(row = {}) {
   const fullName = normalizeText(row.fullName || row.full_name || `${firstName} ${lastName}`)
   const classAssignments = Array.isArray(row.classAssignments) ? row.classAssignments.map(normalizeClassAssignmentRow) : []
   const activeClasses = Array.isArray(row.classes) ? row.classes.map(normalizeClassAssignmentRow) : classAssignments.filter((item) => item.status === 'active')
+  const avatarUrl = resolveStudentAvatarUrl(row)
+  const birthProvince = row.birthProvince || row.birth_province || null
+  const birthDistrict = row.birthDistrict || row.birth_district || null
+  const birthCommune = row.birthCommune || row.birth_commune || null
+  const birthVillage = row.birthVillage || row.birth_village || null
+  const residenceProvince = row.residenceProvince || row.residence_province || null
+  const residenceDistrict = row.residenceDistrict || row.residence_district || null
+  const residenceCommune = row.residenceCommune || row.residence_commune || null
+  const residenceVillage = row.residenceVillage || row.residence_village || null
 
   return {
     id: row.id ?? '',
@@ -123,21 +173,44 @@ function normalizeStudentRow(row = {}) {
     lastName,
     fullName,
     name: normalizeText(row.name || fullName),
+    latinName: normalizeText(row.latinName || row.latin_name),
+    nationality: normalizeText(row.nationality),
+    ethnicity: normalizeText(row.ethnicity),
     gender: normalizeText(row.gender),
     dateOfBirth: row.dateOfBirth || row.date_of_birth || '',
     guardianName: normalizeText(row.guardianName || row.guardian_name),
     guardianPhone: normalizeText(row.guardianPhone || row.guardian_phone),
+    guardianType: normalizeText(
+      row.guardianType
+      || row.guardian_type
+      || row.relationshipType
+      || row.relationship_type,
+    ),
+    placeOfBirth: normalizeText(row.placeOfBirth || row.place_of_birth),
+    birthProvinceId: row.birthProvinceId ?? row.birth_province_id ?? birthProvince?.id ?? '',
+    birthDistrictId: row.birthDistrictId ?? row.birth_district_id ?? birthDistrict?.id ?? '',
+    birthCommuneId: row.birthCommuneId ?? row.birth_commune_id ?? birthCommune?.id ?? '',
+    birthVillageId: row.birthVillageId ?? row.birth_village_id ?? birthVillage?.id ?? '',
+    birthProvince,
+    birthDistrict,
+    birthCommune,
+    birthVillage,
+    birthLocationDisplay: normalizeText(row.birthLocationDisplay || row.birth_location_display),
+    residenceProvinceId: row.residenceProvinceId ?? row.residence_province_id ?? residenceProvince?.id ?? '',
+    residenceDistrictId: row.residenceDistrictId ?? row.residence_district_id ?? residenceDistrict?.id ?? '',
+    residenceCommuneId: row.residenceCommuneId ?? row.residence_commune_id ?? residenceCommune?.id ?? '',
+    residenceVillageId: row.residenceVillageId ?? row.residence_village_id ?? residenceVillage?.id ?? '',
+    residenceProvince,
+    residenceDistrict,
+    residenceCommune,
+    residenceVillage,
+    currentResidenceDisplay: normalizeText(row.currentResidenceDisplay || row.current_residence_display),
     address: normalizeText(row.address),
     status: normalizeText(row.status || 'active'),
     studentType: normalizeText(row.studentType || row.student_type || 'paying'),
-    avatarUrl: normalizeText(
-      row.avatarUrl || row.avatar_url ||
-      row.profile_photo_url || row.profilePhotoUrl ||
-      row.profile_photo_path || row.profilePhotoPath ||
-      row.photo_url || row.photoUrl ||
-      row.image_url || row.imageUrl ||
-      row.avatar || row.photo || row.image || row.thumbnail || '',
-    ),
+    avatarUrl,
+    avatar: avatarUrl,
+    profilePhotoUrl: avatarUrl,
     classesCount: Number(row.classesCount ?? row.classes_count ?? activeClasses.length ?? 0),
     classes: activeClasses,
     classAssignments,
@@ -166,6 +239,8 @@ function normalizeAttendanceRow(row = {}) {
     ),
     recordedByUserId: row.recordedByUserId ?? row.recorded_by_user_id ?? '',
     recordedByName: normalizeText(row.recordedByName || row.recorded_by_name || row.recordedBy?.name),
+    attendanceSessionId: row.attendanceSessionId ?? row.attendance_session_id ?? '',
+    attendanceSession: row.attendanceSession || row.attendance_session || null,
     attendanceDate: row.attendanceDate || row.attendance_date || '',
     status: normalizeText(row.status || ''),
     note: normalizeText(row.note),
@@ -191,6 +266,7 @@ function normalizePaymentRow(row = {}) {
     paymentStatus: normalizeText(row.paymentStatus || row.payment_status),
     paidAt: row.paidAt || row.paid_at || '',
     dueDate: row.dueDate || row.due_date || '',
+    description: normalizeText(row.description || row.payment_description),
     note: normalizeText(row.note),
     receiptCount: Number(row.receiptCount ?? row.receipt_count ?? 0),
     createdAt: row.createdAt || row.created_at || '',
@@ -219,7 +295,17 @@ function buildMultipartPayload(payload = {}, options = {}) {
   }
 
   Object.entries(payload).forEach(([key, value]) => {
-    if (['avatar', 'profileImage', 'password', 'confirmPassword', 'removeAvatar', 'studentIds', 'classIds'].includes(key)) {
+    if ([
+      'avatar',
+      'profileImage',
+      'password',
+      'confirmPassword',
+      'removeAvatar',
+      'studentIds',
+      'student_ids',
+      'classIds',
+      'class_ids',
+    ].includes(key)) {
       return
     }
     appendIfPresent(key, value)
@@ -275,6 +361,30 @@ function normalizeStudentListResponse(response, fallbackPage = 1, fallbackPerPag
   return {
     items: items.map(normalizeStudentRow),
     pagination: unwrapApiPagination(response, fallbackPage, fallbackPerPage, items.length),
+  }
+}
+
+function normalizeClassLevelRow(row = {}) {
+  return {
+    id: row.id ?? '',
+    nameEn: normalizeText(row.nameEn || row.name_en || row.name || row.label),
+    nameKh: normalizeText(row.nameKh || row.name_kh),
+    code: normalizeText(row.code || row.classLevelCode || row.class_level_code).toUpperCase(),
+    sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0),
+    isActive: Boolean(row.isActive ?? row.is_active ?? true),
+    status: row.status || (row.isActive ?? row.is_active ?? true ? 'active' : 'inactive'),
+    deletedAt: row.deletedAt || row.deleted_at || '',
+    createdAt: row.createdAt || row.created_at || '',
+    updatedAt: row.updatedAt || row.updated_at || '',
+    raw: row,
+  }
+}
+
+function normalizeClassLevelListResponse(response) {
+  const items = unwrapApiItems(response)
+
+  return {
+    items: items.map(normalizeClassLevelRow),
   }
 }
 
@@ -572,6 +682,8 @@ export async function fetchReportPeriods(params = {}, options = {}) {
 function normalizePreschoolSettingsSnapshot(payload = {}) {
   const academicYear = payload.academicYear || {}
   const terms = Array.isArray(payload.terms) ? payload.terms : []
+  const groups = payload.groups && typeof payload.groups === 'object' ? payload.groups : {}
+  const metadata = payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}
 
   return {
     academicYear: {
@@ -621,6 +733,41 @@ function normalizePreschoolSettingsSnapshot(payload = {}) {
       transferPolicy: normalizeText(payload.enrollment?.transferPolicy || payload.enrollment?.transfer_policy),
       capacityReviewMode: normalizeText(payload.enrollment?.capacityReviewMode || payload.enrollment?.capacity_review_mode),
     },
+    health: {
+      criticalAlertsEnabled: Boolean(payload.health?.criticalAlertsEnabled ?? payload.health?.critical_alerts_enabled ?? true),
+      guardianNotifications: Boolean(payload.health?.guardianNotifications ?? payload.health?.guardian_notifications ?? true),
+      teacherNotifications: Boolean(payload.health?.teacherNotifications ?? payload.health?.teacher_notifications ?? true),
+      adminNotifications: Boolean(payload.health?.adminNotifications ?? payload.health?.admin_notifications ?? true),
+      medicationReminders: Boolean(payload.health?.medicationReminders ?? payload.health?.medication_reminders ?? true),
+      vaccinationReminders: Boolean(payload.health?.vaccinationReminders ?? payload.health?.vaccination_reminders ?? true),
+      overdueVaccinationAlertDays: Number(payload.health?.overdueVaccinationAlertDays ?? payload.health?.overdue_vaccination_alert_days ?? 7),
+      medicationReminderMinutesBefore: Number(payload.health?.medicationReminderMinutesBefore ?? payload.health?.medication_reminder_minutes_before ?? 30),
+    },
+    preferences: {
+      timezone: normalizeText(payload.preferences?.timezone || 'Asia/Phnom_Penh'),
+      defaultLanguage: normalizeText(payload.preferences?.defaultLanguage || payload.preferences?.default_language || 'en'),
+      dateFormat: normalizeText(payload.preferences?.dateFormat || payload.preferences?.date_format || 'DD/MM/YYYY'),
+      timeFormat: normalizeText(payload.preferences?.timeFormat || payload.preferences?.time_format || 'HH:mm'),
+      minimumEnrollmentAgeMonths: Number(payload.preferences?.minimumEnrollmentAgeMonths ?? payload.preferences?.minimum_enrollment_age_months ?? 24),
+      maximumEnrollmentAgeMonths: Number(payload.preferences?.maximumEnrollmentAgeMonths ?? payload.preferences?.maximum_enrollment_age_months ?? 60),
+      autoApproveEnrollment: Boolean(payload.preferences?.autoApproveEnrollment ?? payload.preferences?.auto_approve_enrollment ?? false),
+      studentCodePrefix: normalizeText(payload.preferences?.studentCodePrefix || payload.preferences?.student_code_prefix || 'PS'),
+      studentCodeYearFormat: normalizeText(payload.preferences?.studentCodeYearFormat || payload.preferences?.student_code_year_format || 'YYYY'),
+      studentCodeSequenceLength: Number(payload.preferences?.studentCodeSequenceLength ?? payload.preferences?.student_code_sequence_length ?? 4),
+      defaultClassCapacity: Number(payload.preferences?.defaultClassCapacity ?? payload.preferences?.default_class_capacity ?? 18),
+      teacherStudentRatio: Number(payload.preferences?.teacherStudentRatio ?? payload.preferences?.teacher_student_ratio ?? 10),
+      waitlistEnabled: Boolean(payload.preferences?.waitlistEnabled ?? payload.preferences?.waitlist_enabled ?? true),
+      minimumGuardians: Number(payload.preferences?.minimumGuardians ?? payload.preferences?.minimum_guardians ?? 1),
+      maximumGuardians: Number(payload.preferences?.maximumGuardians ?? payload.preferences?.maximum_guardians ?? 2),
+      primaryGuardianRequired: Boolean(payload.preferences?.primaryGuardianRequired ?? payload.preferences?.primary_guardian_required ?? true),
+      pickupAuthorizationRequired: Boolean(payload.preferences?.pickupAuthorizationRequired ?? payload.preferences?.pickup_authorization_required ?? true),
+      attendanceAlertEnabled: Boolean(payload.preferences?.attendanceAlertEnabled ?? payload.preferences?.attendance_alert_enabled ?? true),
+      assessmentAlertEnabled: Boolean(payload.preferences?.assessmentAlertEnabled ?? payload.preferences?.assessment_alert_enabled ?? true),
+      healthAlertEnabled: Boolean(payload.preferences?.healthAlertEnabled ?? payload.preferences?.health_alert_enabled ?? true),
+      enrollmentNotificationEnabled: Boolean(payload.preferences?.enrollmentNotificationEnabled ?? payload.preferences?.enrollment_notification_enabled ?? true),
+    },
+    groups,
+    metadata,
   }
 }
 
@@ -736,7 +883,17 @@ export async function deletePreschoolTeacher(id) {
 }
 
 export async function fetchPreschoolClasses(
-  { page = 1, perPage = 10, search = '', status = '', level = '', teacherUserId = '', sortBy = 'created_at', sortDirection = 'desc' } = {},
+  {
+    page = 1,
+    perPage = 10,
+    search = '',
+    status = '',
+    level = '',
+    classLevelId = '',
+    teacherUserId = '',
+    sortBy = 'created_at',
+    sortDirection = 'desc',
+  } = {},
   options = {},
 ) {
   const normalizedPerPage = normalizePerPage(perPage, 10, 100)
@@ -747,6 +904,7 @@ export async function fetchPreschoolClasses(
       search,
       status,
       level,
+      class_level_id: classLevelId,
       teacher_user_id: teacherUserId,
       sort_by: sortBy,
       sort_direction: sortDirection,
@@ -795,6 +953,47 @@ export async function deletePreschoolClass(id) {
   if (!classId) return false
 
   await http.delete(`/preschool/classes/${encodeURIComponent(classId)}`)
+  return true
+}
+
+export async function fetchPreschoolClassLevels(options = {}) {
+  const response = await http.get('/preschool/class-levels', {
+    signal: options.signal,
+  })
+
+  return normalizeClassLevelListResponse(response)
+}
+
+export async function createPreschoolClassLevel(payload = {}) {
+  const response = await http.post('/preschool/class-levels', payload)
+  const data = unwrapApiData(response) || {}
+  return normalizeClassLevelRow(data.classLevel || data.class_level || data)
+}
+
+export async function updatePreschoolClassLevel(id, payload = {}) {
+  const classLevelId = resolveId(id)
+  if (!classLevelId) {
+    throw new Error('Class level id is required.')
+  }
+
+  const response = await http.put(`/preschool/class-levels/${encodeURIComponent(classLevelId)}`, payload)
+  const data = unwrapApiData(response) || {}
+  return normalizeClassLevelRow(data.classLevel || data.class_level || data)
+}
+
+export async function deactivatePreschoolClassLevel(id) {
+  const classLevelId = resolveId(id)
+  if (!classLevelId) return false
+
+  await http.patch(`/preschool/class-levels/${encodeURIComponent(classLevelId)}/deactivate`)
+  return true
+}
+
+export async function restorePreschoolClassLevel(id) {
+  const classLevelId = resolveId(id)
+  if (!classLevelId) return false
+
+  await http.patch(`/preschool/class-levels/${encodeURIComponent(classLevelId)}/restore`)
   return true
 }
 
@@ -862,7 +1061,7 @@ export async function deletePreschoolStudent(id) {
 }
 
 export async function fetchPreschoolAttendance(
-  { page = 1, perPage = 10, search = '', classId = '', studentId = '', status = '', attendanceDate = '', dateFrom = '', dateTo = '' } = {},
+  { page = 1, perPage = 10, search = '', classId = '', studentId = '', status = '', attendanceDate = '', attendanceSessionId = '', dateFrom = '', dateTo = '' } = {},
   options = {},
 ) {
   const response = await http.get('/preschool/attendance', {
@@ -874,6 +1073,7 @@ export async function fetchPreschoolAttendance(
       student_id: studentId,
       status,
       attendance_date: attendanceDate,
+      attendance_session_id: attendanceSessionId,
       date_from: dateFrom,
       date_to: dateTo,
     }),
@@ -884,6 +1084,13 @@ export async function fetchPreschoolAttendance(
 }
 
 export async function savePreschoolAttendance(payload = {}) {
+  const attendanceSessionId = String(payload.attendance_session_id || payload.attendanceSessionId || '').trim()
+
+  if (attendanceSessionId) {
+    const response = await saveAttendanceSessionRecord(attendanceSessionId, payload)
+    return normalizeAttendanceRow(response.attendance || response)
+  }
+
   const attendanceId = resolveId(payload)
   const method = attendanceId ? 'put' : 'post'
   const url = attendanceId ? `/preschool/attendance/${encodeURIComponent(attendanceId)}` : '/preschool/attendance'
@@ -983,6 +1190,18 @@ export async function fetchMyPreschoolClasses(
   return normalizeClassListResponse(response, page, perPage)
 }
 
+export async function fetchMyPreschoolClass(id, options = {}) {
+  const classId = resolveId(id)
+  if (!classId) return null
+
+  const response = await http.get(`/preschool/teacher/my-classes/${encodeURIComponent(classId)}`, {
+    signal: options.signal,
+  })
+
+  const responsePayload = unwrapApiData(response) || {}
+  return normalizeClassRow(responsePayload.class || responsePayload)
+}
+
 // ── Classroom Resources ───────────────────────────────────────────────────────
 
 function normalizeResourceRow(row = {}) {
@@ -1048,4 +1267,205 @@ export async function deleteClassroomResource(id) {
 
   await http.delete(`/preschool/classroom-resources/${encodeURIComponent(resourceId)}`)
   return true
+}
+
+export async function fetchClassroomResourceRequests(
+  { page = 1, perPage = 100, status = '', sortBy = 'created_at', sortDirection = 'desc' } = {},
+  options = {},
+) {
+  const response = await http.get('/preschool/classroom-resource-requests', {
+    params: buildQueryParams({
+      page,
+      per_page: perPage,
+      status,
+      sort_by: sortBy,
+      sort_direction: sortDirection,
+    }),
+    signal: options.signal,
+  })
+
+  return normalizeResourceRequestListResponse(response, page, perPage)
+}
+
+export async function createClassroomResourceRequest(payload = {}) {
+  const response = await http.post('/preschool/classroom-resource-requests', payload)
+  const data = unwrapApiData(response) || {}
+  return normalizeResourceRequestRow(data.request || data)
+}
+
+export async function approveClassroomResourceRequest(id, payload = {}) {
+  const requestId = resolveId(id)
+  if (!requestId) throw new Error('Request id is required.')
+
+  const response = await http.put(`/preschool/classroom-resource-requests/${encodeURIComponent(requestId)}/approve`, payload)
+  const data = unwrapApiData(response) || {}
+  return normalizeResourceRequestRow(data.request || data)
+}
+
+export async function rejectClassroomResourceRequest(id, payload = {}) {
+  const requestId = resolveId(id)
+  if (!requestId) throw new Error('Request id is required.')
+
+  const response = await http.put(`/preschool/classroom-resource-requests/${encodeURIComponent(requestId)}/reject`, payload)
+  const data = unwrapApiData(response) || {}
+  return normalizeResourceRequestRow(data.request || data)
+}
+
+function normalizeResourceRequestRow(row = {}) {
+  return {
+    id: row.id ?? '',
+    resource_id: row.resource_id ?? '',
+    resource_name: row.resource_name ?? '',
+    teacher_id: row.teacher_id ?? '',
+    teacher_name: row.teacher_name ?? '',
+    class_id: row.class_id ?? '',
+    class_name: row.class_name ?? '',
+    status: row.status ?? 'pending',
+    notes: row.notes ?? '',
+    rejection_reason: row.rejection_reason ?? '',
+    requested_at: row.requested_at ?? '',
+    approved_at: row.approved_at ?? '',
+    approved_by: row.approved_by ?? '',
+  }
+}
+
+function normalizeResourceRequestListResponse(response = {}, page = 1, perPage = 100) {
+  const data = unwrapApiData(response) || {}
+  const items = Array.isArray(data.requests) ? data.requests.map(normalizeResourceRequestRow) : []
+  const pagination = data.pagination || {}
+
+  return {
+    items,
+    pagination: {
+      page: pagination.page ?? page,
+      perPage: pagination.per_page ?? perPage,
+      total: pagination.total ?? items.length,
+      totalPages: pagination.total_pages ?? Math.ceil(items.length / perPage),
+    },
+  }
+}
+
+// ── Monthly Assessment Submissions ────────────────────────────────────────────
+
+function normalizeMonthlySubmissionRow(row = {}) {
+  return {
+    id: row.id ?? '',
+    academic_year_id: row.academic_year_id ?? '',
+    class_id: row.class_id ?? '',
+    assessment_category_id: row.assessment_category_id ?? '',
+    submission_month: row.submission_month || '',
+    status: normalizeText(row.status || 'draft'),
+    student_assessments: Array.isArray(row.student_assessments) ? row.student_assessments : [],
+    academicYear: row.academic_year || row.academicYear || null,
+    class: row.class || null,
+    category: row.assessment_category || row.category || null,
+    submitted_at: row.submitted_at || '',
+    submitted_by_user_id: row.submitted_by_user_id || '',
+    reviewed_at: row.reviewed_at || '',
+    reviewed_by_user_id: row.reviewed_by_user_id || '',
+    returned_at: row.returned_at || '',
+    returned_by_user_id: row.returned_by_user_id || '',
+    return_reason: normalizeText(row.return_reason || ''),
+    review_comment: normalizeText(row.review_comment || ''),
+    finalized_at: row.finalized_at || '',
+    finalized_by_user_id: row.finalized_by_user_id || '',
+    created_at: row.created_at || '',
+    updated_at: row.updated_at || '',
+    raw: row,
+  }
+}
+
+function normalizeMonthlySubmissionListResponse(response, fallbackPage = 1, fallbackPerPage = 20) {
+  const items = unwrapApiItems(response)
+  return {
+    items: items.map(normalizeMonthlySubmissionRow),
+    pagination: unwrapApiPagination(response, fallbackPage, fallbackPerPage, items.length),
+  }
+}
+
+export async function fetchMonthlySubmissions(
+  { page = 1, perPage = 20, status = '', academicYearId = '' } = {},
+  options = {},
+) {
+  const normalizedPerPage = normalizePerPage(perPage, 10, 100)
+  const response = await http.get('/api/preschool/monthly-submissions', {
+    params: buildQueryParams({
+      page,
+      per_page: normalizedPerPage,
+      status,
+      academic_year_id: academicYearId,
+    }),
+    signal: options.signal,
+  })
+
+  return normalizeMonthlySubmissionListResponse(response, page, normalizedPerPage)
+}
+
+export async function fetchMonthlySubmission(id, options = {}) {
+  const submissionId = resolveId(id)
+  if (!submissionId) return null
+
+  const response = await http.get(`/api/preschool/monthly-submissions/${encodeURIComponent(submissionId)}`, {
+    signal: options.signal,
+  })
+
+  const responsePayload = unwrapApiData(response) || {}
+  return normalizeMonthlySubmissionRow(responsePayload.submission || responsePayload)
+}
+
+export async function createMonthlySubmission(payload = {}) {
+  const response = await http.post('/api/preschool/monthly-submissions', payload)
+  const data = unwrapApiData(response) || {}
+  return normalizeMonthlySubmissionRow(data.submission || data)
+}
+
+export async function updateMonthlySubmissionScore(submissionId, studentId, payload = {}) {
+  const response = await http.put(
+    `/api/preschool/monthly-submissions/${encodeURIComponent(submissionId)}/students/${encodeURIComponent(studentId)}/score`,
+    payload
+  )
+  const data = unwrapApiData(response) || {}
+  return data.assessment || data
+}
+
+export async function submitMonthlySubmission(id) {
+  const submissionId = resolveId(id)
+  if (!submissionId) throw new Error('Submission id is required.')
+
+  const response = await http.post(`/api/preschool/monthly-submissions/${encodeURIComponent(submissionId)}/submit`)
+  const data = unwrapApiData(response) || {}
+  return normalizeMonthlySubmissionRow(data.submission || data)
+}
+
+export async function returnMonthlySubmission(id, payload = {}) {
+  const submissionId = resolveId(id)
+  if (!submissionId) throw new Error('Submission id is required.')
+
+  const response = await http.post(
+    `/api/preschool/monthly-submissions/${encodeURIComponent(submissionId)}/return`,
+    payload
+  )
+  const data = unwrapApiData(response) || {}
+  return normalizeMonthlySubmissionRow(data.submission || data)
+}
+
+export async function finalizeMonthlySubmission(id, payload = {}) {
+  const submissionId = resolveId(id)
+  if (!submissionId) throw new Error('Submission id is required.')
+
+  const response = await http.post(
+    `/api/preschool/monthly-submissions/${encodeURIComponent(submissionId)}/finalize`,
+    payload
+  )
+  const data = unwrapApiData(response) || {}
+  return normalizeMonthlySubmissionRow(data.submission || data)
+}
+
+export async function archiveMonthlySubmission(id) {
+  const submissionId = resolveId(id)
+  if (!submissionId) throw new Error('Submission id is required.')
+
+  const response = await http.post(`/api/preschool/monthly-submissions/${encodeURIComponent(submissionId)}/archive`)
+  const data = unwrapApiData(response) || {}
+  return normalizeMonthlySubmissionRow(data.submission || data)
 }

@@ -9,6 +9,7 @@ vi.mock('@/modules/sport/services/api/teamRosterApi', () => ({
   updateRosterMembership: vi.fn(),
   removeRosterMembership: vi.fn(),
   fetchPlayerHistory: vi.fn(),
+  fetchRosterCandidates: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -22,8 +23,13 @@ describe('useTeamRoster', () => {
       players: [{ id: 'player-1', name: 'Player One', rosterStatus: 'active' }],
       memberships: [{ id: 'membership-1', status: 'active' }],
     })
+    teamRosterApi.fetchRosterCandidates.mockResolvedValueOnce({
+      team: { id: 'team-1', name: 'Assigned FC' },
+      items: [{ id: 'candidate-1', name: 'Candidate One', approvalStatus: 'approved' }],
+      pagination: { page: 1, perPage: 10, total: 1, totalPages: 1 },
+    })
 
-    const { team, players, memberships, loading, loadRoster } = useTeamRoster()
+    const { team, players, memberships, candidates, loading, loadRoster, loadCandidates } = useTeamRoster()
     const pending = loadRoster('team-1')
 
     expect(loading.value).toBe(true)
@@ -34,6 +40,9 @@ describe('useTeamRoster', () => {
     expect(team.value).toMatchObject({ id: 'team-1', name: 'Assigned FC' })
     expect(players.value).toHaveLength(1)
     expect(memberships.value).toHaveLength(1)
+
+    await loadCandidates('team-1')
+    expect(candidates.value).toHaveLength(1)
   })
 
   it('surfaces roster errors and delegates mutations', async () => {
@@ -42,6 +51,7 @@ describe('useTeamRoster', () => {
     teamRosterApi.updateRosterMembership.mockResolvedValueOnce({ team: null, players: [], memberships: [] })
     teamRosterApi.removeRosterMembership.mockResolvedValueOnce(true)
     teamRosterApi.fetchPlayerHistory.mockResolvedValueOnce({ player: null, memberships: [] })
+    teamRosterApi.fetchRosterCandidates.mockRejectedValueOnce(new Error('Candidates offline'))
 
     const roster = useTeamRoster()
     await roster.loadRoster('team-1')
@@ -51,5 +61,7 @@ describe('useTeamRoster', () => {
     await expect(roster.updateMembership('membership-1', { status: 'inactive' })).resolves.toMatchObject({ memberships: [] })
     await expect(roster.removeMembership('membership-2')).resolves.toBe(true)
     await expect(roster.loadHistory('player-1')).resolves.toMatchObject({ player: null, memberships: [] })
+    await roster.loadCandidates('team-1')
+    expect(roster.error.value).toBe('Candidates offline')
   })
 })

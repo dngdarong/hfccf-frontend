@@ -1,8 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { createRoundRobinFixtures, sortRoundRobinFixtures } from './useTournamentRoundRobin'
-import { calculateTournamentStandings } from '../services/calculateStandings'
-import { calculateTournamentStats } from '../services/statistics/calculateTournamentStats'
 import { normalizeTournamentState } from './useTournamentStateMachine'
+import { generateTournamentFixtures, updateTournamentResult } from '../api/tournamentApi'
 
 function normalizeText(value) {
   return String(value || '').trim()
@@ -55,6 +54,8 @@ export function useTournamentFixtures(tournament, actions = {}) {
   const previewVisible = ref(false)
   const previewFixtures = ref([])
   const previewSummary = ref(null)
+  const isGenerating = ref(false)
+  const isUpdating = ref(false)
   const initialSnapshot = ref(null)
   const settings = ref(createSettingsSnapshot(tournament?.value?.fixturesSettings || {}))
 
@@ -116,7 +117,7 @@ export function useTournamentFixtures(tournament, actions = {}) {
       value: matchday,
     }))
   })
-  const standings = computed(() => calculateTournamentStandings({ tournament: tournament?.value || {} }))
+  const standings = computed(() => Array.isArray(tournament?.value?.standings) ? tournament.value.standings : [])
 
   watch(
     groups,
@@ -203,98 +204,40 @@ export function useTournamentFixtures(tournament, actions = {}) {
     return generated
   }
 
-  function applyPreview() {
-    const updateTournament = actions.updateTournament
-    const transitionTournament = actions.transitionTournament
-
-    if (typeof updateTournament !== 'function' || !tournament?.value?.id || !previewFixtures.value.length) {
+  async function applyPreview() {
+    if (isGenerating.value) return null
+    if (!tournament?.value?.id || !previewFixtures.value.length || typeof actions.reloadTournament !== 'function') {
       return null
     }
-
-    const nextFixtures = sortRoundRobinFixtures(previewFixtures.value).map((fixture) => ({
-      ...fixture,
-      status: normalizeStatus(fixture?.status),
-    }))
-    const nextStandings = calculateTournamentStandings({
-      tournament: {
-        ...tournament.value,
-        fixtures: nextFixtures,
-      },
-    }).groups
-    const nextStatistics = calculateTournamentStats({
-      tournament: {
-        ...tournament.value,
-        fixtures: nextFixtures,
-        standings: nextStandings,
-      },
-    })
-
-    const updated = updateTournament(tournament.value.id, {
-      fixturesSettings: clone(settings.value),
-      fixtures: nextFixtures,
-      results: nextFixtures.filter((fixture) => fixture.status === 'completed'),
-      standings: nextStandings,
-      statistics: {
-        ...tournament.value.statistics,
-        fixturesGenerated: nextFixtures.length,
-        matches: nextFixtures.length,
-        completedMatches: nextFixtures.filter((fixture) => fixture.status === 'completed').length,
-        summary: nextStatistics.summary,
-        analytics: nextStatistics,
-      },
-    })
-
-    if (updated?.id && state.value === 'group_draw_completed' && typeof transitionTournament === 'function') {
-      transitionTournament(updated.id, 'fixtures_generated')
+    isGenerating.value = true
+    try {
+      await generateTournamentFixtures(tournament.value.id, {
+        double_round_robin: settings.value.roundRobinMode === 'double' || settings.value.homeAwayEnabled,
+        replace: true,
+      })
+      await actions.reloadTournament()
+    } finally {
+      isGenerating.value = false
     }
 
     previewVisible.value = false
     initialSnapshot.value = {
-      fixtures: clone(nextFixtures),
-      standings: clone(nextStandings),
+      fixtures: clone(tournament.value.fixtures || []),
+      standings: clone(tournament.value.standings || []),
       fixturesSettings: clone(settings.value),
     }
 
-    return updated
+    return { id: tournament.value.id }
   }
 
   function resetFixtures() {
     if (!initialSnapshot.value) return false
 
-    const updateTournament = actions.updateTournament
-    if (typeof updateTournament !== 'function' || !tournament?.value?.id) {
-      return false
-    }
-
-    const snapshot = clone(initialSnapshot.value)
-    const updated = updateTournament(tournament.value.id, {
-      fixturesSettings: clone(snapshot.fixturesSettings || settings.value),
-      fixtures: clone(snapshot.fixtures || []),
-      standings: clone(snapshot.standings || []),
-      results: (snapshot.fixtures || []).filter((fixture) => fixture.status === 'completed'),
-      statistics: {
-        ...tournament.value.statistics,
-        fixturesGenerated: (snapshot.fixtures || []).length,
-        matches: (snapshot.fixtures || []).length,
-        completedMatches: (snapshot.fixtures || []).filter((fixture) => fixture.status === 'completed').length,
-        summary: calculateTournamentStats({
-          tournament: {
-            ...tournament.value,
-            fixtures: snapshot.fixtures || [],
-            standings: snapshot.standings || [],
-          },
-        }).summary,
-      },
-    })
-
-    if (updated?.id) {
-      settings.value = createSettingsSnapshot(snapshot.fixturesSettings || {})
-    }
-
-    return Boolean(updated?.id)
+    return false
   }
 
-  function updateFixtureStatus(fixtureId, nextStatus) {
+  async function updateFixtureStatus(fixtureId, nextStatus) {
+    if (isUpdating.value) return null
     if (!canEditFixtureStatus.value || !tournament?.value?.id) {
       return null
     }
@@ -302,54 +245,19 @@ export function useTournamentFixtures(tournament, actions = {}) {
     const normalizedId = normalizeText(fixtureId)
     if (!normalizedId) return null
 
-    const updateTournament = actions.updateTournament
-    const transitionTournament = actions.transitionTournament
-    if (typeof updateTournament !== 'function') {
+    if (typeof actions.reloadTournament !== 'function') {
       return null
     }
-
-    const nextFixtures = fixtures.value.map((fixture) =>
-      fixture.id === normalizedId
-        ? {
-            ...fixture,
-            status: normalizeStatus(nextStatus),
-          }
-        : fixture,
-    )
-    const nextStandings = calculateTournamentStandings({
-      tournament: {
-        ...tournament.value,
-        fixtures: nextFixtures,
-      },
-    }).groups
-    const nextStatistics = calculateTournamentStats({
-      tournament: {
-        ...tournament.value,
-        fixtures: nextFixtures,
-        standings: nextStandings,
-      },
-    })
-
-    const updated = updateTournament(tournament.value.id, {
-      fixturesSettings: clone(settings.value),
-      fixtures: nextFixtures,
-      results: nextFixtures.filter((fixture) => fixture.status === 'completed'),
-      standings: nextStandings,
-      statistics: {
-        ...tournament.value.statistics,
-        fixturesGenerated: nextFixtures.length,
-        matches: nextFixtures.length,
-        completedMatches: nextFixtures.filter((fixture) => fixture.status === 'completed').length,
-        summary: nextStatistics.summary,
-        analytics: nextStatistics,
-      },
-    })
-
-    if (updated?.id && state.value === 'fixtures_generated' && normalizeStatus(nextStatus) !== 'scheduled' && typeof transitionTournament === 'function') {
-      transitionTournament(updated.id, 'active')
+    const fixture = fixtures.value.find((item) => item.id === normalizedId)
+    if (!fixture) return null
+    isUpdating.value = true
+    try {
+      await updateTournamentResult(tournament.value.id, normalizedId, { status: normalizeStatus(nextStatus) })
+      await actions.reloadTournament()
+      return { id: tournament.value.id }
+    } finally {
+      isUpdating.value = false
     }
-
-    return updated
   }
 
   return {
@@ -376,6 +284,8 @@ export function useTournamentFixtures(tournament, actions = {}) {
     applyPreview,
     resetFixtures,
     updateFixtureStatus,
+    isGenerating,
+    isUpdating,
   }
 }
 

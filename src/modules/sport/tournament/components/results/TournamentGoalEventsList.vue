@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { computed } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import TournamentMatchEventTypeBadge from './TournamentMatchEventTypeBadge.vue'
@@ -179,3 +179,4 @@ const sortedEvents = computed(() => sortMatchTimeline(props.events))
   }
 }
 </style>
+

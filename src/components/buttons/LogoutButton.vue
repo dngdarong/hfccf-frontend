@@ -14,7 +14,7 @@
  */
 
 import { computed, ref } from 'vue'
-import PrimeButton from 'primevue/button'
+import AppButton from '@/components/ui/AppButton.vue'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -238,23 +238,6 @@ const iconShellClass = computed(() => [
 ])
 
 /**
- * PrimeVue pass-through config.
- */
-const buttonPt = computed(() => ({
-  root: {
-    class: rootClass.value,
-  },
-  label: {
-    class: [
-      'inline-flex',
-      'w-full',
-      'items-center',
-      props.collapsed ? 'justify-center' : 'justify-start',
-    ],
-  },
-}))
-
-/**
  * Handle primary button click.
  */
 function onClick() {
@@ -296,27 +279,30 @@ function onCancel() {
     class="logout-button-wrap"
     :class="collapsed ? 'inline-flex' : 'w-full px-1'"
   >
-    <PrimeButton
+    <AppButton
       type="button"
+      variant="ghost"
       :disabled="isLocked"
       :loading="loading"
-      :pt="buttonPt"
+      :class="rootClass"
       :aria-label="resolvedLabel"
       @click="onClick"
     >
-      <span
-        :class="iconShellClass"
-        aria-hidden="true"
-      >
-        <i
-          class="pi pi-sign-out text-[1rem]"
+      <template #iconLeft>
+        <span
+          :class="iconShellClass"
           aria-hidden="true"
-        />
-      </span>
+        >
+          <i
+            class="pi pi-sign-out text-[1rem]"
+            aria-hidden="true"
+          />
+        </span>
+      </template>
 
       <span
         v-if="!collapsed"
-        class="ml-2 flex flex-col"
+        class="flex flex-col"
       >
         <span class="font-bold text-rose-700">
           {{ resolvedLabel }}
@@ -333,7 +319,7 @@ function onCancel() {
       >
         {{ resolvedLabel }}
       </span>
-    </PrimeButton>
+    </AppButton>
 
     <AlertQuestion
       :show="isConfirmOpen"

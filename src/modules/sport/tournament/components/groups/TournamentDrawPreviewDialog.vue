@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Dialog from 'primevue/dialog'
 import TournamentGroupGrid from './TournamentGroupGrid.vue'
 import TournamentGroupStats from './TournamentGroupStats.vue'
@@ -36,6 +36,10 @@ const props = defineProps({
     default: () => [],
   },
   canApply: {
+    type: Boolean,
+    default: false,
+  },
+  pending: {
     type: Boolean,
     default: false,
   },
@@ -93,7 +97,7 @@ const dialogVisible = computed({
           class="rounded-xl"
           severity="success"
           :label="t('sportTournament.groups.preview.apply')"
-          :disabled="!canApply"
+          :disabled="pending || !canApply"
           @click="emit('apply')"
         />
       </div>
@@ -141,3 +145,4 @@ const dialogVisible = computed({
   gap: 0.75rem;
 }
 </style>
+

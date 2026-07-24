@@ -88,6 +88,8 @@ export function createEmptyCalendarEventDraft() {
 const attendanceSettingsSnapshot = ref(createDefaultAttendanceSettings())
 const calendarEventsSnapshot = ref([])
 
+const CALENDAR_EVENTS_PAGE_SIZE = 100
+
 export function setAttendanceConfigurationSnapshot({ settings = null, calendarEvents = [] } = {}) {
   attendanceSettingsSnapshot.value = settings ? cloneValue(normalizeAttendanceSettings(settings)) : createDefaultAttendanceSettings()
   calendarEventsSnapshot.value = Array.isArray(calendarEvents) ? calendarEvents.map((event) => cloneValue(normalizeCalendarEvent(event))) : []
@@ -180,15 +182,35 @@ export function getCalendarEventsCount() {
   return calendarEventsSnapshot.value.filter((event) => String(event.status || '').toLowerCase() !== 'archived').length
 }
 
+async function fetchAllCalendarEvents(params = {}) {
+  const allEvents = []
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const response = await fetchCalendarEvents({
+      ...params,
+      page,
+      perPage: CALENDAR_EVENTS_PAGE_SIZE,
+    })
+
+    allEvents.push(...(response.items || []))
+    totalPages = Number(response?.pagination?.totalPages || totalPages || 1)
+    page += 1
+  } while (page <= totalPages)
+
+  return allEvents
+}
+
 export async function loadAttendanceConfiguration() {
   const [settings, calendarEvents] = await Promise.all([
     fetchAttendanceSettings(),
-    fetchCalendarEvents({ perPage: 250 }),
+    fetchAllCalendarEvents(),
   ])
 
   setAttendanceConfigurationSnapshot({
     settings,
-    calendarEvents: calendarEvents.items || [],
+    calendarEvents,
   })
 
   return getAttendanceConfigurationSnapshot()

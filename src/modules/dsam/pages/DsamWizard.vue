@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Breadcrumb from '@/components/navigation/Breadcrumb.vue'
 import { useToast } from 'primevue/usetoast'
 import { useDsamWizardStore } from '../stores/useDsamWizardStore'
 import QuestionRendererFactory from '../components/wizard/QuestionRendererFactory.vue'
@@ -86,6 +87,9 @@ const lastSavedLabel = computed(() => {
 
 <template>
   <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
+    <div class="border-b border-slate-200 bg-white px-4 py-2 shadow-sm">
+      <Breadcrumb />
+    </div>
 
     <!-- Topbar with progress -->
     <header class="shrink-0 border-b border-slate-200 bg-white shadow-sm">

@@ -3,7 +3,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import Button from '@/components/buttons/Button.vue'
+import StatsCards from '@/components/data-display/StatsCards.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
+import Loading from '@/components/feedback/Loading.vue'
+import StatusBadge from '@/components/badges/StatusBadge.vue'
+import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
+import AlertError from '@/components/alerts/AlertError.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { deleteSportDivision, fetchSportDivisions } from '@/modules/sport/services/sportApi'
 
@@ -17,8 +23,12 @@ const { t } = useLanguage()
 const divisions = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
-const pageSize = 8
+const pageSize = 5
 const totalDivisions = ref(0)
+const showDeleteConfirm = ref(false)
+const deletingDivision = ref(null)
+const deletingLoading = ref(false)
+const deleteError = ref('')
 
 const pageTitle = computed(() => t('sportDivisionManagement.title'))
 const pageSubtitle = computed(() => t('sportDivisionManagement.subtitle'))
@@ -34,24 +44,28 @@ const totalTeamsInDivisions = computed(
 const summaryCards = computed(() => [
   {
     id: 'total',
-    title: 'Total Divisions',
+    title: t('sportDivisionManagement.summary.total.title'),
     value: totalDivisions.value,
-    badge: `${activeDivisions.value} active`,
-    icon: 'M12 3v18m0 0l-3-3m3 3l3-3',
+    label: t('sportDivisionManagement.summary.total.badge', { count: activeDivisions.value }),
+    status: 'info',
   },
   {
     id: 'active',
-    title: 'Active Divisions',
+    title: t('sportDivisionManagement.summary.active.title'),
     value: activeDivisions.value,
-    badge: totalDivisions.value > 0 ? `${(activeDivisions.value / totalDivisions.value * 100).toFixed(0)}%` : '0%',
-    icon: 'M5 13l4 4L19 7',
+    label: t('sportDivisionManagement.summary.active.badge', {
+      rate: totalDivisions.value > 0
+        ? (activeDivisions.value / totalDivisions.value * 100).toFixed(0)
+        : 0,
+    }),
+    status: 'success',
   },
   {
     id: 'teams',
-    title: 'Teams Assigned',
+    title: t('sportDivisionManagement.summary.teams.title'),
     value: totalTeamsInDivisions.value,
-    badge: 'Across divisions',
-    icon: 'M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5zm0 2c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z',
+    label: t('sportDivisionManagement.summary.teams.badge'),
+    status: 'warning',
   },
 ])
 
@@ -72,26 +86,39 @@ async function loadDivisions() {
     const response = await fetchSportDivisions({ page: currentPage.value, perPage: pageSize })
     divisions.value = response.items || []
     totalDivisions.value = response.pagination?.total || 0
-  } catch (error) {
-    console.error('Error loading divisions:', error)
+  } catch {
+    // Error handling via API response
   } finally {
     loading.value = false
   }
 }
 
-async function onDeleteDivision(division) {
-  const confirmed = window.confirm(
-    `Are you sure you want to delete "${division.name}"?`,
-  )
-  if (confirmed) {
-    try {
-      await deleteSportDivision(division.id)
-      await loadDivisions()
-    } catch (error) {
-      console.error('Error deleting division:', error)
-      alert('Failed to delete division')
-    }
+function onDeleteDivision(division) {
+  deletingDivision.value = division
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!deletingDivision.value) return
+
+  try {
+    deletingLoading.value = true
+    deleteError.value = ''
+    await deleteSportDivision(deletingDivision.value.id)
+    showDeleteConfirm.value = false
+    await loadDivisions()
+  } catch {
+    deleteError.value = t('sportDivisionManagement.errors.deleteFailed')
+  } finally {
+    deletingLoading.value = false
   }
+}
+
+function handleCancelDelete() {
+  showDeleteConfirm.value = false
+  deletingDivision.value = null
+  deleteError.value = ''
 }
 
 onMounted(() => {
@@ -104,61 +131,52 @@ onMounted(() => {
     <section class="division-management-page">
       <HeaderSection :title="pageTitle" :subtitle="pageSubtitle" />
 
-      <div class="summary-cards-grid">
-        <div v-for="card in summaryCards" :key="card.id" class="summary-card">
-          <div class="summary-card-header">
-            <div>
-              <p class="summary-card-title">{{ card.title }}</p>
-              <p class="summary-card-value">{{ card.value }}</p>
-            </div>
-            <span class="summary-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path :d="card.icon" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-          </div>
-          <p class="summary-card-badge">{{ card.badge }}</p>
-        </div>
-      </div>
+      <StatsCards :cards="summaryCards" compact />
 
       <div class="shell">
         <div class="toolbar">
           <div>
-            <p class="toolbar-label">Divisions</p>
-            <p class="toolbar-summary">{{ divisions.length }} total</p>
+            <p class="toolbar-label">{{ t('sportDivisionManagement.toolbar.label') }}</p>
+            <p class="toolbar-summary">{{ t('sportDivisionManagement.toolbar.summary', { count: divisions.length }) }}</p>
           </div>
-          <button class="btn-primary" @click="goToAddDivision">
-            <span class="btn-icon">+</span>
-            New Division
-          </button>
+          <Button
+            type="button"
+            :label="t('sportDivisionManagement.addButton')"
+            icon="pi pi-plus"
+            @click="goToAddDivision"
+          />
         </div>
 
-        <div v-if="divisions.length === 0" class="state-empty">
-          <p>No divisions yet. Create one to get started.</p>
+        <div v-if="loading" class="state-loading">
+          <Loading />
+        </div>
+
+        <div v-else-if="divisions.length === 0" class="state-empty">
+          <p>{{ t('sportDivisionManagement.table.noResults') }}</p>
         </div>
 
         <table v-else class="divisions-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Teams</th>
-              <th>Actions</th>
+              <th>{{ t('sportDivisionManagement.table.name') }}</th>
+              <th>{{ t('sportDivisionManagement.table.status') }}</th>
+              <th>{{ t('sportDivisionManagement.table.teams') }}</th>
+              <th>{{ t('sportDivisionManagement.table.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="division in divisions" :key="division.id">
               <td class="name-cell">{{ division.name }}</td>
               <td>
-                <span :class="['status-badge', `status-${division.status}`]">
-                  {{ division.status }}
-                </span>
+                <StatusBadge :status="division.status" size="sm" />
               </td>
               <td>{{ division.teamsCount }}</td>
               <td class="actions-cell">
-                <button class="btn-small" @click="onEditDivision(division)">Edit</button>
-                <button class="btn-small btn-danger" @click="onDeleteDivision(division)">
-                  Delete
+                <button type="button" class="btn-small" @click="onEditDivision(division)">
+                  {{ t('sportDivisionManagement.table.edit') }}
+                </button>
+                <button type="button" class="btn-small btn-danger" @click="onDeleteDivision(division)">
+                  {{ t('sportDivisionManagement.table.delete') }}
                 </button>
               </td>
             </tr>
@@ -172,6 +190,27 @@ onMounted(() => {
             @change="loadDivisions"
           />
         </div>
+
+        <!-- Delete Confirmation Dialog -->
+        <AlertQuestion
+          :show="showDeleteConfirm"
+          :title="t('sportDivisionManagement.confirmDelete.title')"
+          :message="deletingDivision ? t('sportAdminSharedMessages.confirmations.deleteItem', { itemName: deletingDivision.name }) : ''"
+          :confirm-text="t('common.delete')"
+          :cancel-text="t('common.cancel')"
+          :loading="deletingLoading"
+          type="danger"
+          @confirm="handleConfirmDelete"
+          @cancel="handleCancelDelete"
+        />
+
+        <!-- Delete Error Message -->
+        <AlertError
+          v-if="deleteError"
+          :show="true"
+          :message="deleteError"
+          @close="deleteError = ''"
+        />
       </div>
     </section>
   </MainLayout>

@@ -86,7 +86,7 @@ npm run build
 
 The app can run with mock data without a backend API.
 
-Development defaults are committed in [.env.development](/D:/Thesis2026/frontend/hfccf-frontend/.env.development):
+Development defaults are committed in [.env.development](/D:/Thesis2026/hfccf-project/hfccf-frontend/.env.development):
 
   ```env
   VITE_API_BASE_URL=http://hfccf-backend.test/api
@@ -108,7 +108,7 @@ For production, `VITE_API_BASE_URL` must use HTTPS.
 npm run dev
 ```
 
-The app uses mock authentication data from [src/mocks/users.json](/D:/Thesis2026/frontend/hfccf-frontend/src/mocks/users.json).
+The app uses mock authentication data from [src/mocks/users.json](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/mocks/users.json).
 
 ## PrimeVue
 
@@ -133,10 +133,10 @@ import Button from 'primevue/button'
 
 ## Routing
 
-- Root router setup lives in [src/router/index.js](/D:/Thesis2026/frontend/hfccf-frontend/src/router/index.js).
-- Feature routes are defined inside modules such as [src/modules/auth/routes.js](/D:/Thesis2026/frontend/hfccf-frontend/src/modules/auth/routes.js), `src/modules/dashboard/routes.js`, `src/modules/super-admin/routes.js`, `src/modules/english/routes.js`, `src/modules/preschool/routes.js`, `src/modules/scholarship/routes.js`, and `src/modules/sport/routes.js`.
-- Layout wrappers live in [src/layouts](/D:/Thesis2026/frontend/hfccf-frontend/src/layouts).
-- App routes use shared access metadata via [src/router/defineAppRoute.js](/D:/Thesis2026/frontend/hfccf-frontend/src/router/defineAppRoute.js).
+- Root router setup lives in [src/router/index.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/router/index.js).
+- Feature routes are defined inside modules such as [src/modules/auth/routes.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/modules/auth/routes.js), `src/modules/dashboard/routes.js`, `src/modules/super-admin/routes.js`, `src/modules/english/routes.js`, `src/modules/preschool/routes.js`, `src/modules/scholarship/routes.js`, and `src/modules/sport/routes.js`.
+- Layout wrappers live in [src/layouts](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/layouts).
+- App routes use shared access metadata via [src/router/defineAppRoute.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/router/defineAppRoute.js).
 
 Example route definition:
 
@@ -154,9 +154,9 @@ defineAppRoute({
 
 ## Navigation And RBAC
 
-- Sidebar configuration is driven by [src/data/sidebar-nav.json](/D:/Thesis2026/frontend/hfccf-frontend/src/data/sidebar-nav.json).
-- Sidebar resolution and route validation live in [src/components/navigation/sidebarNavigation.js](/D:/Thesis2026/frontend/hfccf-frontend/src/components/navigation/sidebarNavigation.js).
-- Shared access helpers live in [src/services/accessControl.js](/D:/Thesis2026/frontend/hfccf-frontend/src/services/accessControl.js) and [src/constants/access.js](/D:/Thesis2026/frontend/hfccf-frontend/src/constants/access.js).
+- Sidebar configuration is driven by [src/data/sidebar-nav.json](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/data/sidebar-nav.json).
+- Sidebar resolution and route validation live in [src/components/navigation/sidebarNavigation.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/components/navigation/sidebarNavigation.js).
+- Shared access helpers live in [src/services/accessControl.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/services/accessControl.js) and [src/constants/access.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/constants/access.js).
 - The router guard uses the same access layer as the sidebar, so hidden links and blocked routes stay consistent.
 
 Current access model:
@@ -210,9 +210,16 @@ If you add or rename roles, review route guards, navigation, and dashboard selec
 
 Also review:
 
-- [src/constants/access.js](/D:/Thesis2026/frontend/hfccf-frontend/src/constants/access.js)
-- [src/services/accessControl.js](/D:/Thesis2026/frontend/hfccf-frontend/src/services/accessControl.js)
-- [src/data/sidebar-nav.json](/D:/Thesis2026/frontend/hfccf-frontend/src/data/sidebar-nav.json)
+- [src/constants/access.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/constants/access.js)
+- [src/services/accessControl.js](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/services/accessControl.js)
+- [src/data/sidebar-nav.json](/D:/Thesis2026/hfccf-project/hfccf-frontend/src/data/sidebar-nav.json)
+
+## Preschool Module Notes
+
+- Preschool enrollment management now uses the standard module shell, breadcrumb trail, and locale-driven sidebar labels.
+- Preschool governance pages are intentionally kept backend-driven so the UI stays aligned with the shared API contract.
+- Preschool invoice downloads are served by the backend as standards-compliant XLSX workbooks via `/api/preschool/invoices/{invoice}/download?format=xlsx`.
+- The XLSX export is generated server-side with branded layout, Khmer text support, and Excel-compatible print settings; PDF export remains unchanged.
 
 ## Security Notes
 

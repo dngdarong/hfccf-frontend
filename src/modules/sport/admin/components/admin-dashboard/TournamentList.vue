@@ -193,7 +193,7 @@ function tournamentName(tournament) {
 .tournament-list__card {
   border: 1px solid #d9e6f2;
   border-radius: 1rem;
-  padding: 1.25rem;
+  padding: 1.1rem;
   background:
     radial-gradient(circle at top right, rgba(0, 174, 239, 0.08) 0%, transparent 30%),
     linear-gradient(160deg, #ffffff 0%, #f7fbff 100%);
@@ -205,7 +205,7 @@ function tournamentName(tournament) {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .tournament-list__eyebrow {
@@ -253,7 +253,7 @@ function tournamentName(tournament) {
 .tournament-list__items {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.75rem;
 }
 
 .tournament-list__items--scroll {

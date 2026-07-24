@@ -18,7 +18,12 @@ function normalizeBoolean(value, fallback = false) {
 }
 
 function resolveRecord(payload = {}) {
-  return payload.settings || payload.preference || payload.preferences || payload.data || payload
+  return payload.settings?.preferences
+    || payload.preference
+    || payload.preferences
+    || payload.data
+    || payload.settings
+    || payload
 }
 
 export function normalizePreferences(record = {}) {
@@ -80,7 +85,7 @@ function buildPreferencesPayload(preferences = {}) {
 }
 
 export async function fetchPreferences(options = {}) {
-  const response = await http.get('/preschool/settings/preferences', {
+  const response = await http.get('/preschool/settings/backbone', {
     signal: options.signal,
   })
 
@@ -89,7 +94,9 @@ export async function fetchPreferences(options = {}) {
 }
 
 export async function updatePreferences(preferences = {}) {
-  const response = await http.put('/preschool/settings/preferences', buildPreferencesPayload(preferences))
+  const response = await http.patch('/preschool/settings/backbone', {
+    preferences: buildPreferencesPayload(preferences),
+  })
   const payload = unwrapApiData(response) || {}
   return normalizePreferences(resolveRecord(payload))
 }

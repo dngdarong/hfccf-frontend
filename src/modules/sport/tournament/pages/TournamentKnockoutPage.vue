@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import AlertError from '@/components/alerts/AlertError.vue'
@@ -17,6 +17,7 @@ import TournamentQualifierList from '@/modules/sport/tournament/components/knock
 import { useTournamentKnockout } from '@/modules/sport/tournament/composables/useTournamentKnockout'
 import { useTournamentCatalog } from '@/modules/sport/tournament/composables/useTournamentCatalog'
 import { getTournamentStateMeta } from '@/modules/sport/tournament/composables/useTournamentStateMachine'
+import { fetchTournamentKnockout } from '@/modules/sport/tournament/api/tournamentApi'
 
 defineOptions({
   name: 'SportTournamentKnockoutPage',
@@ -25,7 +26,7 @@ defineOptions({
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
-const { getTournamentById, updateTournament, transitionTournament } = useTournamentCatalog()
+const { getTournamentById, loadTournament, setTournamentRecord } = useTournamentCatalog()
 
 const showError = ref(false)
 const showSuccess = ref(false)
@@ -58,10 +59,9 @@ const {
   resultDraft,
   resetKnockout,
   createKnockoutMatchDraft,
-} = useTournamentKnockout(tournament, {
-  updateTournament,
-  transitionTournament,
-})
+  isGenerating,
+  isSaving,
+} = useTournamentKnockout(tournament, { reloadTournament })
 const bracketSize = qualification.bracketSize
 const knockoutStats = computed(() => ([
   {
@@ -135,8 +135,8 @@ function handleGeneratePreview() {
   notifySuccess(t('sportTournament.knockout.preview.generated'))
 }
 
-function handleApplyPreview() {
-  const updated = applyPreview()
+async function handleApplyPreview() {
+  const updated = await applyPreview().catch(() => null)
   if (!updated?.id) {
     notifyError(t('sportTournament.knockout.validation.applyFailed'))
     return
@@ -145,8 +145,8 @@ function handleApplyPreview() {
   notifySuccess(t('sportTournament.knockout.preview.applied'))
 }
 
-function handleSaveResult() {
-  const updated = saveMatchResult(resultDraft.value)
+async function handleSaveResult() {
+  const updated = await saveMatchResult(resultDraft.value).catch(() => null)
   if (updated?.issue) {
     notifyError(
       updated.issue.code === 'drawWithoutPenaltyWinner'
@@ -182,6 +182,21 @@ function handleSelectMatch(match) {
   selectMatch(match.id)
   updateDraft(createKnockoutMatchDraft(match))
 }
+
+async function reloadTournament() {
+  const detail = await loadTournament(tournamentId.value)
+  const result = await fetchTournamentKnockout(tournamentId.value)
+  setTournamentRecord({ ...detail, knockout: result.knockout })
+}
+
+onMounted(async () => {
+  if (!tournamentId.value) return
+  try {
+    await reloadTournament()
+  } catch (error) {
+    notifyError(error?.message || t('sportTournament.knockout.notFoundMessage'))
+  }
+})
 </script>
 
 <template>
@@ -209,7 +224,7 @@ function handleSelectMatch(match) {
             type="button"
             class="rounded-xl"
             severity="success"
-            :disabled="!canGenerateBracket"
+            :disabled="!canGenerateBracket || isGenerating"
             :label="t('sportTournament.knockout.actions.generatePreview')"
             @click="handleGeneratePreview"
           />
@@ -217,7 +232,7 @@ function handleSelectMatch(match) {
             type="button"
             class="rounded-xl"
             severity="info"
-            :disabled="!previewVisible"
+            :disabled="!previewVisible || isGenerating"
             :label="t('sportTournament.knockout.actions.applyPreview')"
             @click="handleApplyPreview"
           />
@@ -254,7 +269,7 @@ function handleSelectMatch(match) {
               :model-value="resultDraft"
               :status-options="statusOptions"
               :settings="settings"
-              :disabled="!canEdit"
+              :disabled="!canEdit || isSaving"
               @update:modelValue="updateDraft"
               @save="handleSaveResult"
               @reset="handleResetResult"
@@ -354,3 +369,4 @@ function handleSelectMatch(match) {
   }
 }
 </style>
+

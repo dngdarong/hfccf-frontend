@@ -1,49 +1,94 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import Pagination from '@/components/data-display/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import AttendanceHero from '@/modules/sport/admin/components/AttendanceHero.vue'
 import AttendanceToolbar from '@/modules/sport/admin/components/AttendanceToolbar.vue'
 import AttendanceTable from '@/modules/sport/admin/components/AttendanceTable.vue'
 import {
   fetchSportAttendance,
-  fetchSportPlayers,
   fetchSportTeams,
   saveSportPlayerAttendance,
+  fetchCoachTeams,
 } from '@/modules/sport/services/sportApi'
+import { fetchTeamRoster } from '@/modules/sport/services/api/teamRosterApi'
 
 defineOptions({
   name: 'SportAdminAttendancePlayersPage',
 })
 
-const { t } = useLanguage()
+const { t, language } = useLanguage()
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
+const isCoachAttendanceRoute = computed(() => route.name === 'dashboard-sport-coach-attendance')
 
 const selectedTeamId = ref('')
 const selectedDate = ref(new Date().toISOString().slice(0, 10))
 const teamOptions = ref([])
 const players = ref([])
+const currentPage = ref(1)
+const pageSize = 5
 const attendanceMap = ref({})
 const loading = ref(false)
 const teamsLoading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
 
+const pageTitle = computed(() => (
+  isCoachAttendanceRoute.value
+    ? t('nav.items.attendancePlayers')
+    : t('sportAdminPlayerAttendancePage.title')
+))
+
+const pageSubtitle = computed(() => (
+  isCoachAttendanceRoute.value
+    ? t('sportCoachPlayerAttendancePage.subtitle')
+    : t('sportAdminPlayerAttendancePage.subtitle')
+))
+
+const selectTeamMessage = computed(() => (
+  t('sportAdminPlayerAttendancePage.messages.selectTeam')
+))
+
+const noAssignedTeamsMessage = computed(() => (
+  isCoachAttendanceRoute.value
+    ? t('sportCoachPlayerAttendancePage.messages.noTeams')
+    : t('sportAdminPlayerAttendancePage.messages.selectTeam')
+))
+
 const statusOptions = computed(() => [
-  { value: 'present', label: t('sportAttendanceStatus.present'), short: t('sportAttendanceStatus.presentShort'), active: 'border-emerald-300 bg-emerald-50 text-emerald-700', ring: 'ring-emerald-200' },
-  { value: 'absent', label: t('sportAttendanceStatus.absent'), short: t('sportAttendanceStatus.absentShort'), active: 'border-rose-300 bg-rose-50 text-rose-700', ring: 'ring-rose-200' },
-  { value: 'late', label: t('sportAttendanceStatus.late'), short: t('sportAttendanceStatus.lateShort'), active: 'border-amber-300 bg-amber-50 text-amber-700', ring: 'ring-amber-200' },
-  { value: 'excused', label: t('sportAttendanceStatus.excused'), short: t('sportAttendanceStatus.excusedShort'), active: 'border-sky-300 bg-sky-50 text-sky-700', ring: 'ring-sky-200' },
+  { value: 'present', label: t('sportAttendanceStatus.present'), short: t('sportAttendanceStatus.presentShort'), active: 'border-emerald-600 bg-emerald-600 text-white font-bold', ring: 'ring-2 ring-emerald-300' },
+  { value: 'absent', label: t('sportAttendanceStatus.absent'), short: t('sportAttendanceStatus.absentShort'), active: 'border-rose-600 bg-rose-600 text-white font-bold', ring: 'ring-2 ring-rose-300' },
+  { value: 'late', label: t('sportAttendanceStatus.late'), short: t('sportAttendanceStatus.lateShort'), active: 'border-amber-600 bg-amber-500 text-white font-bold', ring: 'ring-2 ring-amber-300' },
+  { value: 'excused', label: t('sportAttendanceStatus.excused'), short: t('sportAttendanceStatus.excusedShort'), active: 'border-blue-600 bg-blue-600 text-white font-bold', ring: 'ring-2 ring-blue-300' },
 ])
 
 const markedCount = computed(() => Object.values(attendanceMap.value).filter((entry) => entry.status).length)
+const totalPages = computed(() => Math.max(Math.ceil(players.value.length / pageSize), 1))
+const paginatedPlayers = computed(() => players.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))
 const summary = computed(() => t('sportAdminPlayerAttendancePage.summary', { marked: markedCount.value, total: players.value.length }))
 const selectedTeamLabel = computed(() => teamOptions.value.find((option) => String(option.value) === String(selectedTeamId.value))?.label || t('sportAdminPlayerAttendancePage.placeholders.team'))
+const selectedDateLabel = computed(() => {
+  const value = selectedDate.value
+
+  if (!value) return ''
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat(language.value === 'KH' ? 'km-KH' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+})
 const heroStats = computed(() => [
   {
     key: 'team',
@@ -53,7 +98,8 @@ const heroStats = computed(() => [
   {
     key: 'date',
     label: t('sportAdminPlayerAttendancePage.filters.date'),
-    value: selectedDate.value,
+    value: selectedDateLabel.value,
+    nowrap: true,
   },
   {
     key: 'marked',
@@ -72,6 +118,31 @@ function shiftDate(days) {
   selectedDate.value = date.toISOString().slice(0, 10)
 }
 
+function syncCoachRouteTeamId(teamId) {
+  if (!isCoachAttendanceRoute.value || !route.name) return
+
+  const nextQuery = { ...route.query }
+
+  if (teamId) {
+    nextQuery.teamId = teamId
+  } else {
+    delete nextQuery.teamId
+  }
+
+  const currentTeamId = String(route.query.teamId || '').trim()
+  if (currentTeamId === String(teamId || '').trim()) return
+
+  router.replace({ name: route.name, query: nextQuery }).catch(() => {})
+}
+
+function setSelectedTeamId(teamId, { syncRoute = false } = {}) {
+  selectedTeamId.value = String(teamId || '').trim()
+
+  if (syncRoute) {
+    syncCoachRouteTeamId(selectedTeamId.value)
+  }
+}
+
 function buildMap(playerList, existingRecords) {
   const map = {}
   for (const player of playerList) {
@@ -88,17 +159,37 @@ function buildMap(playerList, existingRecords) {
 async function loadTeams() {
   teamsLoading.value = true
   try {
-    const response = await fetchSportTeams({ page: 1, perPage: 100, status: 'active' })
+    const response = isCoachAttendanceRoute.value
+      ? await fetchCoachTeams({ page: 1, perPage: 100, status: 'active' })
+      : await fetchSportTeams({ page: 1, perPage: 100, status: 'active' })
     teamOptions.value = (response.items || []).map((team) => ({
       label: team.name || team.shortName || team.teamCode || `Team ${team.id}`,
       value: String(team.id),
     }))
 
-    if (!selectedTeamId.value && teamOptions.value.length) {
-      selectedTeamId.value = String(teamOptions.value[0].value)
+    const routeTeamId = String(route.query.teamId || '').trim()
+    if (isCoachAttendanceRoute.value) {
+      if (routeTeamId) {
+        setSelectedTeamId(routeTeamId)
+      } else if (teamOptions.value.length === 1) {
+        setSelectedTeamId(teamOptions.value[0].value, { syncRoute: true })
+      } else {
+        setSelectedTeamId('')
+      }
+    } else {
+      const initialTeamId = routeTeamId && teamOptions.value.some((option) => String(option.value) === routeTeamId)
+        ? routeTeamId
+        : String(selectedTeamId.value || teamOptions.value[0]?.value || '')
+
+      if (initialTeamId) {
+        setSelectedTeamId(initialTeamId)
+      } else if (!selectedTeamId.value && teamOptions.value.length) {
+        setSelectedTeamId(teamOptions.value[0].value)
+      }
     }
   } catch {
     teamOptions.value = []
+    errorMessage.value = t('sportAdminPlayerAttendancePage.messages.loadFailed')
   } finally {
     teamsLoading.value = false
   }
@@ -112,7 +203,7 @@ async function loadDay() {
 
   try {
     const [playersResponse, attendanceResponse] = await Promise.all([
-      fetchSportPlayers({ teamId: selectedTeamId.value, page: 1, perPage: 100 }),
+      fetchTeamRoster(selectedTeamId.value),
       fetchSportAttendance({
         attendanceType: 'player',
         teamId: selectedTeamId.value,
@@ -122,7 +213,8 @@ async function loadDay() {
       }),
     ])
 
-    players.value = playersResponse.items || []
+    players.value = playersResponse.players || []
+    currentPage.value = 1
     attendanceMap.value = buildMap(players.value, attendanceResponse.items || [])
   } catch (error) {
     errorMessage.value = error?.message || t('sportAdminPlayerAttendancePage.messages.loadFailed')
@@ -201,15 +293,14 @@ onMounted(() => {
     <Toast />
     <section class="sport-attendance-sheet">
       <HeaderSection
-        :title="t('sportAdminPlayerAttendancePage.title')"
-        :subtitle="t('sportAdminPlayerAttendancePage.subtitle')"
+        :title="pageTitle"
+        :subtitle="pageSubtitle"
       />
 
       <AttendanceHero :stats="heroStats">
         <template #copy>
           <p class="hero-eyebrow">{{ t('sportAttendanceShared.playersEyebrow') }}</p>
-          <h2 class="hero-title">{{ t('sportAdminPlayerAttendancePage.title') }}</h2>
-          <p class="hero-text">{{ t('sportAdminPlayerAttendancePage.subtitle') }}</p>
+          <p class="hero-text">{{ pageSubtitle }}</p>
         </template>
       </AttendanceHero>
 
@@ -219,23 +310,28 @@ onMounted(() => {
         :team-options="teamOptions"
         :loading="loading"
         :teams-loading="teamsLoading"
-        @update:team-id="selectedTeamId = $event"
+        :show-back="!isCoachAttendanceRoute"
+        @update:team-id="setSelectedTeamId($event, { syncRoute: isCoachAttendanceRoute })"
         @update:date="selectedDate = $event"
         @shift-date="shiftDate"
         @go-today="selectedDate = todayIso()"
         @go-back="router.push({ name: 'dashboard-sport-admin-attendance' })"
       />
 
-      <div v-if="!selectedTeamId" class="state-empty">
-        {{ t('sportAdminPlayerAttendancePage.messages.selectTeam') }}
+      <div v-if="loading || teamsLoading" class="state-empty">
+        {{ t('common.loading') }}
       </div>
 
       <div v-else-if="errorMessage" class="state-error">
         {{ errorMessage }}
       </div>
 
-      <div v-else-if="loading" class="state-empty">
-        {{ t('preschoolReportsShared.loading') }}
+      <div v-else-if="!selectedTeamId && !teamOptions.length" class="state-empty">
+        {{ noAssignedTeamsMessage }}
+      </div>
+
+      <div v-else-if="!selectedTeamId" class="state-empty">
+        {{ selectTeamMessage }}
       </div>
 
       <div v-else-if="!players.length" class="state-empty">
@@ -244,7 +340,7 @@ onMounted(() => {
 
       <AttendanceTable
         v-else
-        :players="players"
+        :players="paginatedPlayers"
         :attendance-map="attendanceMap"
         :status-options="statusOptions"
         :summary="summary"
@@ -257,6 +353,9 @@ onMounted(() => {
         @clear-all="clearAll"
         @save="saveAll"
       />
+      <div v-if="selectedTeamId && totalPages > 1" class="flex justify-end">
+        <Pagination v-model="currentPage" :total-pages="totalPages" />
+      </div>
     </section>
   </MainLayout>
 </template>
@@ -276,14 +375,6 @@ onMounted(() => {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.hero-title {
-  margin: 0 0 0.35rem;
-  color: #0f172a;
-  font-size: clamp(1.35rem, 2vw, 1.8rem);
-  font-weight: 800;
-  line-height: 1.1;
 }
 
 .hero-text {

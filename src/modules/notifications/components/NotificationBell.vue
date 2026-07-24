@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Badge from 'primevue/badge'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Popover from 'primevue/popover'
 import { useNotifications } from '@/modules/notifications/composables/useNotifications'
 import { useUnreadNotifications } from '@/modules/notifications/composables/useUnreadNotifications'
@@ -82,8 +82,11 @@ async function handleMarkAllRead() {
 }
 
 function goToNotificationsPage() {
-  overlayRef.value?.hide()
-  router.push({ name: 'notifications' })
+  overlayRef.value?.hide?.()
+  router.push({
+    name: 'dashboard-notifications',
+    query: { tab: 'notifications' },
+  })
 }
 
 onMounted(() => {
@@ -161,3 +164,4 @@ onMounted(() => {
   box-shadow: none;
 }
 </style>
+

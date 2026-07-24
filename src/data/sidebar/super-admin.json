@@ -20,6 +20,27 @@
           "badgeKey": "nav.badges.core"
         },
         {
+          "id": "command-center-executive-operations",
+          "routeName": "dashboard-super-admin-command-center-executive-operations",
+          "labelKey": "nav.items.executiveOperations",
+          "icon": "performance",
+          "badgeKey": "nav.badges.core"
+        },
+        {
+          "id": "command-center-workflow-approvals",
+          "routeName": "dashboard-super-admin-command-center-workflow-approvals",
+          "labelKey": "nav.items.workflowApprovals",
+          "icon": "governance",
+          "badgeKey": "nav.badges.core"
+        },
+        {
+          "id": "command-center-preschool-analytics",
+          "routeName": "dashboard-super-admin-command-center-preschool-analytics",
+          "labelKey": "nav.items.preschoolAnalytics",
+          "icon": "performance",
+          "badgeKey": "nav.badges.core"
+        },
+        {
           "id": "admin-management",
           "routeName": "dashboard-super-admin-users-manage",
           "labelKey": "nav.items.manageUsers",

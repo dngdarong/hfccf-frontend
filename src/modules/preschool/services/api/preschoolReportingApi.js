@@ -12,19 +12,11 @@ function normalizeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-function normalizeFilters(filters = {}) {
-  return {
-    academicYearId: filters.academicYearId ?? filters.academic_year_id ?? '',
-    termId: filters.termId ?? filters.term_id ?? '',
-    dateFrom: filters.dateFrom ?? filters.date_from ?? '',
-    dateTo: filters.dateTo ?? filters.date_to ?? '',
-    month: filters.month ?? '',
-    quarter: filters.quarter ?? '',
-    classId: filters.classId ?? filters.class_id ?? '',
-    teacherId: filters.teacherId ?? filters.teacher_id ?? '',
-    status: filters.status ?? '',
-    exportFormat: filters.exportFormat ?? filters.export_format ?? '',
-  }
+function normalizeNullableNumber(value) {
+  if (value === null || value === undefined || value === '') return null
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function normalizeCard(card = {}) {
@@ -40,7 +32,9 @@ function normalizeKpis(kpis = {}) {
   return {
     totalStudents: normalizeNumber(kpis.total_students ?? kpis.totalStudents),
     activeStudents: normalizeNumber(kpis.active_students ?? kpis.activeStudents),
+    attendanceToday: normalizeNullableNumber(kpis.attendance_today ?? kpis.attendanceToday),
     newEnrollments: normalizeNumber(kpis.new_enrollments ?? kpis.newEnrollments),
+    pendingEnrollments: normalizeNumber(kpis.pending_enrollments ?? kpis.pendingEnrollments),
     attendanceRate: normalizeNumber(kpis.attendance_rate ?? kpis.attendanceRate),
     absenceRate: normalizeNumber(kpis.absence_rate ?? kpis.absenceRate),
     lateRate: normalizeNumber(kpis.late_rate ?? kpis.lateRate),
@@ -56,6 +50,35 @@ function normalizeKpis(kpis = {}) {
     openGuardianIssues: normalizeNumber(kpis.open_guardian_issues ?? kpis.openGuardianIssues),
     escalatedCases: normalizeNumber(kpis.escalated_cases ?? kpis.escalatedCases),
   }
+}
+
+function normalizeComparison(comparison = {}) {
+  return {
+    current: normalizeNullableNumber(comparison.current),
+    previous: normalizeNullableNumber(comparison.previous),
+    delta: normalizeNullableNumber(comparison.delta),
+    percent: normalizeNullableNumber(comparison.percent),
+    trend: normalizeText(comparison.trend || 'neutral').toLowerCase(),
+    comparison: normalizeText(comparison.comparison),
+  }
+}
+
+function normalizeAnalytics(analytics = {}) {
+  return {
+    activeStudents: normalizeComparison(analytics.active_students ?? analytics.activeStudents),
+    attendanceToday: normalizeComparison(analytics.attendance_today ?? analytics.attendanceToday),
+    openHealthAlerts: normalizeComparison(analytics.open_health_alerts ?? analytics.openHealthAlerts),
+    pendingEnrollments: normalizeComparison(analytics.pending_enrollments ?? analytics.pendingEnrollments),
+    outstandingPayments: normalizeComparison(analytics.outstanding_payments ?? analytics.outstandingPayments),
+  }
+}
+
+function normalizeExecutiveHealth(health = {}) {
+  return Object.fromEntries(Object.entries(health).map(([key, item = {}]) => [key, {
+    ...item,
+    status: normalizeText(item.status || 'neutral').toLowerCase(),
+    value: normalizeNullableNumber(item.value),
+  }]))
 }
 
 function normalizeSeries(items = []) {
@@ -82,7 +105,7 @@ function normalizeReport(payload = {}) {
   return {
     report: normalizeText(payload.report),
     section: normalizeText(payload.section),
-    filters: normalizeFilters(payload.filters || {}),
+    filters: payload.filters || {},
     summary: payload.summary ? {
       ...payload.summary,
       attendanceRate: payload.summary.attendance_rate ?? payload.summary.attendanceRate ?? null,
@@ -93,6 +116,8 @@ function normalizeReport(payload = {}) {
       vaccinationCompliance: payload.summary.vaccination_compliance ?? payload.summary.vaccinationCompliance ?? null,
     } : {},
     kpis: payload.kpis ? normalizeKpis(payload.kpis) : {},
+    analytics: normalizeAnalytics(payload.analytics || {}),
+    executiveHealth: normalizeExecutiveHealth(payload.executive_health || payload.executiveHealth || {}),
     cards: Array.isArray(payload.cards) ? payload.cards.map(normalizeCard) : [],
     trend: normalizeSeries(payload.trend || []),
     performance: normalizeSeries(payload.performance || []),
@@ -224,6 +249,8 @@ export async function exportReport(section, format = 'csv', params = {}, options
     content: normalizeText(payload.export?.content),
     section: normalizeText(payload.export?.section || section),
     format: normalizeText(payload.export?.format || format),
+    mimeType: normalizeText(payload.export?.mimeType),
+    encoding: normalizeText(payload.export?.encoding || 'utf-8'),
   }
 }
 

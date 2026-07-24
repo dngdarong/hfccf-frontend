@@ -1,5 +1,9 @@
 import { computed, reactive, ref, watch } from 'vue'
-import { normalizeTournamentGroupDraw } from '../mocks/tournaments.mock'
+function normalizeTournamentGroupDraw(value = {}, fallback = {}) {
+  const source = value && typeof value === 'object' ? value : {}
+  const base = fallback?.groupDraw || { settings: {}, groups: [], locked: false, mode: 'automatic', lastGeneratedAt: '' }
+  return { ...base, ...source, settings: { ...base.settings, ...source.settings }, groups: Array.isArray(source.groups) ? source.groups : (base.groups || []) }
+}
 import {
   assignTournamentTeamToGroup,
   createTournamentGroupOptions,

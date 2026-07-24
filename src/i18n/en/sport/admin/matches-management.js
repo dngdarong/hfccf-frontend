@@ -49,7 +49,7 @@ export default {
     },
     toolbarEyebrow: 'Match Management',
     toolbarSummary: 'Matches ({count})',
-    visibleRange: 'Showing {shown} of {total} matches',
+    visibleRange: 'Showing {start}–{end} of {total} matches',
     noResults: 'No matches found.',
     spotlightLabel: 'Live Now',
     summary: {
@@ -76,7 +76,7 @@ export default {
     },
     filters: {
       searchLabel: 'Search',
-      searchPlaceholder: 'Search by team, venue, or match id',
+      searchPlaceholder: 'Search matches...',
       competitionLabel: 'Competition',
       competitionPlaceholder: 'All Competitions',
       tournamentLabel: 'Tournament',
@@ -85,7 +85,7 @@ export default {
       matchDatePlaceholder: '',
     },
     table: {
-      id: 'ID',
+      number: 'No.',
       homeTeam: 'Home Team',
       score: 'Score',
       awayTeam: 'Away Team',
@@ -189,6 +189,7 @@ export default {
         teamPlaceholder: 'Select team',
         eventType: 'Event Type',
         typePlaceholder: 'Select event type',
+        period: 'Period',
         player: 'Player',
         playerPlaceholder: 'Select squad player',
         assistPlayer: 'Assist Player',
@@ -244,6 +245,7 @@ export default {
       defaultTeam: 'this team',
     },
     status: {
+      draft: 'Draft',
       scheduled: 'Scheduled',
       live: 'Live',
       completed: 'Completed',

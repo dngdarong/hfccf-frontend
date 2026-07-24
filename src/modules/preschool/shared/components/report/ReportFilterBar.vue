@@ -17,9 +17,11 @@ defineProps({
     default: () => ({
       academicYear: 'Academic Year',
       term: 'Term',
+      reportPeriod: 'Report Period',
       dateFrom: 'Date From',
       dateTo: 'Date To',
       class: 'Class',
+      student: 'Student',
       teacher: 'Teacher',
       status: 'Status',
       apply: 'Apply Filters',
@@ -81,6 +83,18 @@ function resetFilters() {
         />
       </label>
 
+      <label v-if="visibleFilters.includes('reportPeriod')" class="space-y-2 text-sm font-medium text-slate-700">
+        <span>{{ labels.reportPeriod }}</span>
+        <Select
+          :model-value="modelValue.reportPeriodId"
+          :options="options.reportPeriods || []"
+          option-label="label"
+          option-value="value"
+          class="w-full"
+          @update:model-value="(value) => onUpdateField('reportPeriodId', value, modelValue)"
+        />
+      </label>
+
       <template v-if="visibleFilters.includes('dateRange')">
         <label class="space-y-2 text-sm font-medium text-slate-700">
           <span>{{ labels.dateFrom }}</span>
@@ -111,6 +125,18 @@ function resetFilters() {
           option-value="value"
           class="w-full"
           @update:model-value="(value) => onUpdateField('classId', value, modelValue)"
+        />
+      </label>
+
+      <label v-if="visibleFilters.includes('student')" class="space-y-2 text-sm font-medium text-slate-700">
+        <span>{{ labels.student }}</span>
+        <Select
+          :model-value="modelValue.studentId"
+          :options="options.students || []"
+          option-label="label"
+          option-value="value"
+          class="w-full"
+          @update:model-value="(value) => onUpdateField('studentId', value, modelValue)"
         />
       </label>
 

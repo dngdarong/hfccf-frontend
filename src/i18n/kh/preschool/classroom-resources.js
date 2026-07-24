@@ -18,6 +18,7 @@ export default {
       condition: 'លក្ខខណ្ឌ',
       notes: 'កំណត់ចំណាំ',
       actions: 'សកម្មភាព',
+      class: 'ថ្នាក់',
     },
     categories: {
       books: 'សៀវភៅ',
@@ -67,6 +68,41 @@ export default {
       total: 'ធនធានសរុប',
       goodCondition: 'លក្ខខណ្ឌល្អ',
       needsAttention: 'ត្រូវការយកចិត្តទុកដាក់',
+    },
+  },
+  preschoolResourceRequests: {
+    title: 'ស្នើសុំធនធាន',
+    columns: {
+      resource: 'ធនធាន',
+      teacher: 'គ្រូ',
+      class: 'ថ្នាក់',
+      status: 'ស្ថានភាព',
+      requestedDate: 'កាលបរិច្ឆេទស្នើ',
+      action: 'សកម្មភាព',
+    },
+    statuses: {
+      pending: 'រង់ចាំ',
+      approved: 'ឯកភាព',
+      rejected: 'បដិសេធ',
+    },
+    actions: {
+      approve: 'ឯកភាព',
+      reject: 'បដិសេធ',
+      request: 'ស្នើសុំ',
+    },
+    dialogs: {
+      approveTitle: 'ឯកភាពការស្នើសុំធនធាន',
+      rejectTitle: 'បដិសេធការស្នើសុំធនធាន',
+      approvalNotes: 'កំណត់ចំណាំការឯកភាព (ស្រេចចិត្ត)',
+      rejectionReason: 'ហេតុផលដែលបដិសេធ',
+    },
+    messages: {
+      empty: 'មិនមានការស្នើសុំធនធានបានរកឃើញទេ។',
+      approvedSuccess: 'ការស្នើសុំត្រូវបានឯកភាពដោយជោគជ័យ។',
+      rejectedSuccess: 'ការស្នើសុំត្រូវបានបដិសេធដោយជោគជ័យ។',
+      requestSubmitSuccess: 'ការស្នើសុំធនធានត្រូវបានដាក់ស្នើដោយជោគជ័យ។ រង់ចាំការឯកភាពរបស់អ្នកគ្រប់គ្រង។',
+      selectClassRequired: 'សូមជ្រើសរើសថ្នាក់ដើម្បីស្នើសុំធនធាននេះ។',
+      actionFailed: 'មិនអាចដោះស្រាយការស្នើសុំបានទេ។',
     },
   },
 }

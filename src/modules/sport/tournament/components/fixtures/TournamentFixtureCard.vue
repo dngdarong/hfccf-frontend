@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Select from 'primevue/select'
 import TournamentFixtureStatusBadge from './TournamentFixtureStatusBadge.vue'
 import { useLanguage } from '@/composables/useLanguage'
@@ -218,3 +218,4 @@ function changeStatus(event) {
   }
 }
 </style>
+

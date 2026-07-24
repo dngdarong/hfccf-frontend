@@ -10,7 +10,8 @@ import {
   updateKnockoutMatchResult,
 } from './useTournamentBracket'
 import { createKnockoutSettingsSnapshot, useTournamentQualification } from './useTournamentQualification'
-import { canTransitionTournament, normalizeTournamentState } from './useTournamentStateMachine'
+import { normalizeTournamentState } from './useTournamentStateMachine'
+import { generateTournamentKnockout, updateTournamentResult } from '../api/tournamentApi'
 
 function clone(value) {
   if (typeof structuredClone === 'function') {
@@ -35,6 +36,8 @@ export function useTournamentKnockout(tournament, actions = {}) {
   const previewVisible = ref(false)
   const selectedMatchId = ref('')
   const resultDraft = ref(createKnockoutMatchDraft())
+  const isGenerating = ref(false)
+  const isSaving = ref(false)
 
   const qualification = useTournamentQualification(tournament, settings)
 
@@ -164,37 +167,30 @@ export function useTournamentKnockout(tournament, actions = {}) {
     return result
   }
 
-  function applyPreview() {
-    if (!previewVisible.value || !previewBracket.value || typeof actions.updateTournament !== 'function' || !currentTournament.value?.id) {
+  async function applyPreview() {
+    if (isGenerating.value) return null
+    if (!previewVisible.value || !previewBracket.value || typeof actions.reloadTournament !== 'function' || !currentTournament.value?.id) {
       return null
     }
-
-    const nextBracket = rebuildKnockoutProgression(clone(previewBracket.value), settings.value)
-    const updated = actions.updateTournament(currentTournament.value.id, {
-      knockoutSettings: clone(settings.value),
-      knockout: {
-        settings: clone(settings.value),
-        qualifiers: clone(qualifiers.value),
-        bracket: nextBracket,
-        champion: nextBracket.champion || null,
-        generatedAt: nextBracket.generatedAt || new Date().toISOString(),
-        updatedAt: nextBracket.updatedAt || new Date().toISOString(),
-      },
-    })
-
-    if (updated?.id && tournamentState.value === 'active' && typeof actions.transitionTournament === 'function' && canTransitionTournament(tournamentState.value, 'knockout_stage')) {
-      actions.transitionTournament(updated.id, 'knockout_stage')
+    isGenerating.value = true
+    try {
+      await generateTournamentKnockout(currentTournament.value.id, { replace: true })
+      await actions.reloadTournament()
+    } finally {
+      isGenerating.value = false
     }
+    const nextBracket = rebuildKnockoutProgression(clone(previewBracket.value), settings.value)
 
     previewVisible.value = false
     previewBracket.value = null
     selectedMatchId.value = flattenKnockoutMatches(nextBracket)[0]?.id || ''
 
-    return updated
+    return { id: currentTournament.value.id }
   }
 
-  function saveMatchResult(patch = {}) {
-    if (!selectedMatch.value || !currentTournament.value?.id || typeof actions.updateTournament !== 'function') {
+  async function saveMatchResult(patch = {}) {
+    if (isSaving.value) return null
+    if (!selectedMatch.value || !currentTournament.value?.id || typeof actions.reloadTournament !== 'function') {
       return null
     }
 
@@ -207,37 +203,24 @@ export function useTournamentKnockout(tournament, actions = {}) {
       return outcome
     }
 
-    const nextBracket = outcome.bracket
-    const updated = actions.updateTournament(currentTournament.value.id, {
-      knockoutSettings: clone(settings.value),
-      knockout: {
-        settings: clone(settings.value),
-        qualifiers: clone(qualifiers.value),
-        bracket: nextBracket,
-        champion: nextBracket.champion || null,
-        generatedAt: currentTournament.value?.knockout?.generatedAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    })
-
-    if (
-      updated?.id
-      && nextBracket.champion?.teamId
-      && typeof actions.transitionTournament === 'function'
-      && canTransitionTournament(tournamentState.value, 'completed')
-    ) {
-      actions.transitionTournament(updated.id, 'completed')
+    isSaving.value = true
+    try {
+      await updateTournamentResult(currentTournament.value.id, selectedMatch.value.id, {
+        homeScore: nextPatch.homeScore,
+        awayScore: nextPatch.awayScore,
+        extraTimeHomeScore: nextPatch.extraTimeHomeScore,
+        extraTimeAwayScore: nextPatch.extraTimeAwayScore,
+        penaltyHomeScore: nextPatch.penaltyHomeScore,
+        penaltyAwayScore: nextPatch.penaltyAwayScore,
+        winnerTeamId: nextPatch.winnerTeamId,
+        status: nextPatch.status,
+        notes: nextPatch.notes,
+      })
+      await actions.reloadTournament()
+      return { id: currentTournament.value.id }
+    } finally {
+      isSaving.value = false
     }
-    else if (
-      updated?.id
-      && tournamentState.value === 'active'
-      && typeof actions.transitionTournament === 'function'
-      && canTransitionTournament(tournamentState.value, 'knockout_stage')
-    ) {
-      actions.transitionTournament(updated.id, 'knockout_stage')
-    }
-
-    return updated
   }
 
   function resetKnockout() {
@@ -278,5 +261,7 @@ export function useTournamentKnockout(tournament, actions = {}) {
     resultDraft,
     resetKnockout,
     createKnockoutMatchDraft,
+    isGenerating,
+    isSaving,
   }
 }

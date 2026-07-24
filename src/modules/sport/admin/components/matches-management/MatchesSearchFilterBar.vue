@@ -162,7 +162,9 @@ const searchInputPt = {
         </label>
       </div>
 
-      <div class="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+      <div
+        class="matches-search-filter-bar__filters flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end xl:w-auto xl:flex-none xl:flex-nowrap"
+      >
         <Select
           input-id="matchCompetitionFilter"
           :model-value="competition"
@@ -232,6 +234,16 @@ const searchInputPt = {
 :deep(.p-iconfield .p-inputicon) {
   /* Keep the search icon readable but subtle. */
   color: var(--brand-surface-500);
+}
+
+:deep(.p-iconfield) {
+  display: block;
+  width: 100%;
+}
+
+:deep(.p-iconfield > .p-inputtext) {
+  display: block;
+  width: 100%;
 }
 
 :deep(.matches-search-filter-bar__search-input) {

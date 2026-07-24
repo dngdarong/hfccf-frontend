@@ -134,6 +134,56 @@ export default {
       },
     },
   },
+  preschoolClassLevelsPage: {
+    eyebrow: 'Class configuration',
+    title: 'Class Levels',
+    subtitle: 'Manage the configurable preschool class levels used by the class editor and enrollment forms.',
+    description: 'Add new levels here, then use them in class creation without hardcoding the option list.',
+    actions: {
+      add: 'Add Level',
+      save: 'Save Level',
+      deactivate: 'Deactivate',
+      restore: 'Restore',
+    },
+    status: {
+      active: 'Active',
+      inactive: 'Inactive',
+    },
+    labels: {
+      sortOrder: 'Sort order: {value}',
+    },
+    emptyStates: {
+      none: 'No levels found.',
+      noKhmer: 'No Khmer name provided',
+    },
+    dialog: {
+      addTitle: 'Add Level',
+      editTitle: 'Edit Level',
+      subtitle: 'Keep the code short and unique so the class-code generator can reuse it safely.',
+    },
+    fields: {
+      nameEn: 'Level Name EN',
+      nameKh: 'Level Name KH',
+      code: 'Level Code',
+      sortOrder: 'Sort Order',
+      isActive: 'Active',
+    },
+    placeholders: {
+      nameEn: 'Nursery',
+      nameKh: 'មត្តេយ្យកម្រិតតូច',
+      code: 'NUR',
+      sortOrder: '0',
+    },
+    help: {
+      isActive: 'Inactive levels stay available for records but are hidden from new class selection.',
+    },
+    validation: {
+      required: 'This field is required.',
+      max: 'Must be 10 characters or fewer.',
+      positive: 'Please enter a zero or positive number.',
+      alphaNumeric: 'Use uppercase letters and numbers only.',
+    },
+  },
   preschoolAttendanceSettingsPage: {
     pageTitle: 'Attendance Configuration',
     pageSubtitle: 'Manage attendance thresholds, alerts, school week rules, and school calendar events.',
@@ -382,6 +432,7 @@ export default {
       status: 'Status',
       sortOrder: 'Sort Order',
       name: 'Name',
+      periodType: 'Period Type',
       academicYear: 'Academic Year',
       term: 'Term',
       startDate: 'Start Date',
@@ -426,11 +477,20 @@ export default {
         subtitle: 'Link the period to an academic year and optional term.',
       },
     },
+    periodTypes: {
+      monthly: 'Monthly',
+      term: 'Term',
+      annual: 'Annual',
+    },
     help: {
       weightingEnabled: 'When enabled, weights must total 100%.',
       passing: 'Mark the band that represents a passing score.',
       categoryStatus: 'Archived categories stay in history but are hidden from new use.',
       reportPeriodStatus: 'Archived report periods remain read-only.',
+      termOptional: 'Leave the term blank for monthly or annual periods if the period spans the full year.',
+    },
+    placeholders: {
+      termOptional: 'Optional for monthly or annual periods',
     },
     table: {
       actions: 'Actions',
@@ -656,6 +716,11 @@ export default {
       required: 'This field is required.',
       positive: 'Please enter a positive number.',
       range: 'The maximum age must be greater than or equal to the minimum age.',
+      invalidTimezone: 'Select a supported timezone.',
+      unsupportedLanguage: 'Select a supported language.',
+      invalidDateFormat: 'Select a supported date format.',
+      invalidTimeFormat: 'Select a supported time format.',
+      invalidYearFormat: 'Select a supported year format.',
     },
   },
   preschoolAcademicSettingsPage: {

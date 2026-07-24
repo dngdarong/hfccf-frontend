@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -76,7 +76,7 @@ function hasExtraTime() {
         <p class="tournament-bracket-match__eyebrow">{{ t('sportTournament.knockout.labels.match') }} {{ match.matchNumber || '-' }}</p>
         <h5 class="tournament-bracket-match__title">
           {{ match.homeTeamName || t('sportTournament.knockout.match.placeholder') }}
-          <span class="tournament-bracket-match__title-divider">vs</span>
+          <span class="tournament-bracket-match__title-divider">{{ t('sportTournament.knockout.resultForm.vs') }}</span>
           {{ match.awayTeamName || t('sportTournament.knockout.match.placeholder') }}
         </h5>
       </div>
@@ -308,3 +308,4 @@ function hasExtraTime() {
   }
 }
 </style>
+

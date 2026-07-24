@@ -1,0 +1,434 @@
+.student-profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.student-profile-page__shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #dce6f2;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(186, 230, 253, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.99) 100%);
+  box-shadow: 0 25px 60px -40px rgba(15, 23, 42, 0.5);
+}
+
+.student-profile-page__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.student-profile-page__state {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.student-profile-page__state--error {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.student-profile-page__hero {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  padding: 1.2rem;
+  border-radius: 1.4rem;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(135deg, #0f2e63 0%, #12356f 45%, #0f2a58 100%);
+  color: #fff;
+}
+
+.student-profile-page__avatar-wrap {
+  flex-shrink: 0;
+}
+
+.student-profile-page__avatar {
+  width: 6.5rem;
+  height: 6.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #c4b5fd, #7c3aed);
+  border: 4px solid rgba(255,255,255,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 18px 30px -18px rgba(15, 23, 42, 0.5);
+}
+
+.student-profile-page__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-profile-page__avatar-initials {
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.student-profile-page__hero-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.student-profile-page__hero-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.student-profile-page__eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.student-profile-page__name {
+  margin: 0.3rem 0 0;
+  font-size: clamp(1.5rem, 2.2vw, 2.1rem);
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.student-profile-page__code {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #bfdbfe;
+}
+
+.student-profile-page__summary {
+  margin: 0;
+  max-width: 62rem;
+  font-size: 0.95rem;
+  color: #dbeafe;
+}
+
+.student-profile-page__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: 0.5rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.student-profile-page__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.student-profile-page__health {
+  border-radius: 1.25rem;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.45);
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.student-profile-page__communications {
+  border-radius: 1.25rem;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.45);
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.student-profile-page__health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.student-profile-page__panel-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7c3aed;
+}
+
+.student-profile-page__health-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.student-profile-page__health-chip {
+  padding: 0.75rem 0.9rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.student-profile-page__payments {
+  border-radius: 1.25rem;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.45);
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.student-profile-page__payments-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.95rem;
+}
+
+.student-profile-page__payment-chip {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.student-profile-page__payment-chip span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.student-profile-page__payment-chip strong {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-profile-page__payment-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.student-profile-page__payment-column h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.student-profile-page__payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.student-profile-page__payment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+}
+
+.student-profile-page__payment-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-profile-page__payment-card-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.student-profile-page__payment-card strong {
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-profile-page__card,
+.student-profile-page__panel {
+  border-radius: 1.25rem;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.45);
+}
+
+.student-profile-page__card {
+  padding: 1rem 1.05rem;
+}
+
+.student-profile-page__card-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.student-profile-page__card-value {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-profile-page__content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.student-profile-page__panel {
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.student-profile-page__panel--wide {
+  grid-column: 1 / -1;
+}
+
+.student-profile-page__panel-title {
+  margin: 0 0 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-profile-page__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.student-profile-page__details--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.student-profile-page__details dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.student-profile-page__details dd {
+  margin: 0.3rem 0 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.student-profile-page__class-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.student-profile-page__class-chip {
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+}
+
+.student-profile-page__class-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-profile-page__class-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.student-profile-page__empty-inline {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+@media (max-width: 1024px) {
+  .student-profile-page__cards,
+  .student-profile-page__content-grid,
+  .student-profile-page__details--four,
+  .student-profile-page__class-list,
+  .student-profile-page__health-grid,
+  .student-profile-page__payments-grid,
+  .student-profile-page__payment-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .student-profile-page__hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-profile-page__hero-row {
+    flex-direction: column;
+  }
+
+  .student-profile-page__cards,
+  .student-profile-page__content-grid,
+  .student-profile-page__details,
+  .student-profile-page__details--four,
+  .student-profile-page__class-list,
+  .student-profile-page__health-grid,
+  .student-profile-page__payments-grid,
+  .student-profile-page__payment-columns {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import Button from 'primevue/button'
+import { computed, onMounted } from 'vue'
+import Button from '@/components/buttons/Button.vue'
 import Card from 'primevue/card'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -8,19 +8,14 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { useAuthStore } from '@/store/userStore'
-import { useSportApprovals } from '@/modules/sport/admin/composables/useSportApprovals'
 import { useRouter } from 'vue-router'
+import { useCoachRequests } from '../composables/useCoachRequests'
 
 defineOptions({ name: 'SportCoachRequestsPage' })
 
 const router = useRouter()
-const authStore = useAuthStore()
 const { t, language } = useLanguage()
-const { loadPendingPlayers, loadPendingMatches } = useSportApprovals()
-const pendingPlayers = ref([])
-const pendingMatches = ref([])
-const loading = ref(false)
+const { loadRequests, playerRequests, matchRequests, loading, error } = useCoachRequests()
 const isKh = computed(() => language.value === 'KH')
 
 const pageTitle = computed(() => t('sportCoachTeamManagement.requests.title'))
@@ -34,23 +29,8 @@ function tone(status) {
   return 'info'
 }
 
-function currentUserId() {
-  return String(authStore.currentUser?.id || '').trim()
-}
-
 async function refresh() {
-  loading.value = true
-  try {
-    const [players, matches] = await Promise.all([
-      loadPendingPlayers(),
-      loadPendingMatches(),
-    ])
-
-    pendingPlayers.value = (players.items || []).filter((item) => String(item.createdByUserId || '') === currentUserId())
-    pendingMatches.value = (matches.items || []).filter((item) => String(item.createdByUserId || '') === currentUserId())
-  } finally {
-    loading.value = false
-  }
+  await loadRequests()
 }
 
 onMounted(() => {
@@ -66,7 +46,13 @@ onMounted(() => {
       <Card class="sport-coach-page__panel">
         <template #title>{{ t('sportCoachTeamManagement.requests.playersTitle') }}</template>
         <template #content>
-          <DataTable :value="pendingPlayers" :loading="loading" data-key="id" striped-rows>
+          <p v-if="error" class="m-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ error }}
+          </p>
+          <p v-else-if="!loading && !playerRequests.length" class="m-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            {{ t('sportCoachTeamManagement.requests.emptyPlayers') }}
+          </p>
+          <DataTable v-else :value="playerRequests" :loading="loading" data-key="id" striped-rows>
             <Column field="name" :header="t('sportCoachTeamManagement.common.player')" />
             <Column field="team" :header="t('sportCoachTeamManagement.common.team')" />
             <Column field="approvalStatus" :header="t('sportCoachTeamManagement.common.status')">
@@ -81,7 +67,10 @@ onMounted(() => {
       <Card class="sport-coach-page__panel">
         <template #title>{{ t('sportCoachTeamManagement.requests.matchesTitle') }}</template>
         <template #content>
-          <DataTable :value="pendingMatches" :loading="loading" data-key="id" striped-rows>
+          <p v-if="!error && !loading && !matchRequests.length" class="m-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            {{ t('sportCoachTeamManagement.requests.emptyMatches') }}
+          </p>
+          <DataTable v-else :value="matchRequests" :loading="loading" data-key="id" striped-rows>
             <Column field="homeTeam" :header="t('sportCoachTeamManagement.common.homeTeam')" />
             <Column field="awayTeam" :header="t('sportCoachTeamManagement.common.awayTeam')" />
             <Column field="approvalStatus" :header="t('sportCoachTeamManagement.common.status')">
@@ -117,3 +106,4 @@ onMounted(() => {
     'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
 }
 </style>
+

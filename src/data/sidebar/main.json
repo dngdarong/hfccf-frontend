@@ -29,18 +29,53 @@
           }
         },
         {
+          "id": "sport-coach-dashboard",
+          "labelKey": "nav.dashboard",
+          "icon": "sport-coach-dashboard",
+          "access": {
+            "scopes": [
+              "staff"
+            ],
+            "domains": [
+              "sport"
+            ]
+          },
+          "exactActive": true,
+          "routeName": "dashboard-sport-coach"
+        },
+        {
+          "id": "sport-player-attendance",
+          "routeName": "dashboard-sport-coach-attendance",
+          "labelKey": "nav.items.attendance",
+          "icon": "sport-attendance",
+          "access": {
+            "scopes": [
+              "staff"
+            ],
+            "domains": [
+              "sport"
+            ]
+          }
+        },
+        {
           "id": "staff-dashboard",
           "labelKey": "nav.dashboard",
           "icon": "home",
           "access": {
             "scopes": [
               "staff"
+            ],
+            "domains": [
+              "english",
+              "preschool",
+              "scholarship"
             ]
           },
+          "exactActive": true,
           "routeNameByDomain": {
             "english": "dashboard-english-teacher",
             "preschool": "dashboard-preschool-teacher",
-            "sport": "dashboard-sport-coach",
+            "scholarship": "dashboard-scholarship-teacher",
             "default": "dashboard"
           }
         },
@@ -48,8 +83,7 @@
           "id": "sport-training-schedule",
           "routeName": "dashboard-sport-coach-training",
           "labelKey": "nav.items.trainingSchedule",
-          "icon": "reports",
-          "badgeKey": "nav.badges.staff",
+          "icon": "sport-coach-training",
           "access": {
             "scopes": [
               "staff"
@@ -63,8 +97,7 @@
           "id": "sport-my-teams",
           "routeName": "dashboard-sport-coach-teams",
           "labelKey": "nav.items.myTeams",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff",
+          "icon": "sport-coach-teams",
           "access": {
             "scopes": [
               "staff"
@@ -78,8 +111,21 @@
           "id": "sport-team-roster",
           "routeName": "dashboard-sport-coach-roster",
           "labelKey": "nav.items.teamRoster",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff",
+          "icon": "sport-coach-roster",
+          "access": {
+            "scopes": [
+              "staff"
+            ],
+            "domains": [
+              "sport"
+            ]
+          }
+        },
+        {
+          "id": "sport-equipment",
+          "routeName": "dashboard-sport-coach-equipment",
+          "labelKey": "nav.items.equipment",
+          "icon": "sport-equipment",
           "access": {
             "scopes": [
               "staff"
@@ -93,8 +139,7 @@
           "id": "sport-my-requests",
           "routeName": "dashboard-sport-coach-requests",
           "labelKey": "nav.items.myRequests",
-          "icon": "reports",
-          "badgeKey": "nav.badges.staff",
+          "icon": "sport-coach-requests",
           "access": {
             "scopes": [
               "staff"
@@ -120,10 +165,10 @@
           }
         },
         {
-          "id": "preschool-teacher-emergency-contacts",
-          "routeName": "dashboard-preschool-teacher-emergency-contacts",
-          "labelKey": "nav.items.emergencyContacts",
-          "icon": "notification",
+          "id": "preschool-teacher-classes",
+          "routeName": "dashboard-preschool-teacher-classes",
+          "labelKey": "nav.items.myClasses",
+          "icon": "class",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -150,10 +195,25 @@
           }
         },
         {
-          "id": "preschool-teacher-assessments",
-          "routeName": "dashboard-preschool-assessments",
-          "labelKey": "nav.items.preschoolAssessments",
-          "icon": "performance",
+          "id": "preschool-teacher-attendance",
+          "routeName": "dashboard-preschool-teacher-attendance",
+          "labelKey": "nav.items.attendance",
+          "icon": "attendance",
+          "badgeKey": "nav.badges.staff",
+          "access": {
+            "scopes": [
+              "staff"
+            ],
+            "domains": [
+              "preschool"
+            ]
+          }
+        },
+        {
+          "id": "preschool-teacher-grades",
+          "routeName": "dashboard-preschool-teacher-grades",
+          "labelKey": "nav.items.grades",
+          "icon": "reports",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -293,21 +353,6 @@
           "access": {
             "scopes": [
               "admin"
-            ],
-            "domains": [
-              "preschool"
-            ]
-          }
-        },
-         {
-          "id": "preschool-teacher-report",
-          "routeName": "dashboard-preschool-teacher-report",
-          "labelKey": "nav.items.reports",
-          "icon": "reports",
-          "badgeKey": "nav.badges.staff",
-          "access": {
-            "scopes": [
-              "staff"
             ],
             "domains": [
               "preschool"
@@ -556,21 +601,6 @@
           }
         },
         {
-          "id": "preschool-forms",
-          "routeName": "dashboard-preschool-admin-forms",
-          "labelKey": "nav.items.forms",
-          "icon": "forms",
-          "badgeKey": "nav.badges.staff",
-          "access": {
-            "scopes": [
-              "admin"
-            ],
-            "domains": [
-              "preschool"
-            ]
-          }
-        },
-        {
           "id": "preschool-attendance",
           "routeName": "dashboard-preschool-admin-attendance",
           "labelKey": "nav.items.attendance",
@@ -634,7 +664,7 @@
           "id": "sport-coaches",
           "routeName": "dashboard-sport-admin-users",
           "labelKey": "nav.items.coaches",
-          "icon": "users",
+          "icon": "sport-coach",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -649,7 +679,7 @@
           "id": "sport-teams",
           "routeName": "dashboard-sport-admin-teams",
           "labelKey": "nav.items.teams",
-          "icon": "users",
+          "icon": "sport-team",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -664,7 +694,7 @@
           "id": "sport-players",
           "routeName": "dashboard-sport-admin-players",
           "labelKey": "nav.items.players",
-          "icon": "users",
+          "icon": "sport-player",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -679,7 +709,7 @@
           "id": "sport-matches",
           "routeName": "dashboard-sport-admin-matches",
           "labelKey": "nav.items.matches",
-          "icon": "reports",
+          "icon": "sport-match",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -694,7 +724,7 @@
           "id": "sport-tournaments",
           "routeName": "dashboard-sport-admin-tournaments",
           "labelKey": "nav.items.tournaments",
-          "icon": "tournaments",
+          "icon": "sport-tournament",
           "badgeKey": "nav.badges.staff",
           "access": {
             "scopes": [
@@ -709,7 +739,7 @@
           "id": "sport-training-schedule-admin",
           "routeName": "dashboard-sport-admin-training",
           "labelKey": "nav.items.trainingSchedule",
-          "icon": "reports",
+          "icon": "sport-coach-training",
           "badgeKey": "nav.badges.admin",
           "access": {
             "scopes": [
@@ -724,7 +754,7 @@
           "id": "sport-coach-team-assignments",
           "routeName": "dashboard-sport-admin-coach-team-assignments",
           "labelKey": "nav.items.coachTeamAssignments",
-          "icon": "users",
+          "icon": "sport-assignment",
           "badgeKey": "nav.badges.admin",
           "access": {
             "scopes": [
@@ -739,7 +769,7 @@
           "id": "sport-pending-player-approvals",
           "routeName": "dashboard-sport-admin-pending-player-approvals",
           "labelKey": "nav.items.pendingPlayerApprovals",
-          "icon": "users",
+          "icon": "sport-player-approval",
           "badgeKey": "nav.badges.admin",
           "access": {
             "scopes": [
@@ -754,7 +784,7 @@
           "id": "sport-pending-match-approvals",
           "routeName": "dashboard-sport-admin-pending-match-approvals",
           "labelKey": "nav.items.pendingMatchApprovals",
-          "icon": "reports",
+          "icon": "sport-match-approval",
           "badgeKey": "nav.badges.admin",
           "access": {
             "scopes": [
@@ -769,7 +799,7 @@
           "id": "sport-player-lifecycle",
           "routeName": "dashboard-sport-admin-player-lifecycle",
           "labelKey": "nav.items.playerLifecycle",
-          "icon": "users",
+          "icon": "sport-lifecycle",
           "badgeKey": "nav.badges.admin",
           "access": {
             "scopes": [

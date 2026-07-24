@@ -62,13 +62,6 @@ vi.mock('@/modules/sport/tournament/composables/useTournamentGroupDraw', () => (
   useTournamentGroupDraw: () => apiMocks.drawEngine,
 }))
 
-function networkError(message = 'Network unavailable') {
-  const error = new Error(message)
-  error.isNetworkError = true
-  error.code = 'NETWORK_ERROR'
-  return error
-}
-
 function createTournamentRecord() {
   return {
     id: 'tournament-001',
@@ -180,7 +173,7 @@ describe('useTournamentGroups', () => {
     expect(apiMocks.getTournamentGroups).toHaveBeenCalledWith(
       'tournament-001',
       expect.objectContaining({
-        fallbackTournament: tournament.value,
+        signal: undefined,
       }),
     )
     expect(record).toMatchObject({
@@ -254,9 +247,6 @@ describe('useTournamentGroups', () => {
           'team-1': 'A',
         },
       }),
-      expect.objectContaining({
-        fallbackTournament: tournament.value,
-      }),
     )
     expect(loadTournament).toHaveBeenCalledWith('tournament-001')
     expect(record).toMatchObject({
@@ -301,12 +291,7 @@ describe('useTournamentGroups', () => {
     const record = await groups.finalizeGroups()
 
     expect(apiMocks.drawTournamentGroups).toHaveBeenCalledTimes(1)
-    expect(apiMocks.finalizeTournamentGroups).toHaveBeenCalledWith(
-      'tournament-001',
-      expect.objectContaining({
-        fallbackTournament: expect.any(Object),
-      }),
-    )
+    expect(apiMocks.finalizeTournamentGroups).toHaveBeenCalledWith('tournament-001')
     expect(loadTournament).toHaveBeenCalledTimes(2)
     expect(record).toMatchObject({
       state: 'group_draw_completed',
@@ -316,8 +301,8 @@ describe('useTournamentGroups', () => {
     })
   })
 
-  it('falls back to the local snapshot when the API is unavailable', async () => {
-    apiMocks.getTournamentGroups.mockRejectedValueOnce(networkError())
+  it('propagates API failures without returning a local snapshot', async () => {
+    apiMocks.getTournamentGroups.mockRejectedValueOnce(new Error('Network unavailable'))
 
     const tournament = ref(createTournamentRecord())
     const groups = useTournamentGroups(tournament, {
@@ -325,11 +310,9 @@ describe('useTournamentGroups', () => {
       transitionTournament: vi.fn(),
     })
 
-    const record = await groups.loadGroups()
-
+    await expect(groups.loadGroups()).rejects.toThrow('Network unavailable')
     expect(apiMocks.getTournamentGroups).toHaveBeenCalledTimes(1)
-    expect(record?.groupDraw?.groups).toHaveLength(2)
     expect(groups.hasLoadedGroups.value).toBe(true)
-    expect(groups.error.value).toBe('')
+    expect(groups.error.value).toBe('Network unavailable')
   })
 })

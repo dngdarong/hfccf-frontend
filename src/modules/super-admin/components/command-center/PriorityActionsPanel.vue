@@ -1,6 +1,6 @@
 <script setup>
 import Card from 'primevue/card'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 
 defineOptions({
@@ -76,3 +76,4 @@ defineProps({
   box-shadow: 0 22px 50px -38px rgba(15, 23, 42, 0.46);
 }
 </style>
+

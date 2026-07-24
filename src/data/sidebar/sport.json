@@ -8,7 +8,10 @@
       "collapsible": true,
       "access": {
         "scopes": [
-          "super_admin"
+          "admin"
+        ],
+        "domains": [
+          "sport"
         ]
       },
       "items": [
@@ -16,78 +19,79 @@
           "id": "sport-dashboard",
           "routeName": "dashboard-sport-admin",
           "labelKey": "nav.items.sportDashboard",
-          "icon": "home",
-          "badgeKey": "nav.badges.admin"
+          "icon": "sport-dashboard"
         },
         {
           "id": "sport-attendance",
           "routeName": "dashboard-sport-admin-attendance",
-          "labelKey": "nav.items.attendanceManagement",
-          "icon": "reports",
-          "badgeKey": "nav.badges.staff"
+          "labelKey": "nav.items.attendance",
+          "icon": "sport-attendance"
         },
         {
           "id": "sport-coaches",
           "routeName": "dashboard-sport-admin-users",
           "labelKey": "nav.items.coaches",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff"
+          "icon": "sport-coach"
         },
         {
           "id": "sport-teams",
           "routeName": "dashboard-sport-admin-teams",
           "labelKey": "nav.items.teams",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff"
+          "icon": "sport-team"
         },
         {
           "id": "sport-players",
           "routeName": "dashboard-sport-admin-players",
           "labelKey": "nav.items.players",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff"
+          "icon": "sport-player"
+        },
+        {
+          "id": "sport-coach-team-assignments",
+          "routeName": "dashboard-sport-admin-coach-team-assignments",
+          "labelKey": "nav.items.sportCoachAssignments",
+          "icon": "sport-assignment"
+        },
+        {
+          "id": "sport-equipment",
+          "routeName": "dashboard-sport-admin-equipment",
+          "labelKey": "nav.items.equipment",
+          "icon": "sport-equipment"
         },
         {
           "id": "sport-matches",
           "routeName": "dashboard-sport-admin-matches",
           "labelKey": "nav.items.matches",
-          "icon": "reports",
-          "badgeKey": "nav.badges.staff"
+          "icon": "sport-match"
         },
         {
           "id": "sport-tournaments",
           "routeName": "dashboard-sport-admin-tournaments",
           "labelKey": "nav.items.tournaments",
-          "icon": "tournaments",
-          "badgeKey": "nav.badges.staff"
+          "icon": "sport-tournament"
         },
         {
-          "id": "sport-coach-team-assignments",
-          "routeName": "dashboard-sport-admin-coach-team-assignments",
-          "labelKey": "nav.items.coachTeamAssignments",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff"
+          "id": "sport-reports",
+          "routeName": "dashboard-sport-admin-reports",
+          "labelKey": "nav.items.sportReports",
+          "icon": "sport-reports"
         },
         {
           "id": "sport-pending-player-approvals",
           "routeName": "dashboard-sport-admin-pending-player-approvals",
-          "labelKey": "nav.items.pendingPlayerApprovals",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff"
+          "labelKey": "nav.items.sportPlayerApproval",
+          "icon": "sport-player-approval"
         },
         {
           "id": "sport-pending-match-approvals",
           "routeName": "dashboard-sport-admin-pending-match-approvals",
-          "labelKey": "nav.items.pendingMatchApprovals",
-          "icon": "reports",
-          "badgeKey": "nav.badges.staff"
+          "labelKey": "nav.items.sportMatchApproval",
+          "icon": "sport-match-approval"
         },
         {
           "id": "sport-player-lifecycle",
           "routeName": "dashboard-sport-admin-player-lifecycle",
-          "labelKey": "nav.items.playerLifecycle",
-          "icon": "users",
-          "badgeKey": "nav.badges.staff"
+          "labelKey": "nav.items.sportPlayerLifecycle",
+          "icon": "sport-lifecycle"
         }
       ]
     }

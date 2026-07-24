@@ -6,6 +6,10 @@ import NotificationBell from '@/modules/notifications/components/NotificationBel
 
 const loadUnreadCount = vi.fn()
 
+function createRoute(name, path, component = { template: '<div />' }) {
+  return { name, path, component }
+}
+
 vi.mock('@/modules/notifications/composables/useUnreadNotifications', () => ({
   useUnreadNotifications: () => ({
     unreadCount: ref(4),
@@ -44,11 +48,14 @@ describe('NotificationBell', () => {
           },
         },
       },
+      routes: [
+        createRoute('dashboard-notifications', '/module/notifications'),
+      ],
       global: {
         stubs: {
           Button: { template: '<button><slot name="icon" /></button>' },
           Badge: { props: ['value'], template: '<span class="badge">{{ value }}</span>' },
-          Popover: { template: '<div><slot /></div>' },
+          Popover: { template: '<div><slot /></div>', methods: { hide() {}, toggle() {} } },
           NotificationDropdown: { template: '<div />' },
           NotificationTypeIcon: { template: '<span />' },
         },
@@ -59,5 +66,39 @@ describe('NotificationBell', () => {
 
     expect(wrapper.text()).toContain('4')
     expect(loadUnreadCount).toHaveBeenCalled()
+  })
+
+  it('routes the view-all action to the unified notifications page', async () => {
+    const wrapper = mountWithPlugins(NotificationBell, {
+      messages: {
+        en: {
+          common: {
+            notifications: {
+              title: 'Notifications',
+            },
+          },
+        },
+      },
+      routes: [
+        createRoute('dashboard-notifications', '/module/notifications'),
+      ],
+      global: {
+        stubs: {
+          Button: { template: '<button><slot name="icon" /></button>' },
+          Badge: { props: ['value'], template: '<span class="badge">{{ value }}</span>' },
+          Popover: { template: '<div><slot /></div>', methods: { hide() {}, toggle() {} } },
+          NotificationDropdown: { template: '<button class="view-all" @click="$emit(\'view-all\')">View all</button>' },
+          NotificationTypeIcon: { template: '<span />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await wrapper.find('.view-all').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.vm.$router.currentRoute.value.name).toBe('dashboard-notifications')
+    expect(wrapper.vm.$router.currentRoute.value.query.tab).toBe('notifications')
   })
 })

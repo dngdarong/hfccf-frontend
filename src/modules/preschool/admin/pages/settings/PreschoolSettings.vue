@@ -12,11 +12,20 @@ import {
   validatePreschoolAcademicYearDraft,
   validatePreschoolTermDraft,
 } from '@/modules/preschool/composables/usePreschoolSettings'
+import {
+  createPreschoolClassLevel,
+  deactivatePreschoolClassLevel,
+  fetchPreschoolClassLevels,
+  restorePreschoolClassLevel,
+  updatePreschoolClassLevel,
+} from '@/modules/preschool/services/preschoolApi'
 import PreschoolAssessmentConfiguration from '@/modules/preschool/shared/components/settings/PreschoolAssessmentConfiguration.vue'
 import PreschoolAcademicYearDialog from '@/modules/preschool/shared/components/settings/PreschoolAcademicYearDialog.vue'
 import PreschoolAcademicYearManager from '@/modules/preschool/shared/components/settings/PreschoolAcademicYearManager.vue'
 import PreschoolAttendanceConfiguration from '@/modules/preschool/shared/components/settings/PreschoolAttendanceConfiguration.vue'
 import PreschoolClassConfiguration from '@/modules/preschool/shared/components/settings/PreschoolClassConfiguration.vue'
+import PreschoolClassLevelDialog from '@/modules/preschool/shared/components/settings/PreschoolClassLevelDialog.vue'
+import PreschoolClassLevelsManager from '@/modules/preschool/shared/components/settings/PreschoolClassLevelsManager.vue'
 import PreschoolEnrollmentConfiguration from '@/modules/preschool/shared/components/settings/PreschoolEnrollmentConfiguration.vue'
 import PreschoolPaymentConfiguration from '@/modules/preschool/shared/components/settings/PreschoolPaymentConfiguration.vue'
 import PreschoolScheduleConfiguration from '@/modules/preschool/shared/components/settings/PreschoolScheduleConfiguration.vue'
@@ -89,6 +98,15 @@ const {
   closeTerm: closeLifecycleTerm,
 } = usePreschoolAcademicLifecycle()
 
+const classLevels = ref([])
+const classLevelsLoading = ref(false)
+const classLevelsSaving = ref(false)
+const classLevelDialogVisible = ref(false)
+const classLevelDialogMode = ref('create')
+const classLevelDraft = ref(createEmptyClassLevelDraft())
+const classLevelDraftErrors = ref({})
+const editingClassLevelIndex = ref(-1)
+
 const yearDialogVisible = ref(false)
 const yearDialogMode = ref('create')
 const yearDraft = ref(createEmptyAcademicYearDraft())
@@ -102,7 +120,7 @@ const termDraftErrors = ref({})
 const editingTermIndex = ref(-1)
 
 const statusOptions = computed(() => buildStatusOptions(t))
-const classLevelOptions = computed(() => buildClassLevelOptions(t))
+const classLevelOptions = computed(() => buildClassLevelOptions(classLevels.value, language.value))
 const teacherOptions = computed(() => buildTeacherOptions(t))
 const absenceRuleOptions = computed(() => buildAbsenceRuleOptions(t))
 const paymentCycleOptions = computed(() => buildPaymentCycleOptions(t))
@@ -125,6 +143,156 @@ const currentLifecycleTerms = computed(() => {
   const yearId = currentAcademicYearRecord.value?.id
   return terms.value.filter((term) => String(term.academicYearId || '') === String(yearId || ''))
 })
+
+function createEmptyClassLevelDraft() {
+  return {
+    id: '',
+    nameEn: '',
+    nameKh: '',
+    code: '',
+    sortOrder: 0,
+    isActive: true,
+  }
+}
+
+function cloneClassLevel(level = {}) {
+  return {
+    ...createEmptyClassLevelDraft(),
+    ...level,
+    nameEn: level.nameEn || level.name_en || '',
+    nameKh: level.nameKh || level.name_kh || '',
+    code: String(level.code || '').toUpperCase(),
+    sortOrder: Number(level.sortOrder ?? level.sort_order ?? 0),
+    isActive: level.isActive ?? level.is_active ?? true,
+  }
+}
+
+function resetClassLevelDialog() {
+  classLevelDraftErrors.value = {}
+  editingClassLevelIndex.value = -1
+}
+
+function openCreateClassLevel() {
+  classLevelDialogMode.value = 'create'
+  classLevelDialogVisible.value = true
+  classLevelDraft.value = createEmptyClassLevelDraft()
+  resetClassLevelDialog()
+}
+
+function openEditClassLevel(index) {
+  const nextLevel = classLevels.value[index]
+  if (!nextLevel) return
+
+  classLevelDialogMode.value = 'edit'
+  classLevelDialogVisible.value = true
+  editingClassLevelIndex.value = index
+  classLevelDraft.value = cloneClassLevel(nextLevel)
+  classLevelDraftErrors.value = {}
+}
+
+function closeClassLevelDialog() {
+  classLevelDialogVisible.value = false
+  classLevelDraftErrors.value = {}
+}
+
+function validateClassLevelDraft(draft = {}) {
+  const errors = {}
+
+  if (!String(draft.nameEn || '').trim()) {
+    errors.nameEn = 'required'
+  }
+
+  if (!String(draft.code || '').trim()) {
+    errors.code = 'required'
+  }
+
+  if (String(draft.code || '').length > 10) {
+    errors.code = 'max'
+  }
+
+  if (String(draft.code || '').trim() && !/^[A-Z0-9]+$/.test(String(draft.code || '').trim().toUpperCase())) {
+    errors.code = 'alphaNumeric'
+  }
+
+  if (!Number.isInteger(Number(draft.sortOrder ?? 0)) || Number(draft.sortOrder ?? 0) < 0) {
+    errors.sortOrder = 'positive'
+  }
+
+  return {
+    errors,
+    isValid: Object.keys(errors).length === 0,
+  }
+}
+
+async function loadClassLevels() {
+  classLevelsLoading.value = true
+
+  try {
+    const response = await fetchPreschoolClassLevels()
+    classLevels.value = Array.isArray(response.items) ? response.items.map(cloneClassLevel) : []
+  } catch {
+    classLevels.value = []
+  } finally {
+    classLevelsLoading.value = false
+  }
+}
+
+async function saveClassLevelDraft() {
+  const result = validateClassLevelDraft(classLevelDraft.value)
+  classLevelDraftErrors.value = result.errors
+
+  if (!result.isValid) {
+    return
+  }
+
+  classLevelsSaving.value = true
+
+  const payload = {
+    name_en: String(classLevelDraft.value.nameEn || '').trim(),
+    name_kh: String(classLevelDraft.value.nameKh || '').trim() || null,
+    code: String(classLevelDraft.value.code || '').trim().toUpperCase(),
+    sort_order: Number(classLevelDraft.value.sortOrder ?? 0),
+    is_active: Boolean(classLevelDraft.value.isActive),
+  }
+
+  try {
+    const nextLevel = classLevelDialogMode.value === 'edit' && editingClassLevelIndex.value > -1
+      ? await updatePreschoolClassLevel(classLevelDraft.value.id, payload)
+      : await createPreschoolClassLevel(payload)
+
+    await loadClassLevels()
+    classLevelDraft.value = cloneClassLevel(nextLevel)
+    closeClassLevelDialog()
+  } finally {
+    classLevelsSaving.value = false
+  }
+}
+
+async function deactivateClassLevelRow(index) {
+  const nextLevel = classLevels.value[index]
+  if (!nextLevel) return
+
+  classLevelsSaving.value = true
+  try {
+    await deactivatePreschoolClassLevel(nextLevel.id)
+    await loadClassLevels()
+  } finally {
+    classLevelsSaving.value = false
+  }
+}
+
+async function restoreClassLevelRow(index) {
+  const nextLevel = classLevels.value[index]
+  if (!nextLevel) return
+
+  classLevelsSaving.value = true
+  try {
+    await restorePreschoolClassLevel(nextLevel.id)
+    await loadClassLevels()
+  } finally {
+    classLevelsSaving.value = false
+  }
+}
 
 function syncBackboneAcademicDraft() {
   performSyncBackboneAcademicDraft(settings.value, currentAcademicYearRecord.value, currentLifecycleTerms.value)
@@ -316,6 +484,13 @@ onMounted(async () => {
   }
 
   try {
+    await loadClassLevels()
+  } catch {
+    // The class-level lookup is optional for rendering the rest of the
+    // settings page, so keep the page usable if the lookup endpoint fails.
+  }
+
+  try {
     await loadAcademicLifecycle()
     syncBackboneAcademicDraft()
   } catch {
@@ -473,6 +648,16 @@ onMounted(async () => {
           @remove="removeClassConfiguration"
         />
 
+        <PreschoolClassLevelsManager
+          :items="classLevels"
+          :loading="classLevelsLoading"
+          :saving="classLevelsSaving"
+          @open-add="openCreateClassLevel"
+          @open-edit="openEditClassLevel"
+          @deactivate="deactivateClassLevelRow"
+          @restore="restoreClassLevelRow"
+        />
+
         <PreschoolAttendanceConfiguration
           :model-value="settings.attendance"
           :absence-rule-options="absenceRuleOptions"
@@ -531,6 +716,18 @@ onMounted(async () => {
         @cancel="closeTermDialog"
         @save="saveTermDraft"
         @update:draft="termDraft = $event"
+      />
+
+      <PreschoolClassLevelDialog
+        :visible="classLevelDialogVisible"
+        :title="classLevelDialogMode === 'edit'
+          ? t('preschoolClassLevelsPage.dialog.editTitle')
+          : t('preschoolClassLevelsPage.dialog.addTitle')"
+        :draft="classLevelDraft"
+        :errors="classLevelDraftErrors"
+        @cancel="closeClassLevelDialog"
+        @save="saveClassLevelDraft"
+        @update:draft="classLevelDraft = $event"
       />
 
       <!-- save / reset footer -->

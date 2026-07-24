@@ -14,6 +14,7 @@
  */
 
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Avatar from 'primevue/avatar'
@@ -45,17 +46,155 @@ const emit = defineEmits(['view', 'edit', 'delete'])
 
 const { t } = useLanguage()
 
+const dayOrder = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+]
+
+const dayPatterns = [
+  ['monday', /\b(mon|monday)\b/i],
+  ['tuesday', /\b(tue|tues|tuesday)\b/i],
+  ['wednesday', /\b(wed|weds|wednesday)\b/i],
+  ['thursday', /\b(thu|thur|thurs|thursday)\b/i],
+  ['friday', /\b(fri|friday)\b/i],
+  ['saturday', /\b(sat|saturday)\b/i],
+  ['sunday', /\b(sun|sunday)\b/i],
+]
+
+function getDayShortLabel(day) {
+  return t(`preschoolClassesManagement.table.weekdaysShort.${day}`)
+}
+
+function normalizeScheduleTime(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+
+  const match = text.match(/^(\d{1,2}):(\d{2})(?:\s?(am|pm))?$/i)
+  if (!match) return text
+
+  let hours = Number(match[1])
+  const minutes = match[2]
+  const meridiem = match[3]?.toLowerCase()
+
+  if (meridiem === 'am' && hours === 12) hours = 0
+  if (meridiem === 'pm' && hours < 12) hours += 12
+
+  return `${String(hours).padStart(2, '0')}:${minutes}`
+}
+
+function formatScheduleRange(startTime, endTime) {
+  const start = normalizeScheduleTime(startTime)
+  const end = normalizeScheduleTime(endTime)
+
+  if (!start || !end) return ''
+  return `${start}–${end}`
+}
+
+function compressDays(days = []) {
+  const selected = dayOrder.filter((day) => days.includes(day))
+  if (!selected.length) return ''
+
+  const segments = []
+  let segmentStart = selected[0]
+  let previousIndex = dayOrder.indexOf(selected[0])
+
+  for (let index = 1; index < selected.length; index += 1) {
+    const currentDay = selected[index]
+    const currentIndex = dayOrder.indexOf(currentDay)
+
+    if (currentIndex === previousIndex + 1) {
+      previousIndex = currentIndex
+      continue
+    }
+
+    segments.push([segmentStart, dayOrder[previousIndex]])
+    segmentStart = currentDay
+    previousIndex = currentIndex
+  }
+
+  segments.push([segmentStart, dayOrder[previousIndex]])
+
+  return segments
+    .map(([start, end]) => (start === end ? getDayShortLabel(start) : `${getDayShortLabel(start)}–${getDayShortLabel(end)}`))
+    .join(', ')
+}
+
+function truncateSchedule(value, maxLength = 36) {
+  const text = String(value || '').trim()
+  if (!text) return t('preschoolClassesManagement.table.scheduleUnavailable')
+  if (text.length <= maxLength) return text
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`
+}
+
+function parseScheduleDisplay(value) {
+  const raw = String(value || '').trim()
+  if (!raw) {
+    return {
+      mode: 'empty',
+      label: t('preschoolClassesManagement.table.scheduleUnavailable'),
+      title: t('preschoolClassesManagement.table.scheduleUnavailable'),
+    }
+  }
+
+  const timeMatch = raw.match(/(\d{1,2}:\d{2}\s?(?:am|pm)?)[\s]*[–—-][\s]*(\d{1,2}:\d{2}\s?(?:am|pm)?)/i)
+  if (!timeMatch) {
+    return {
+      mode: 'legacy',
+      label: truncateSchedule(raw),
+      title: raw,
+    }
+  }
+
+  const daysPart = raw.slice(0, timeMatch.index).replace(/[,·•]+$/, '').trim()
+  const selectedDays = dayPatterns
+    .filter(([, pattern]) => pattern.test(daysPart))
+    .map(([day]) => day)
+
+  if (!selectedDays.length) {
+    return {
+      mode: 'legacy',
+      label: truncateSchedule(raw),
+      title: raw,
+    }
+  }
+
+  const startTime = normalizeScheduleTime(timeMatch[1])
+  const endTime = normalizeScheduleTime(timeMatch[2])
+  const dayLabel = compressDays(selectedDays)
+
+  if (!dayLabel || !startTime || !endTime) {
+    return {
+      mode: 'legacy',
+      label: truncateSchedule(raw),
+      title: raw,
+    }
+  }
+
+  return {
+    mode: 'structured',
+    label: `${dayLabel} · ${formatScheduleRange(startTime, endTime)}`,
+    title: raw,
+  }
+}
+
 /**
  * Normalize API/mock class data into table-safe rows.
  */
 const normalizedRows = computed(() =>
   props.classes.map((item, index) => ({
     id: item.id || `class-${index + 1}`,
+    number: index + 1,
     code: item.code || item.classCode || '-',
     name: item.name || item.className || '-',
     teacher: item.teacher || item.teacherName || '-',
     level: item.level || item.grade || '-',
     schedule: item.schedule || item.time || '-',
+    scheduleDisplay: parseScheduleDisplay(item.schedule || item.time || '-'),
     students: item.students ?? item.studentCount ?? 0,
     status: item.status || 'Active',
     raw: item,
@@ -151,10 +290,16 @@ const tablePt = computed(() => ({
     </template>
 
     <Column
-      field="code"
-      :header="t('preschoolClassesManagement.table.code')"
+      field="number"
+      :header="t('preschoolClassesManagement.table.number')"
       sortable
-    />
+    >
+      <template #body="{ data }">
+        <span class="font-semibold text-slate-700">
+          {{ data.number }}
+        </span>
+      </template>
+    </Column>
 
     <Column
       field="name"
@@ -162,7 +307,10 @@ const tablePt = computed(() => ({
       sortable
     >
       <template #body="{ data }">
-        <div class="flex items-center gap-3">
+        <RouterLink
+          :to="{ name: 'dashboard-preschool-admin-class-details', params: { id: data.id } }"
+          class="flex items-center gap-3 rounded-xl text-inherit no-underline transition-colors hover:text-brand-700"
+        >
           <Avatar
             :label="classInitials(data.name)"
             shape="circle"
@@ -178,7 +326,7 @@ const tablePt = computed(() => ({
               {{ data.code }}
             </div>
           </div>
-        </div>
+        </RouterLink>
       </template>
     </Column>
 
@@ -203,7 +351,22 @@ const tablePt = computed(() => ({
     <Column
       field="schedule"
       :header="t('preschoolClassesManagement.table.schedule')"
-    />
+    >
+      <template #body="{ data }">
+        <span
+          class="block max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-surface-700"
+          :title="data.scheduleDisplay.title"
+        >
+          {{ data.scheduleDisplay.label }}
+        </span>
+        <span
+          v-if="data.scheduleDisplay.mode === 'legacy'"
+          class="mt-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700"
+        >
+          {{ t('preschoolClassesManagement.table.legacySchedule') }}
+        </span>
+      </template>
+    </Column>
 
     <Column
       field="students"

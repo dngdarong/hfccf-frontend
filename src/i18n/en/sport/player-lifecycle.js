@@ -5,6 +5,7 @@ export default {
       subtitle: 'Manage assigned players, availability, and membership history for your team.',
       panelTitle: 'Current roster',
       summary: '{players} players • {memberships} membership records',
+      noCandidates: 'No eligible players are available for this team right now.',
     },
     adminLifecycle: {
       title: 'Player Lifecycle Management',

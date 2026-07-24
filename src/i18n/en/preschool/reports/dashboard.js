@@ -11,9 +11,11 @@ export default {
     filters: {
       academicYear: 'Academic Year',
       term: 'Term',
+      reportPeriod: 'Report Period',
       dateFrom: 'Date From',
       dateTo: 'Date To',
       class: 'Class',
+      student: 'Student',
       teacher: 'Teacher',
       status: 'Status',
       apply: 'Apply Filters',

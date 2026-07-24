@@ -6,6 +6,7 @@ export default {
   aboutDescription: 'This page uses the shared main layout.',
   calendar: {
     pageTitle: 'Schedule & Events',
+    previewNotice: 'This calendar is currently a preview. Changes are not saved.',
     addEvent: 'Add Event',
     highlight: {
       monthSnapshot: 'Month snapshot',

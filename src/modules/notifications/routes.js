@@ -5,7 +5,9 @@ export const notificationsRoutes = [
   defineAppRoute({
     path: '/notifications',
     name: 'notifications',
-    component: () => import('@/modules/notifications/pages/NotificationsPage.vue'),
+    redirect: {
+      name: 'dashboard-notifications',
+    },
     access: {},
   }),
   defineAppRoute({

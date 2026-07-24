@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -138,3 +138,4 @@ function seedLabel(team) {
   padding: 0.75rem 0.85rem;
 }
 </style>
+

@@ -1,6 +1,5 @@
 import { computed, ref, watch } from 'vue'
 import { getApiErrorMessage } from '@/services/api'
-import { createTournamentGroupDrawDraft, normalizeTournamentGroupDraw } from '../mocks/tournaments.mock'
 import { useTournamentGroupDraw } from './useTournamentGroupDraw'
 import {
   drawTournamentGroups as apiDrawTournamentGroups,
@@ -21,13 +20,8 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value))
 }
 
-function isFallbackableError(error) {
-  const status = Number(error?.status || error?.response?.status || 0)
-  return Boolean(error?.isNetworkError || error?.code === 'NETWORK_ERROR' || status === 0 || status === 404 || status >= 500)
-}
-
 function normalizeLocalGroupDraw(tournament) {
-  return normalizeTournamentGroupDraw(tournament?.groupDraw || createTournamentGroupDrawDraft(), tournament || {})
+  return tournament?.groupDraw || { groups: [], settings: {}, locked: false }
 }
 
 function buildMergedTournament(baseTournament, groupDraw) {
@@ -85,7 +79,7 @@ export function useTournamentGroups(tournament, actions = {}) {
       // Keep the latest tournament payload but preserve the last known group
       // draft snapshot so backend group state does not get lost when the CRUD
       // layer rehydrates the tournament record.
-      const currentGroupDraw = syncedTournament.value?.groupDraw || nextTournament.groupDraw || createTournamentGroupDrawDraft()
+      const currentGroupDraw = syncedTournament.value?.groupDraw || nextTournament.groupDraw || normalizeLocalGroupDraw(nextTournament)
       syncedTournament.value = buildMergedTournament(nextTournament, currentGroupDraw)
     },
     { immediate: true, deep: true },
@@ -101,10 +95,6 @@ export function useTournamentGroups(tournament, actions = {}) {
     return deepClone(syncedTournament.value)
   }
 
-  function getFallbackGroupDraw() {
-    return normalizeLocalGroupDraw(baseTournament.value || activeTournament.value || {})
-  }
-
   async function loadGroups(options = {}) {
     const tournamentId = String(baseTournament.value?.id || '').trim()
     if (!tournamentId) return null
@@ -113,27 +103,21 @@ export function useTournamentGroups(tournament, actions = {}) {
     error.value = ''
 
     try {
-      const response = await apiGetTournamentGroups(tournamentId, {
-        signal: options.signal,
-        fallbackTournament: baseTournament.value || activeTournament.value || null,
-      })
+      const response = await apiGetTournamentGroups(tournamentId, { signal: options.signal })
 
       hasLoadedGroups.value = true
       return setSyncedTournament(baseTournament.value || activeTournament.value, response.groupDraw)
     } catch (cause) {
-      if (!isFallbackableError(cause)) {
-        error.value = getApiErrorMessage(cause, 'Failed to load tournament groups.')
-        throw cause
-      }
-
       hasLoadedGroups.value = true
-      return setSyncedTournament(baseTournament.value || activeTournament.value, getFallbackGroupDraw())
+      error.value = getApiErrorMessage(cause, 'Failed to load tournament groups.')
+      throw cause
     } finally {
       isLoading.value = false
     }
   }
 
   async function persistGroups({ finalize = false } = {}) {
+    if (isSaving.value) return null
     const tournamentId = String(baseTournament.value?.id || '').trim()
     if (!tournamentId) return null
 
@@ -147,18 +131,10 @@ export function useTournamentGroups(tournament, actions = {}) {
         reset: true,
       })
 
-      const drawResponse = await apiDrawTournamentGroups(tournamentId, drawPayload, {
-        fallbackTournament: baseTournament.value || activeTournament.value || null,
-      })
+      const drawResponse = await apiDrawTournamentGroups(tournamentId, drawPayload)
 
       const tournamentRecord = typeof actions.loadTournament === 'function'
-        ? await actions.loadTournament(tournamentId).catch((loadError) => {
-          if (!isFallbackableError(loadError)) {
-            throw loadError
-          }
-
-          return baseTournament.value || activeTournament.value || null
-        })
+        ? await actions.loadTournament(tournamentId)
         : baseTournament.value || activeTournament.value || null
 
       const synced = setSyncedTournament(tournamentRecord, {
@@ -171,18 +147,10 @@ export function useTournamentGroups(tournament, actions = {}) {
         return synced
       }
 
-      const finalizeResponse = await apiFinalizeTournamentGroups(tournamentId, {
-        fallbackTournament: tournamentRecord || baseTournament.value || activeTournament.value || null,
-      })
+      const finalizeResponse = await apiFinalizeTournamentGroups(tournamentId)
 
       const refreshedTournament = typeof actions.loadTournament === 'function'
-        ? await actions.loadTournament(tournamentId).catch((loadError) => {
-          if (!isFallbackableError(loadError)) {
-            throw loadError
-          }
-
-          return tournamentRecord || baseTournament.value || activeTournament.value || null
-        })
+        ? await actions.loadTournament(tournamentId)
         : tournamentRecord || baseTournament.value || activeTournament.value || null
 
       return setSyncedTournament(refreshedTournament || tournamentRecord || baseTournament.value || activeTournament.value || null, {
@@ -192,26 +160,8 @@ export function useTournamentGroups(tournament, actions = {}) {
         lastGeneratedAt: drawEngine.lastGeneratedAt.value || finalizeResponse.groupDraw?.lastGeneratedAt || new Date().toISOString(),
       })
     } catch (cause) {
-      if (!isFallbackableError(cause)) {
-        error.value = getApiErrorMessage(cause, 'Failed to save tournament groups.')
-        throw cause
-      }
-
-      const fallbackTournament = baseTournament.value || activeTournament.value || null
-      const fallbackGroupDraw = {
-        ...normalizeLocalGroupDraw(fallbackTournament || {}),
-        mode: drawEngine.mode.value,
-        locked: Boolean(finalize),
-        lastGeneratedAt: drawEngine.lastGeneratedAt.value || new Date().toISOString(),
-        groups: deepClone(drawEngine.groups.value),
-      }
-
-      if (finalize && typeof actions.transitionTournament === 'function' && tournamentId) {
-        actions.transitionTournament(tournamentId, 'group_draw_completed')
-      }
-
-      hasLoadedGroups.value = true
-      return setSyncedTournament(fallbackTournament, fallbackGroupDraw)
+      error.value = getApiErrorMessage(cause, 'Failed to save tournament groups.')
+      throw cause
     } finally {
       isSaving.value = false
     }

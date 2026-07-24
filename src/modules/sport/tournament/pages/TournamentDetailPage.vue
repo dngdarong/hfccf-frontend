@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import StatsCards from '@/components/data-display/StatsCards.vue'
@@ -9,6 +9,7 @@ import AlertError from '@/components/alerts/AlertError.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import TournamentQuickActions from '@/modules/sport/tournament/components/shared/TournamentQuickActions.vue'
 import TournamentSettingsSummary from '@/modules/sport/tournament/components/detail/TournamentSettingsSummary.vue'
+import TournamentTeamManagement from '@/modules/sport/tournament/components/detail/TournamentTeamManagement.vue'
 import TournamentStateTimeline from '@/modules/sport/tournament/components/shared/TournamentStateTimeline.vue'
 import TournamentStatusBadge from '@/modules/sport/tournament/components/shared/TournamentStatusBadge.vue'
 import TournamentStatisticsPanel from '@/modules/sport/tournament/components/statistics/TournamentStatisticsPanel.vue'
@@ -18,6 +19,7 @@ import {
 } from '@/modules/sport/tournament/composables/useTournamentStateMachine'
 import { useTournamentCrudCatalog } from '@/modules/sport/tournament/composables/useTournamentCrudCatalog'
 import { useTournamentStatistics } from '@/modules/sport/tournament/composables/useTournamentStatistics'
+import { useTournamentTeams } from '@/modules/sport/tournament/composables/useTournamentTeams'
 
 defineOptions({
   name: 'SportTournamentDetailPage',
@@ -26,7 +28,7 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 const { t } = useLanguage()
-const { getTournamentById, loadTournament, transitionTournament, isLoading } = useTournamentCrudCatalog()
+const { getTournamentById, loadTournament, updateTournament, isLoading } = useTournamentCrudCatalog()
 
 const showError = ref(false)
 const errorMessage = ref('')
@@ -38,12 +40,36 @@ const stateMeta = computed(() => getTournamentStateMeta(tournament.value?.state)
 const canEdit = computed(() => Boolean(tournament.value?.id) && canEditTournamentConfiguration(tournament.value.state))
 const canUseKnockout = computed(() => Boolean(tournament.value?.rules?.knockoutEnabled ?? true))
 const tournamentStatistics = useTournamentStatistics(tournament)
+const tournamentTeams = useTournamentTeams(tournament, { reload: () => loadTournament(tournamentId.value) })
 const loadingTournament = computed(() => isLoading.value && !hasLoadedTournament.value)
 
 const pageTitle = computed(() => tournament.value?.name || t('sportTournament.detail.notFoundTitle'))
 const pageSubtitle = computed(() =>
   tournament.value?.description || t('sportTournament.detail.notFoundMessage'),
 )
+
+const attachedTeams = computed(() => {
+  const teams = tournamentTeams.attachedTeams
+  return Array.isArray(teams) ? teams : (teams?.value || [])
+})
+
+const selectableTeams = computed(() => {
+  const teams = tournamentTeams.selectableTeams
+  return Array.isArray(teams) ? teams : (teams?.value || [])
+})
+
+const removingTeamId = computed(() => {
+  const id = tournamentTeams.removingTeamId
+  return typeof id === 'string' ? id : (id?.value ?? '')
+})
+
+const teamManagementPending = computed(() => {
+  return Boolean(
+    tournamentTeams.isLoading?.value ||
+    tournamentTeams.isAttaching?.value ||
+    removingTeamId.value
+  )
+})
 
 const overviewCards = computed(() => {
   const stats = tournament.value?.statistics || {}
@@ -68,17 +94,17 @@ const overviewCards = computed(() => {
     {
       title: t('sportTournament.detail.metrics.matches'),
       titleKey: 'sportTournament.detail.metrics.matches',
-      value: stats.matches ?? 0,
-      label: t('sportTournament.detail.metrics.completedMatches'),
-      labelKey: 'sportTournament.detail.metrics.completedMatches',
+      value: stats.totalMatches ?? stats.matches ?? 0,
+      label: t('sportTournament.detail.metrics.fixturesGenerated'),
+      labelKey: 'sportTournament.detail.metrics.fixturesGenerated',
       status: 'success',
     },
     {
       title: t('sportTournament.detail.metrics.completedMatches'),
       titleKey: 'sportTournament.detail.metrics.completedMatches',
       value: stats.completedMatches ?? 0,
-      label: t('sportTournament.detail.metrics.fixturesGenerated'),
-      labelKey: 'sportTournament.detail.metrics.fixturesGenerated',
+      label: t('sportTournament.detail.metrics.matches'),
+      labelKey: 'sportTournament.detail.metrics.matches',
       status: 'error',
     },
   ]
@@ -129,10 +155,10 @@ function goToKnockout() {
   router.push({ name: 'dashboard-sport-admin-tournaments-knockout', params: { id } })
 }
 
-function onWorkflowAction(action) {
+async function onWorkflowAction(action) {
   if (!tournament.value?.id || !action?.isAllowed || action.disabled) return
 
-  const updated = transitionTournament(tournament.value.id, action.nextState)
+  const updated = await updateTournament(tournament.value.id, { status: action.nextState })
   if (!updated?.id) {
     errorMessage.value = t('sportTournament.create.validation.saveFailed')
     showError.value = true
@@ -148,6 +174,8 @@ onMounted(async () => {
 
   try {
     await loadTournament(tournamentId.value)
+    await tournamentStatistics.loadStatistics()
+    await tournamentTeams.loadTeams()
   } catch {
     errorMessage.value = t('sportTournament.create.validation.saveFailed')
     showError.value = true
@@ -155,6 +183,14 @@ onMounted(async () => {
     hasLoadedTournament.value = true
   }
 })
+
+async function handleAttachTeam(teamId) {
+  try { await tournamentTeams.attachTeam(teamId) } catch { showError.value = true; errorMessage.value = tournamentTeams.error.value }
+}
+
+async function handleRemoveTeam(teamId) {
+  try { await tournamentTeams.removeTeam(teamId) } catch { showError.value = true; errorMessage.value = tournamentTeams.error.value }
+}
 </script>
 
 <template>
@@ -202,56 +238,66 @@ onMounted(async () => {
           </div>
 
           <div class="sport-tournament-detail__hero-actions">
-            <Button
-              type="button"
-              outlined
-              class="rounded-xl"
-              :label="t('sportTournament.detail.backToList')"
-              @click="goBack"
-            />
+            <div class="sport-tournament-detail__primary-actions">
               <Button
                 type="button"
                 outlined
                 class="rounded-xl"
-                :label="t('sportTournament.detail.manageGroups')"
-                @click="goToGroups"
-              />
-              <Button
-                type="button"
-                outlined
-                class="rounded-xl"
-                :label="t('sportTournament.detail.manageFixtures')"
-                @click="goToFixtures"
-              />
-              <Button
-                type="button"
-                outlined
-                class="rounded-xl"
-                :label="t('sportTournament.detail.manageStandings')"
-                @click="goToStandings"
-              />
-              <Button
-                type="button"
-                outlined
-                class="rounded-xl"
-                :label="t('sportTournament.detail.manageResults')"
-                @click="goToResults"
-              />
-              <Button
-                type="button"
-                outlined
-                class="rounded-xl"
-                :label="t('sportTournament.detail.manageKnockout')"
-                :disabled="!canUseKnockout"
-                @click="goToKnockout"
+                :label="t('sportTournament.detail.backToList')"
+                @click="goBack"
               />
               <Button
                 type="button"
                 class="rounded-xl"
                 :label="t('sportTournament.detail.editTournament')"
                 :disabled="!canEdit"
-              @click="goToEdit"
-            />
+                @click="goToEdit"
+              />
+            </div>
+
+            <div class="sport-tournament-detail__management-actions">
+              <Button
+                type="button"
+                outlined
+                size="sm"
+                class="rounded-lg"
+                :label="t('sportTournament.detail.manageGroups')"
+                @click="goToGroups"
+              />
+              <Button
+                type="button"
+                outlined
+                size="sm"
+                class="rounded-lg"
+                :label="t('sportTournament.detail.manageFixtures')"
+                @click="goToFixtures"
+              />
+              <Button
+                type="button"
+                outlined
+                size="sm"
+                class="rounded-lg"
+                :label="t('sportTournament.detail.manageStandings')"
+                @click="goToStandings"
+              />
+              <Button
+                type="button"
+                outlined
+                size="sm"
+                class="rounded-lg"
+                :label="t('sportTournament.detail.manageResults')"
+                @click="goToResults"
+              />
+              <Button
+                type="button"
+                outlined
+                size="sm"
+                class="rounded-lg"
+                :label="t('sportTournament.detail.manageKnockout')"
+                :disabled="!canUseKnockout"
+                @click="goToKnockout"
+              />
+            </div>
           </div>
         </div>
 
@@ -274,6 +320,15 @@ onMounted(async () => {
 
         <TournamentStatisticsPanel
           :statistics="tournamentStatistics.statistics"
+        />
+
+        <TournamentTeamManagement
+          :teams="attachedTeams"
+          :available-teams="selectableTeams"
+          :removing-team-id="removingTeamId"
+          :pending="teamManagementPending"
+          @attach="handleAttachTeam"
+          @remove="handleRemoveTeam"
         />
 
         <TournamentSettingsSummary :tournament="tournament" />
@@ -403,8 +458,26 @@ onMounted(async () => {
 .sport-tournament-detail__hero-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   align-self: flex-start;
+}
+
+.sport-tournament-detail__primary-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.sport-tournament-detail__primary-actions button {
+  width: 100%;
+}
+
+.sport-tournament-detail__management-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  width: 100%;
 }
 
 .sport-tournament-detail__stats {
@@ -452,9 +525,8 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
-  .sport-tournament-detail__hero-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .sport-tournament-detail__management-actions {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -470,5 +542,10 @@ onMounted(async () => {
   .sport-tournament-detail__meta {
     grid-template-columns: 1fr;
   }
+
+  .sport-tournament-detail__management-actions {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
+

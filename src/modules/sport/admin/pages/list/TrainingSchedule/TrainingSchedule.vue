@@ -3,25 +3,24 @@
  * SportTrainingSchedulePage
  * Admin-facing training schedule page for the sport module.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import PlayerInfoToolbar from '@/modules/sport/admin/components/player-management/PlayerInfoToolbar.vue'
 import Button from '@/components/buttons/Button.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
-import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
+import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
+import Dialog from 'primevue/dialog'
+import Loading from '@/components/feedback/Loading.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import TrainingSearchFilterBar from '@/modules/sport/coach/components/TrainingSearchFilterBar.vue'
 import TrainingSessionsTable from '@/modules/sport/coach/components/TrainingSessionsTable.vue'
-import trainingSessionsData from '@/mocks/sport/training-sessions.json'
-import {
-  filterSessions,
-  getPaginatedSessions,
-  getFilterOptions,
-  calculateLiveSessionsCount,
-} from './utils/trainingScheduleHelpers'
-import { TRAINING_PAGE_SIZE } from './constants/trainingScheduleConstants'
+import TrainingSessionForm from '@/modules/sport/coach/components/TrainingSessionForm.vue'
+import TrainingSessionDetail from '@/modules/sport/coach/components/TrainingSessionDetail.vue'
+import { useTrainingSessions } from '@/modules/sport/composables/useTrainingSessions'
+import { fetchSportCoaches } from '@/modules/sport/services/api/sportCoachesApi'
+import { fetchSportTeams } from '@/modules/sport/services/api/sportTeamsApi'
 
 defineOptions({
   name: 'SportTrainingSchedulePage',
@@ -33,72 +32,132 @@ const isKh = computed(() => language.value === 'KH')
 // Page copy uses the existing sports training schedule locale bundle.
 const title = computed(() => t('coachTrainingSchedule.title'))
 const subtitle = computed(() => t('coachTrainingSchedule.subtitle'))
-const addButtonLabel = computed(() => t('coachTrainingSchedule.actions.addButton'))
+const {
+  currentPage,
+  error,
+  clearError,
+  create,
+  intensityFilter,
+  items: sessions,
+  load,
+  loading,
+  loadDetail,
+  pagination,
+  remove,
+  searchQuery,
+  statusFilter,
+  trainingTypeFilter,
+  teamFilter,
+  update,
+  saving,
+  validationErrors,
+} = useTrainingSessions({
+  messages: {
+    load: t('coachTrainingSchedule.messages.loadFailed'),
+  },
+})
 
-const searchQuery = ref('')
-const intensityFilter = ref('')
-const statusFilter = ref('')
-const teamFilter = ref('')
-const currentPage = ref(1)
-const pageSize = TRAINING_PAGE_SIZE
-
-// Training sessions remain frontend-mocked until the backend API is connected.
-const sessions = ref([...trainingSessionsData])
-
-// Feedback states are intentionally local to this page.
-const showAddSuccess = ref(false)
 const showDeleteConfirm = ref(false)
 const selectedSession = ref(null)
+const formVisible = ref(false)
+const formSession = ref(null)
+const detailVisible = ref(false)
+const detailSession = ref(null)
+const formMode = ref('create')
+const teams = ref([])
+const coaches = ref([])
+const optionsLoading = ref(false)
+const optionsError = ref('')
+const showSuccess = ref(false)
+const successMessage = ref('')
 
-const intensityOptions = computed(() => getFilterOptions(sessions.value, 'intensity'))
-const statusOptions = computed(() => getFilterOptions(sessions.value, 'status'))
-const teamOptions = computed(() => getFilterOptions(sessions.value, 'team'))
-
-const filteredSessions = computed(() =>
-  filterSessions(
-    sessions.value,
-    searchQuery.value,
-    intensityFilter.value,
-    statusFilter.value,
-    teamFilter.value,
-  ),
-)
-
-const totalPages = computed(() => Math.max(Math.ceil(filteredSessions.value.length / pageSize), 1))
-const paginatedSessions = computed(() =>
-  getPaginatedSessions(filteredSessions.value, currentPage.value, pageSize),
-)
-
-watch(
-  () => filteredSessions.value.length,
-  () => {
-    if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
-  },
-)
+const intensityOptions = computed(() => [...new Set(sessions.value.map((session) => session.intensity).filter(Boolean))].sort())
+const statusOptions = computed(() => [...new Set(sessions.value.map((session) => session.status).filter(Boolean))].sort())
+const trainingTypeOptions = ['technical', 'tactical', 'fitness', 'recovery', 'match_preparation']
+const filterTeamOptions = computed(() => {
+  const options = new Map()
+  sessions.value.forEach((session) => {
+    if (session.teamId && session.team) options.set(String(session.teamId), session.team)
+  })
+  return [...options].map(([value, label]) => ({ value, label }))
+})
 
 const toolbarEyebrow = computed(() => t('coachTrainingSchedule.toolbarEyebrow'))
 const toolbarTitle = computed(() =>
-  t('coachTrainingSchedule.toolbarSummary', { count: filteredSessions.value.length }),
+  t('coachTrainingSchedule.toolbarSummary', { count: pagination.value.total }),
 )
 const toolbarText = computed(() =>
   t('coachTrainingSchedule.visibleRange', {
-    shown: filteredSessions.value.length,
-    total: sessions.value.length,
+    shown: sessions.value.length,
+    total: pagination.value.total,
   }),
 )
-const spotlightValue = computed(() => String(calculateLiveSessionsCount(sessions.value)))
+const spotlightValue = computed(() => String(sessions.value.filter((session) => session.status === 'live').length))
 
-function onAddSession() {
-  // The add flow stays mocked until the backend form exists.
-  showAddSuccess.value = true
+const totalPages = computed(() => pagination.value.totalPages)
+const formTitle = computed(() => formMode.value === 'edit'
+  ? t('coachTrainingSchedule.dialogs.editTitle')
+  : t('coachTrainingSchedule.dialogs.createTitle'))
+const teamOptions = computed(() => teams.value
+  .filter((team) => team.status !== 'inactive')
+  .map((team) => ({ ...team, id: String(team.id) })))
+const coachOptions = computed(() => coaches.value
+  .filter((coach) => coach.status !== 'inactive')
+  .map((coach) => ({ ...coach, id: String(coach.id) })))
+
+async function loadOptions() {
+  optionsLoading.value = true
+  optionsError.value = ''
+  try {
+    const [teamResponse, coachResponse] = await Promise.all([
+      fetchSportTeams({ page: 1, perPage: 100, status: 'active' }),
+      fetchSportCoaches({ page: 1, perPage: 100, status: 'active' }),
+    ])
+    teams.value = teamResponse.items || []
+    coaches.value = coachResponse.items || []
+  } catch (cause) {
+    optionsError.value = cause?.message || t('coachTrainingSchedule.messages.optionsFailed')
+  } finally {
+    optionsLoading.value = false
+  }
 }
 
-function onViewSession(session) {
-  selectedSession.value = session
+onMounted(async () => {
+  await Promise.all([load(), loadOptions()])
+})
+
+function openCreate() {
+  clearError()
+  formMode.value = 'create'
+  formSession.value = null
+  formVisible.value = true
 }
 
-function onEditSession(session) {
-  selectedSession.value = session
+function openEdit(session) {
+  clearError()
+  formMode.value = 'edit'
+  formSession.value = session
+  formVisible.value = true
+}
+
+async function openDetail(session) {
+  const detail = await loadDetail(session.id)
+  if (detail) {
+    detailSession.value = detail
+    detailVisible.value = true
+  }
+}
+
+async function submitForm(payload) {
+  const result = formMode.value === 'edit'
+    ? await update(formSession.value.id, payload)
+    : await create(payload)
+  if (!result) return
+  formVisible.value = false
+  successMessage.value = formMode.value === 'edit'
+    ? t('coachTrainingSchedule.feedback.updateSuccess')
+    : t('coachTrainingSchedule.feedback.createSuccess')
+  showSuccess.value = true
 }
 
 function onDeleteSession(session) {
@@ -106,9 +165,13 @@ function onDeleteSession(session) {
   showDeleteConfirm.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (selectedSession.value) {
-    sessions.value = sessions.value.filter((s) => s.id !== selectedSession.value.id)
+    const removed = await remove(selectedSession.value.id)
+    if (removed) {
+      successMessage.value = t('coachTrainingSchedule.feedback.deleteSuccess')
+      showSuccess.value = true
+    }
   }
   showDeleteConfirm.value = false
   selectedSession.value = null
@@ -129,13 +192,7 @@ function confirmDelete() {
           :spotlight-value="spotlightValue"
         >
           <template #actions>
-            <Button
-              type="button"
-              :label="addButtonLabel"
-              icon="pi pi-plus"
-              class="training-schedule-page__add-btn"
-              @click="onAddSession"
-            />
+            <Button type="button" icon="pi pi-plus" :label="t('coachTrainingSchedule.actions.addButton')" @click="openCreate" />
           </template>
         </PlayerInfoToolbar>
 
@@ -144,39 +201,42 @@ function confirmDelete() {
             v-model:searchQuery="searchQuery"
             v-model:intensity="intensityFilter"
             v-model:status="statusFilter"
+            v-model:trainingType="trainingTypeFilter"
             v-model:team="teamFilter"
             :intensity-options="intensityOptions"
             :status-options="statusOptions"
-            :team-options="teamOptions"
+            :training-type-options="trainingTypeOptions"
+            :team-options="filterTeamOptions"
             :t="t"
           />
         </div>
 
         <div class="training-schedule-page__table-wrapper mt-6">
           <TrainingSessionsTable
-            :sessions="paginatedSessions"
+            v-if="!loading && !error"
+            :sessions="sessions"
             :t="t"
+            :show-view="true"
+            :show-edit="true"
             :empty-text="t('coachTrainingSchedule.table.empty')"
-            @view="onViewSession"
-            @edit="onEditSession"
+            @view="openDetail"
+            @edit="openEdit"
             @delete="onDeleteSession"
           />
 
-          <div v-if="totalPages > 1" class="mt-6 flex justify-end">
+          <Loading v-if="loading" class="mt-6" :label="t('common.states.loading')" />
+          <div v-else-if="error" class="mt-6 flex items-center justify-between gap-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">
+            <span>{{ error }}</span>
+            <button type="button" class="font-bold underline" @click="load()">
+              {{ t('common.states.retry') }}
+            </button>
+          </div>
+          <div v-if="!loading && !error && totalPages > 1" class="mt-6 flex justify-end">
             <Pagination v-model="currentPage" :total-pages="totalPages" />
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Feedback dialogs stay local so the page can evolve into a backend form later. -->
-    <AlertSuccess
-      :show="showAddSuccess"
-      :title="t('coachTrainingSchedule.feedback.addTitle')"
-      :message="t('coachTrainingSchedule.feedback.addMessage')"
-      :button-text="t('common.close')"
-      @close="showAddSuccess = false"
-    />
 
     <AlertQuestion
       :show="showDeleteConfirm"
@@ -187,6 +247,36 @@ function confirmDelete() {
       type="danger"
       @confirm="confirmDelete"
       @cancel="showDeleteConfirm = false"
+    />
+
+    <Dialog v-model:visible="formVisible" modal :header="formTitle" :style="{ width: 'min(48rem, 95vw)' }">
+      <Loading v-if="optionsLoading" :label="t('coachTrainingSchedule.messages.loadingOptions')" />
+      <p v-else-if="optionsError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{{ optionsError }}</p>
+      <TrainingSessionForm
+        v-else
+        :session="formSession"
+        :team-options="teamOptions"
+        :coach-options="coachOptions"
+        :loading="saving"
+        :server-errors="validationErrors"
+        :error-message="error"
+        :t="t"
+        @submit="submitForm"
+        @cancel="formVisible = false"
+      />
+    </Dialog>
+
+    <Dialog v-model:visible="detailVisible" modal :header="t('coachTrainingSchedule.dialogs.detailTitle')" :style="{ width: 'min(42rem, 95vw)' }">
+      <TrainingSessionDetail :session="detailSession" :t="t" />
+      <template #footer><Button text :label="t('common.close')" @click="detailVisible = false" /></template>
+    </Dialog>
+
+    <AlertSuccess
+      :show="showSuccess"
+      :title="t('common.success')"
+      :message="successMessage || t('common.actionCompleted')"
+      :button-text="t('common.close')"
+      @close="showSuccess = false"
     />
   </MainLayout>
 </template>
@@ -203,18 +293,6 @@ function confirmDelete() {
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.training-schedule-page__add-btn {
-  background-color: #00aeef;
-  border-color: #00aeef;
-  font-weight: 700;
-  border-radius: 0.5rem;
-}
-
-.training-schedule-page__add-btn:hover {
-  background-color: #0089bc !important;
-  border-color: #0089bc !important;
 }
 
 .training-schedule-page--kh {

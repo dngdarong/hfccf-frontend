@@ -3,8 +3,271 @@
 export default {
   preschoolDashboardPage: {
     title: 'Preschool Operations Board',
-    subtitle: 'Enrollment readiness, attendance, and classroom resourcing.',
+    subtitle: 'Enrollment readiness, attendance, health, and classroom oversight at a glance.',
     loading: 'Loading preschool dashboard...',
+    header: {
+      academicYear: 'Academic year',
+      term: 'Term',
+      scheduleManagement: 'Schedule',
+      openReports: 'Reports',
+      refresh: 'Refresh',
+      lastUpdated: 'Updated {time}',
+    },
+    summary: {
+      activeStudents: {
+        title: 'Active Students',
+        label: 'Live student records',
+      },
+      attendanceToday: {
+        title: 'Attendance Today',
+        label: 'Records marked today',
+        rateLabel: 'Attendance rate today',
+      },
+      healthAlerts: {
+        title: 'Open Health Alerts',
+        label: 'Needs follow-up',
+      },
+      pendingEnrollments: {
+        title: 'Pending Enrollments',
+        label: 'Applications awaiting review',
+      },
+      outstandingPayments: {
+        title: 'Outstanding Payments',
+        label: 'Unpaid invoices',
+      },
+      noComparisonYet: 'No comparison yet',
+      comparison: {
+        previous_day: '{value} vs yesterday',
+        start_of_month: '{value} vs start of month',
+        previous_period: '{value} vs previous period',
+      },
+      trend: {
+        upCount: '+{value} this month',
+        downCount: '-{value} this month',
+        upPercent: '+{value} vs yesterday',
+        downPercent: '-{value} vs yesterday',
+      },
+      healthAlertsComparison: '{count} urgent',
+      pendingEnrollmentsComparison: '{count} awaiting review',
+      outstandingPaymentsComparison: '{amount} unpaid',
+    },
+    executiveHealth: {
+      title: 'System Health',
+      subtitle: 'Compact status across the core preschool workflows.',
+      noData: 'No data',
+      modules: {
+        enrollment: 'Enrollment',
+        attendance: 'Attendance',
+        billing: 'Billing',
+        assessment: 'Assessment',
+        health: 'Health',
+        guardians: 'Guardian Governance',
+      },
+      statuses: {
+        healthy: 'Healthy',
+        watch: 'Watch',
+        critical: 'Needs attention',
+        neutral: 'No data',
+      },
+      statusesShort: {
+        healthy: 'Healthy',
+        watch: 'Watch',
+        critical: 'Critical',
+        neutral: 'No data',
+      },
+      details: {
+        healthy: 'Operating normally',
+        pendingEnrollments: '{count} pending applications',
+        attendanceExceptions: '{count} attendance exceptions',
+        attendanceRate: 'Attendance at {rate}',
+        outstandingPayments: '{amount} outstanding',
+        assessmentRisk: '{count} students at risk',
+        assessmentCompletion: 'Assessment completion at {rate}',
+        openHealthAlerts: '{count} open alerts',
+        guardianIssues: '{count} open guardian issues',
+      },
+    },
+    priority: {
+      title: 'Today / Action Required',
+      subtitle: 'Only the items that need attention right now.',
+      cardTitle: 'Priority Queue',
+      empty: 'No urgent items right now.',
+      review: 'Review now',
+      openSchedule: 'Open schedule',
+      levels: {
+        critical: 'Critical',
+        high: 'High',
+        medium: 'Medium',
+        info: 'Info',
+      },
+      health: {
+        title: 'Urgent health alerts',
+        detail: '{count} open alerts',
+      },
+      enrollment: {
+        title: 'Pending enrollment decisions',
+        detail: '{count} awaiting review',
+      },
+      guardians: {
+        title: 'Unresolved guardian issues',
+        detail: '{count} open cases',
+      },
+      payments: {
+        title: 'Overdue payments',
+        detail: '{amount} overdue',
+      },
+      attendance: {
+        title: 'Attendance exceptions',
+        detail: '{count} flagged records',
+      },
+      assessment: {
+        title: 'Assessment risk',
+        detail: '{count} students at risk',
+      },
+      upcoming: {
+        title: 'Upcoming schedule',
+      },
+    },
+    operationalSummary: {
+      title: 'Operational Summary',
+      subtitle: 'Today’s schedules, generated sessions, and missing coverage stay visible here.',
+      todaySchedule: {
+        title: 'Today’s Schedule',
+        subtitle: 'Structured schedule entries for today.',
+        label: 'Scheduled classes',
+      },
+      todaySessions: {
+        title: 'Today’s Sessions',
+        subtitle: 'Attendance sessions generated from today’s schedule.',
+        label: 'Generated sessions',
+      },
+      scheduled: {
+        title: 'Scheduled',
+        label: 'Scheduled sessions',
+      },
+      open: {
+        title: 'Open',
+        label: 'Active sessions',
+      },
+      completed: {
+        title: 'Completed',
+        label: 'Finalized sessions',
+      },
+      locked: {
+        title: 'Locked',
+        label: 'Read-only sessions',
+      },
+      cancelled: {
+        title: 'Cancelled',
+        label: 'Cancelled sessions',
+      },
+      missing: {
+        title: 'Missing Sessions',
+        label: 'No session generated',
+      },
+      noSessionsToday: 'No Sessions Today',
+      noSessionGenerated: 'No Session Generated',
+    },
+    insights: {
+      title: 'Main Insights',
+      subtitle: 'Summary analytics for the current day and reporting cycle.',
+      attendance: {
+        title: 'Attendance Overview',
+        label: 'Attendance rate',
+        note: 'Absence rate {absence}, late rate {late}.',
+        metrics: {
+          present: 'Recorded today',
+          absent: 'Absence rate',
+        },
+      },
+      enrollment: {
+        title: 'Enrollment Trend',
+        label: 'New enrollments',
+        note: '{active} active students currently enrolled.',
+        metrics: {
+          active: 'Active students',
+          students: 'Total students',
+        },
+      },
+      assessment: {
+        title: 'Assessment Snapshot',
+        label: 'Completion rate',
+        note: '{risk} students are currently at risk.',
+        metrics: {
+          risk: 'At-risk students',
+          score: 'Average score',
+        },
+      },
+      payments: {
+        title: 'Payment Snapshot',
+        label: 'Revenue',
+        note: '{overdue} invoices still need follow-up.',
+        metrics: {
+          outstanding: 'Outstanding balance',
+          overdue: 'Overdue invoices',
+        },
+      },
+      sparklineFallback: 'No trend data',
+      sparklineStates: {
+        noComparison: 'No comparison yet',
+        baseline: 'Baseline',
+        newPeriod: 'New reporting period',
+      },
+    },
+    operations: {
+      title: 'Operational Sections',
+      subtitle: 'Secondary information, schedules, and shortcuts stay below the fold.',
+      recentActivityEmpty: 'No attendance activity has been recorded yet.',
+      viewAll: 'View all',
+      upcomingSchedules: 'Upcoming Schedules',
+      upcomingSchedulesSubtitle: 'The next few classes scheduled for today and the week ahead.',
+      upcomingEmpty: 'No upcoming classes are scheduled.',
+      relative: {
+        today: 'Today',
+        yesterday: 'Yesterday',
+        tomorrow: 'Tomorrow',
+      },
+      recentActivityFallback: 'Student activity',
+      classFallback: 'Class',
+      classroomSummary: {
+        title: 'Classroom Summary',
+        subtitle: 'A compact read on classrooms, teachers, and attendance.',
+        students: 'Students',
+        classes: 'Classes',
+        teachers: 'Teachers',
+        attendance: 'Attendance today',
+      },
+      shortcuts: {
+        title: 'Shortcuts',
+        subtitle: 'Quick navigation to the most common admin actions.',
+        schedule: 'Manage schedules',
+        scheduleDescription: 'Review class timing and upcoming sessions.',
+        scheduleAction: 'Open schedule',
+        reports: 'Open reports center',
+        reportsDescription: 'Check attendance, billing, and progress reports.',
+        reportsAction: 'Open reports',
+        settings: 'Open settings',
+        settingsDescription: 'Update preschool configuration and preferences.',
+        settingsAction: 'Open settings',
+        enrollments: 'Open enrollments',
+        enrollmentsDescription: 'Review pending applications and admissions.',
+        enrollmentsAction: 'Open enrollments',
+      },
+    },
+    spotlight: {
+      eyebrow: 'Current Academic Context',
+      noUpcomingClasses: 'No upcoming classes',
+      nextClassSuffix: 'is next',
+      assignedTeacher: 'Assigned teacher',
+      fallback: 'Create classes and assign teachers to populate this section.',
+      nextClassFallback: 'Upcoming class',
+      nextClassText: '{teacher} teaches {students} students',
+    },
+    errors: {
+      coreLoadFailed: 'Failed to load preschool dashboard.',
+      reportsLoadFailed: 'Failed to load reporting dashboard.',
+      loadFailed: 'Failed to load preschool dashboard.',
+    },
     cards: {
       students: {
         title: 'Total Students',
@@ -49,9 +312,12 @@ export default {
     nextClassSuffix: 'is next',
     assignedTeacher: 'Assigned teacher',
     populateText: 'Create classes and assign teachers to populate this board.',
-    errors: {
-      loadFailed: 'Failed to load preschool dashboard.',
-    },
+  },
+  preschoolDashboardActivity: {
+    title: 'Recent Activity',
+  },
+  preschoolDashboardSpotlight: {
+    eyebrow: 'Current Academic Context',
   },
   preschoolTeacherDashboardPage: {
     title: 'Preschool Teaching Workspace',
@@ -60,16 +326,20 @@ export default {
     quickStats: 'Quick Stats',
     cards: {
       students: {
-        title: 'My Students',
+        title: 'Students',
         label: 'Students in your classes',
       },
       classes: {
-        title: 'My Classes',
+        title: 'Classes',
         label: 'Assigned classes',
       },
       attendance: {
         title: 'Attendance Today',
         label: 'Records for today',
+        actions: {
+          recordAttendance: 'Record Attendance',
+          viewToday: "View Today's Attendance",
+        },
       },
       payments: {
         title: 'Pending Payments',
@@ -81,6 +351,36 @@ export default {
       overduePayments: 'Overdue payments: {count}',
       paidPayments: 'Paid payments: {count}',
       mySchedule: 'My schedule',
+    },
+    attendanceSessions: {
+      title: 'Attendance Sessions',
+      subtitle: 'Today’s attendance work for your assigned classes.',
+      todayCount: 'session(s) today',
+      loading: 'Loading today’s attendance sessions...',
+      warning: 'Attendance needs action',
+      noRoster: 'Roster count unavailable',
+      progressLabel: '{completed} of {total} marked',
+      completedSummary: '{completed} of {total} students marked',
+      pendingSummary: '{completed} of {total} marked · {pending} pending',
+      empty: {
+        title: 'No attendance session is scheduled for today.',
+        subtitle: 'Open Attendance to start or continue a class session when needed.',
+      },
+      labels: {
+        students: 'Students',
+        completed: 'Completed',
+        progress: 'Progress',
+      },
+      actions: {
+        openAttendance: 'Open Attendance',
+        recordAttendance: 'Record Attendance',
+        continueAttendance: 'Continue Attendance',
+        recordNow: 'Record Now',
+        viewDetails: 'View Details',
+      },
+      errors: {
+        loadFailed: 'Failed to load today’s attendance sessions.',
+      },
     },
     spotlight: {
       nextSuffix: 'is next',

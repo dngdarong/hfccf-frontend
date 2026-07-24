@@ -115,14 +115,17 @@ beforeEach(() => {
 })
 
 describe('PreschoolPreferencesSettingsPage', () => {
-  it('renders the preferences configuration page', async () => {
+  it('shows a loading state before preferences resolve', async () => {
     const wrapper = mountWithPlugins(PreschoolPreferencesSettingsPage, {
       messages: { en: enPreschool },
       global: { stubs: stubs() },
     })
 
+    expect(wrapper.find('[data-testid="preferences-settings-loading"]').exists()).toBe(true)
+
     await flushPromises()
 
+    expect(wrapper.find('[data-testid="preferences-settings-loading"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Preferences')
     expect(wrapper.text()).toContain('General Preferences')
     expect(wrapper.text()).toContain('Enrollment Rules')
@@ -130,6 +133,27 @@ describe('PreschoolPreferencesSettingsPage', () => {
     expect(wrapper.text()).toContain('Class Rules')
     expect(wrapper.text()).toContain('Guardian Rules')
     expect(wrapper.text()).toContain('Communication Rules')
+  })
+
+  it('shows an explicit empty state when loading fails', async () => {
+    fetchPreferences.mockRejectedValueOnce({
+      response: {
+        data: {
+          message: 'API endpoint not found.',
+        },
+      },
+    })
+
+    const wrapper = mountWithPlugins(PreschoolPreferencesSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="preferences-settings-error"]').text()).toContain('API endpoint not found.')
+    expect(wrapper.get('[data-testid="student-code-preview"]').text()).toBe('—')
+    expect(wrapper.text()).not.toContain('PS-')
   })
 
   it('sends the preferences payload when saving', async () => {
@@ -199,6 +223,54 @@ describe('PreschoolPreferencesSettingsPage', () => {
       assessmentAlertEnabled: false,
       healthAlertEnabled: true,
       enrollmentNotificationEnabled: false,
+    }))
+  })
+
+  it('maps backend validation errors onto fields', async () => {
+    updatePreferences.mockRejectedValueOnce({
+      response: {
+        data: {
+          data: {
+            errors: {
+              timezone: ['Select a supported timezone.'],
+              defaultLanguage: ['Select a supported language.'],
+            },
+          },
+        },
+      },
+    })
+
+    const wrapper = mountWithPlugins(PreschoolPreferencesSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-testid="save-preferences-settings"]').trigger('click')
+
+    expect(toastAdd).toHaveBeenCalledWith(expect.objectContaining({
+      severity: 'warn',
+    }))
+    expect(wrapper.text()).toContain('Select a supported timezone.')
+    expect(wrapper.text()).toContain('Select a supported language.')
+  })
+
+  it('surfaces non-validation save errors through the toast', async () => {
+    updatePreferences.mockRejectedValueOnce(new Error('Service unavailable'))
+
+    const wrapper = mountWithPlugins(PreschoolPreferencesSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-testid="save-preferences-settings"]').trigger('click')
+
+    expect(toastAdd).toHaveBeenCalledWith(expect.objectContaining({
+      severity: 'error',
+      summary: 'Service unavailable',
     }))
   })
 

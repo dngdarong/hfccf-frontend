@@ -3,6 +3,8 @@ export default {
     list: {
       title: 'Tournament management',
       subtitle: 'Create, organize, and monitor competition lifecycles from one dashboard.',
+      sectionTitle: 'Tournaments',
+      resultSummary: 'Showing {start}–{end} of {total} tournaments',
       searchPlaceholder: 'Search tournaments by name, season, organizer, or location',
       empty: 'No tournaments match the current filters.',
       createButton: 'Create tournament',
@@ -11,22 +13,23 @@ export default {
       stats: {
         total: {
           title: 'Total tournaments',
-          label: 'All active records in the catalog',
+          label: 'In catalog',
         },
         active: {
           title: 'Active tournaments',
-          label: 'Competition currently in play',
+          label: 'In progress',
         },
         registrationOpen: {
           title: 'Registration open',
-          label: 'Tournaments accepting team entries',
+          label: 'Accepting entries',
         },
         completed: {
           title: 'Completed tournaments',
-          label: 'Archived tournament records',
+          label: 'Finished',
         },
       },
       table: {
+        number: 'No.',
         name: 'Tournament',
         state: 'State',
         season: 'Season',
@@ -48,13 +51,25 @@ export default {
       editTitle: 'Edit tournament',
       subtitle: 'Set up a new tournament structure and schedule.',
       editSubtitle: 'Update tournament details and rules.',
+      heroEyebrow: 'Tournament setup',
+      heroText: 'Shape the competition identity, timing, and rules before teams are invited to register.',
       summary: 'Configure the tournament basics, dates, rules, and visibility.',
       formDescription: 'Complete the setup before registration opens.',
       sections: {
         basicInformation: 'Basic information',
-        dates: 'Dates',
+        schedule: 'Schedule',
         rules: 'Tournament rules',
-        status: 'Status management',
+        registration: 'Registration',
+        media: 'Media',
+        status: 'Status',
+      },
+      schedule: {
+        registration: 'Registration window',
+        tournament: 'Tournament window',
+      },
+      rules: {
+        structure: 'Structure',
+        points: 'Points',
       },
       fields: {
         name: 'Tournament name',
@@ -83,10 +98,15 @@ export default {
         penaltyEnabled: 'Penalty enabled',
       },
       upload: {
+        helper: 'Upload a JPG, PNG, or WebP file. Preview, replace, or remove it anytime.',
+        preview: 'Preview',
+        previewHint: 'Choose a file to see it here.',
+        upload: 'Upload image',
+        replace: 'Replace image',
         placeholder: 'No image selected',
-        select: 'Choose image',
         remove: 'Remove image',
       },
+      registrationSummary: 'Set who can register and what is visible to teams and visitors.',
       statusNotice: 'Tournament state is managed from the detail workflow.',
       validation: {
         nameRequired: 'Tournament name is required.',
@@ -168,6 +188,14 @@ export default {
       manageStandings: 'Manage standings',
       manageResults: 'Manage results',
       manageKnockout: 'Manage knockout',
+      teams: {
+        eyebrow: 'Tournament teams',
+        title: 'Attached teams',
+        select: 'Select a Sport team',
+        attach: 'Attach team',
+        remove: 'Remove',
+        empty: 'No teams are attached to this tournament.',
+      },
     },
     groups: {
       title: 'Group draw',
@@ -383,6 +411,8 @@ export default {
       backToDetail: 'Back to detail',
       goToFixtures: 'View fixtures',
       goToResults: 'View results',
+      recalculate: 'Recalculate standings',
+      recalculated: 'Standings recalculated successfully.',
       notFoundTitle: 'Standings not found',
       notFoundMessage: 'The selected tournament does not exist in the current catalog.',
       labels: {
@@ -763,6 +793,7 @@ export default {
       waitlist: 'Waitlist',
     },
     sportTypes: {
+      league: 'League',
       football: 'Football',
       basketball: 'Basketball',
       volleyball: 'Volleyball',

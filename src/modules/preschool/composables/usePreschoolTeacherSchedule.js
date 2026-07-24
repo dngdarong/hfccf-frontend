@@ -5,7 +5,6 @@
 import { computed, ref } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { fetchMySchedule, fetchTeacherSchedule } from '@/modules/preschool/services/api/preschoolScheduleApi'
-import { fetchAcademicLifecycle } from '@/modules/preschool/services/api/preschoolAcademicLifecycleApi'
 import { fetchPreschoolTeachers } from '@/modules/preschool/services/preschoolApi'
 
 function normalizeText(value) {
@@ -76,12 +75,7 @@ export function usePreschoolTeacherSchedule() {
       const bundle = await fetchMySchedule()
       teacherSummary.value = bundle.teacher || null
       schedules.value = bundle.items || []
-      try {
-        const lifecycle = await fetchAcademicLifecycle()
-        lifecycleContext.value = lifecycle.currentContext || {}
-      } catch {
-        lifecycleContext.value = {}
-      }
+      lifecycleContext.value = bundle.currentContext || bundle.raw?.currentContext || bundle.raw?.current_context || {}
       return bundle
     } catch (error) {
       teacherSummary.value = null

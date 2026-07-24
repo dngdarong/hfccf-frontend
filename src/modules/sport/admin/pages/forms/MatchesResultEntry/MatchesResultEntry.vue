@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
@@ -17,7 +17,6 @@ import { useMatchResultEntry } from '@/modules/sport/admin/composables/useMatchR
 import {
   createResultValue,
   createDraftEvent,
-  calculateScore,
   buildFixtureSummary,
   validateResult,
   buildResultSavePayload,
@@ -71,18 +70,6 @@ const statusOptions = computed(() => [
 ])
 
 const fixtureSummary = computed(() => buildFixtureSummary(selectedMatch.value))
-
-const scoreState = computed(() => calculateScore(matchEvents.value, selectedMatch.value))
-
-watch(
-  scoreState,
-  (value) => {
-    resultEntryValue.value.homeScore = value.home
-    resultEntryValue.value.awayScore = value.away
-  },
-  { immediate: true, deep: true },
-)
-
 const resultEntryValue = ref(createResultValue())
 
 watch(
@@ -93,9 +80,13 @@ watch(
     resultEntryValue.value = createResultValue({
       homeTeam: match.homeTeam || '',
       awayTeam: match.awayTeam || '',
+      homeScore: match.homeScore ?? 0,
+      awayScore: match.awayScore ?? 0,
       status: match.status || 'completed',
       report: match.notes || '',
     })
+    draftEvent.value = createDraftEvent()
+    pendingDeleteEvent.value = null
   },
   { immediate: true },
 )
@@ -104,6 +95,7 @@ watch(
 function resetFeedback() {
   errorMessage.value = ''
   showError.value = false
+  showSuccess.value = false
 }
 
 function goBackToMatches() {
@@ -182,25 +174,24 @@ async function onSaveResult(result) {
 }
 
 async function loadMatchData() {
-  const [match] = await Promise.all([
+  resetFeedback()
+  draftEvent.value = createDraftEvent()
+  pendingDeleteEvent.value = null
+
+  await Promise.all([
     loadMatch(matchId.value),
     loadMatchSquads(matchId.value),
     loadEvents(matchId.value),
   ])
-
-  if (!match?.id) return
-
-  resultEntryValue.value = createResultValue({
-    homeTeam: match.homeTeam || '',
-    awayTeam: match.awayTeam || '',
-    status: match.status || 'completed',
-    report: match.notes || '',
-  })
 }
 
-onMounted(() => {
-  void loadMatchData()
-})
+watch(
+  matchId,
+  () => {
+    void loadMatchData()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

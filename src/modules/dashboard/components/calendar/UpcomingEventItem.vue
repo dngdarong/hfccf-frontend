@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import EventTypeBadge from '@/modules/dashboard/components/calendar/EventTypeBadge.vue'
 
-const emit = defineEmits(['select'])
-
 const props = defineProps({
   event: {
     type: Object,
@@ -39,7 +37,7 @@ const dayLabel = computed(() => String(dateValue.value.getDate()).padStart(2, '0
 </script>
 
 <template>
-  <button type="button" class="upcoming-event-item" @click="emit('select', event)">
+  <article class="upcoming-event-item">
     <div class="upcoming-event-item__date">
       <span class="upcoming-event-item__month">{{ monthLabel }}</span>
       <span class="upcoming-event-item__day">{{ dayLabel }}</span>
@@ -66,7 +64,7 @@ const dayLabel = computed(() => String(dateValue.value.getDate()).padStart(2, '0
         <span>{{ event.tournament }}</span>
       </p>
     </div>
-  </button>
+  </article>
 </template>
 
 <style scoped>

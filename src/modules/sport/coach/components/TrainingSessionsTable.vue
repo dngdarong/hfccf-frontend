@@ -28,6 +28,26 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  readOnly: {
+    type: Boolean,
+    default: false,
+  },
+  showView: {
+    type: Boolean,
+    default: true,
+  },
+  showEdit: {
+    type: Boolean,
+    default: true,
+  },
+  showDelete: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const emit = defineEmits(['view', 'edit', 'delete'])
@@ -73,6 +93,7 @@ function intensityLabel(intensity) {
   <div class="training-sessions-table">
     <DataTable
       :value="sessions"
+      :loading="loading"
       data-key="id"
       striped-rows
       removable-sort
@@ -136,6 +157,7 @@ function intensityLabel(intensity) {
       </Column>
 
       <Column
+        v-if="showView || showEdit || showDelete"
         field="actions"
         :header="t('coachTrainingSchedule.table.actions')"
         header-class="text-right"
@@ -144,6 +166,9 @@ function intensityLabel(intensity) {
           <div class="flex justify-end">
             <ActionsButton
               :item="data"
+              :show-view="showView"
+              :show-edit="showEdit && !readOnly"
+              :show-delete="showDelete && !readOnly"
               @view="emit('view', $event)"
               @edit="emit('edit', $event)"
               @delete="emit('delete', $event)"

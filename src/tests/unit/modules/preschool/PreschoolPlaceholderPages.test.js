@@ -13,6 +13,7 @@ const placeholderStubs = {
   MainLayout: { template: '<div><slot /></div>' },
   HeaderSection: { props: ['title', 'subtitle'], template: '<div><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>' },
   PreschoolPlaceholderState: { props: ['eyebrow', 'title', 'subtitle', 'description'], template: '<div><h2>{{ title }}</h2><p>{{ subtitle }}</p><small>{{ description }}</small></div>' },
+  RouterLink: { props: ['to'], template: '<a><slot /></a>' },
 }
 
 beforeEach(() => {
@@ -34,7 +35,7 @@ describe('Preschool placeholder pages', () => {
   it('renders the admin scaffold pages with explicit copy', async () => {
     const pages = [
       [FormManagement, enPreschool.preschoolScaffold.formManagement.title],
-      [AttendanceManagement, enPreschool.preschoolScaffold.attendanceManagement.title],
+      [AttendanceManagement, enPreschool.preschoolAttendanceHubPage.title],
     ]
 
     for (const [page, title] of pages) {
@@ -46,8 +47,8 @@ describe('Preschool placeholder pages', () => {
 
   it('renders the teacher scaffold pages with explicit copy', async () => {
     const pages = [
-      [TeacherClassroomResources, enPreschool.preschoolScaffold.teacherClassroomResources.title],
-      [Healthy, enPreschool.preschoolScaffold.healthy.title],
+      [TeacherClassroomResources, enPreschool.preschoolClassroomResources.title],
+      [Healthy, enPreschool.preschoolHealthPage.teacher.title],
     ]
 
     for (const [page, title] of pages) {
@@ -57,5 +58,3 @@ describe('Preschool placeholder pages', () => {
     }
   })
 })
-
-

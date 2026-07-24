@@ -194,7 +194,7 @@ function onAddClass() {
 function onViewClass(item) {
   const id = String(item?.id || '').trim()
   if (!id) return
-  router.push({ path: '/module/preschool-admin/classes/add', query: { mode: 'view', id } })
+  router.push({ name: 'dashboard-preschool-admin-class-details', params: { id } })
 }
 
 function onEditClass(item) {

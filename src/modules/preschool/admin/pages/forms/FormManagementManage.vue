@@ -27,6 +27,24 @@ const heroSummary = computed(() =>
   ),
 )
 
+const guidanceSteps = computed(() => [
+  {
+    icon: '📋',
+    title: safeText('preschoolScaffold.formManagement.pages.manage.guidance.browse.title', 'Browse catalog'),
+    description: safeText('preschoolScaffold.formManagement.pages.manage.guidance.browse.description', 'View active and archived templates.'),
+  },
+  {
+    icon: '🔍',
+    title: safeText('preschoolScaffold.formManagement.pages.manage.guidance.review.title', 'Review details'),
+    description: safeText('preschoolScaffold.formManagement.pages.manage.guidance.review.description', 'Check template properties and audit history.'),
+  },
+  {
+    icon: '📊',
+    title: safeText('preschoolScaffold.formManagement.pages.manage.guidance.organize.title', 'Organize'),
+    description: safeText('preschoolScaffold.formManagement.pages.manage.guidance.organize.description', 'Archive, duplicate, or reorganize templates.'),
+  },
+])
+
 const quickLinks = computed(() => [
   {
     label: safeText('breadcrumb.forms', 'Forms'),
@@ -55,17 +73,14 @@ const quickLinks = computed(() => [
       />
 
       <div class="workflow-guidance">
-        <p class="workflow-guidance__step">
-          <span class="workflow-guidance__icon">📋</span>
-          <strong>Browse catalog:</strong> View all active and archived forms
-        </p>
-        <p class="workflow-guidance__step">
-          <span class="workflow-guidance__icon">🔍</span>
-          <strong>Review details:</strong> Check form properties and audit history
-        </p>
-        <p class="workflow-guidance__step">
-          <span class="workflow-guidance__icon">📊</span>
-          <strong>Organize:</strong> Archive, duplicate, or reorganize forms
+        <p
+          v-for="step in guidanceSteps"
+          :key="step.title"
+          class="workflow-guidance__step"
+        >
+          <span class="workflow-guidance__icon">{{ step.icon }}</span>
+          <strong>{{ step.title }}:</strong>
+          {{ step.description }}
         </p>
       </div>
 

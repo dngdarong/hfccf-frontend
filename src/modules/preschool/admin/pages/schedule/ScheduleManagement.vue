@@ -10,6 +10,7 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 import Pagination from '@/components/data-display/Pagination.vue'
+import { useRouter } from 'vue-router'
 import { useLanguage } from '@/composables/useLanguage'
 import { usePreschoolSchedules } from '@/modules/preschool/composables/usePreschoolSchedules'
 import ScheduleDayTabs from '@/modules/preschool/shared/components/schedule/ScheduleDayTabs.vue'
@@ -17,6 +18,15 @@ import ScheduleEntryCard from '@/modules/preschool/shared/components/schedule/Sc
 import ScheduleEntryForm from '@/modules/preschool/shared/components/schedule/ScheduleEntryForm.vue'
 import ScheduleConflictNotice from '@/modules/preschool/shared/components/schedule/ScheduleConflictNotice.vue'
 import { PreschoolScheduleDay, PreschoolScheduleStatus } from '@/modules/preschool/services/scheduleConstants'
+import {
+  getScheduleSessionActionKey,
+  getScheduleSessionActionTone,
+  normalizeScheduleSessionStatus,
+  resolveScheduleSession,
+} from '@/modules/preschool/shared/components/schedule/scheduleSessionOverlay'
+import {
+  openAttendanceSession,
+} from '@/modules/preschool/services/api/preschoolAttendanceSessionApi'
 
 defineOptions({
   name: 'PreschoolScheduleManagementPage',
@@ -24,6 +34,7 @@ defineOptions({
 
 const { t } = useLanguage()
 const toast = useToast()
+const router = useRouter()
 const {
   archiveSchedule,
   classOptions,
@@ -54,6 +65,19 @@ const {
   loading,
 } = usePreschoolSchedules()
 
+function todayIso() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function todayDayOfWeek() {
+  const day = new Date().getDay()
+  return day === 0 ? PreschoolScheduleDay.SUNDAY : day
+}
+
 const dayOptions = computed(() => [
   { label: t('preschoolSchedulesShared.days.monday'), value: PreschoolScheduleDay.MONDAY },
   { label: t('preschoolSchedulesShared.days.tuesday'), value: PreschoolScheduleDay.TUESDAY },
@@ -71,6 +95,23 @@ const statusOptions = computed(() => [
 ])
 
 const visibleSchedules = computed(() => schedules.value || [])
+const scheduleEntries = computed(() =>
+  visibleSchedules.value.map((entry) => {
+    const session = resolveScheduleSession(entry, undefined, todayIso())
+
+    return {
+      ...entry,
+      session: session
+        ? {
+            ...session,
+            statusLabel: t(`preschoolAttendanceSessionsPage.statuses.${normalizeScheduleSessionStatus(session.status)}`) || session.status,
+            actionLabel: t(`preschoolAttendanceSessionsPage.actions.${getScheduleSessionActionKey(session.status)}`),
+            actionTone: getScheduleSessionActionTone(session.status),
+          }
+        : null,
+    }
+  }),
+)
 const selectedScheduleId = computed(() => selectedSchedule.value?.id || '')
 const isSelectedScheduleArchived = computed(
   () => String(selectedSchedule.value?.status || '').toLowerCase() === PreschoolScheduleStatus.ARCHIVED,
@@ -144,8 +185,63 @@ function handleEdit(entry) {
   setSelectedSchedule(entry)
 }
 
+function routeToAttendanceSession(session, entry) {
+  const sessionId = String(session?.id || '').trim()
+  if (!sessionId) return
+
+  const status = normalizeScheduleSessionStatus(session.status)
+
+  if (status === 'scheduled') {
+    openAttendanceSession(sessionId).then(() => {
+      router.push({
+        name: 'dashboard-preschool-admin-attendance-students',
+        query: {
+          classId: session.classId || entry.classId || '',
+          date: session.attendanceDate || todayIso(),
+          attendance_session_id: sessionId,
+          sessionId,
+        },
+      })
+    })
+    return
+  }
+
+  if (status === 'open') {
+    router.push({
+      name: 'dashboard-preschool-admin-attendance-students',
+      query: {
+        classId: session.classId || entry.classId || '',
+        date: session.attendanceDate || todayIso(),
+        attendance_session_id: sessionId,
+        sessionId,
+      },
+    })
+    return
+  }
+
+  router.push({
+    name: 'dashboard-preschool-admin-attendance-session-details',
+    params: { id: sessionId },
+  })
+}
+
+function handleSessionAction(entry) {
+  routeToAttendanceSession(entry?.session, entry)
+}
+
+function handleSessionView(entry) {
+  const sessionId = String(entry?.session?.id || '').trim()
+  if (!sessionId) return
+
+  router.push({
+    name: 'dashboard-preschool-admin-attendance-session-details',
+    params: { id: sessionId },
+  })
+}
+
 onMounted(async () => {
   await loadLookups()
+  setSelectedDayOfWeek(todayDayOfWeek())
   await loadSchedules()
 })
 </script>
@@ -264,18 +360,25 @@ onMounted(async () => {
 
               <div v-else class="grid gap-3 md:grid-cols-2">
                 <ScheduleEntryCard
-                  v-for="entry in visibleSchedules"
+                  v-for="entry in scheduleEntries"
                   :key="entry.id"
                   :entry="entry"
                   :day-label="dayOptions.find((day) => String(day.value) === String(entry.dayOfWeek))?.label || ''"
+                  :session="entry.session"
                   :show-actions="true"
+                  :show-session-actions="true"
                   :view-label="t('preschoolSchedulesPage.actions.view')"
                   :edit-label="t('preschoolSchedulesPage.actions.update')"
                   :archive-label="t('preschoolSchedulesPage.actions.archive')"
+                  :session-view-label="t('preschoolSchedulesPage.actions.viewDetails')"
+                  :session-action-label="t(`preschoolAttendanceSessionsPage.actions.${getScheduleSessionActionKey(entry.session?.status)}`)"
+                  :no-session-label="t('preschoolSchedulesPage.sessions.noSessionGenerated')"
                   :is-locked="isTermLocked || isReportPeriodLocked"
                   @edit="handleEdit"
                   @archive="handleArchive"
                   @view="handleEdit"
+                  @session-action="handleSessionAction"
+                  @session-view="handleSessionView"
                 />
               </div>
 

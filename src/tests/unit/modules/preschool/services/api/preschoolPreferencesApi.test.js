@@ -9,7 +9,7 @@ import {
 vi.mock('@/services/http', () => ({
   default: {
     get: vi.fn(),
-    put: vi.fn(),
+    patch: vi.fn(),
   },
 }))
 
@@ -67,13 +67,15 @@ describe('preschool preferences api', () => {
   it('fetches and updates preferences with normalized payloads', async () => {
     http.get.mockResolvedValueOnce(stubResponse({
       settings: {
-        id: 1,
-        timezone: 'Asia/Phnom_Penh',
-        default_language: 'en',
-        minimum_enrollment_age_months: 24,
-        student_code_prefix: 'PS',
-        student_code_year_format: 'YYYY',
-        student_code_sequence_length: 4,
+        preferences: {
+          id: 1,
+          timezone: 'Asia/Phnom_Penh',
+          default_language: 'en',
+          minimum_enrollment_age_months: 24,
+          student_code_prefix: 'PS',
+          student_code_year_format: 'YYYY',
+          student_code_sequence_length: 4,
+        },
       },
     }))
 
@@ -83,16 +85,18 @@ describe('preschool preferences api', () => {
       studentCodePrefix: 'PS',
     })
 
-    http.put.mockResolvedValueOnce(stubResponse({
+    http.patch.mockResolvedValueOnce(stubResponse({
       settings: {
-        timezone: 'Asia/Phnom_Penh',
-        default_language: 'kh',
-        minimum_enrollment_age_months: 30,
-        maximum_enrollment_age_months: 72,
-        student_code_prefix: 'PRE',
-        student_code_year_format: 'YY',
-        student_code_sequence_length: 6,
-        default_class_capacity: 22,
+        preferences: {
+          timezone: 'Asia/Phnom_Penh',
+          default_language: 'kh',
+          minimum_enrollment_age_months: 30,
+          maximum_enrollment_age_months: 72,
+          student_code_prefix: 'PRE',
+          student_code_year_format: 'YY',
+          student_code_sequence_length: 6,
+          default_class_capacity: 22,
+        },
       },
     }))
 
@@ -124,14 +128,16 @@ describe('preschool preferences api', () => {
       defaultClassCapacity: 22,
     })
 
-    expect(http.put).toHaveBeenCalledWith('/preschool/settings/preferences', expect.objectContaining({
-      default_language: 'kh',
-      student_code_prefix: 'PRE',
-      student_code_year_format: 'YY',
-      student_code_sequence_length: 6,
-      default_class_capacity: 22,
-      teacher_student_ratio: 11,
-      waitlist_enabled: false,
+    expect(http.patch).toHaveBeenCalledWith('/preschool/settings/backbone', expect.objectContaining({
+      preferences: expect.objectContaining({
+        default_language: 'kh',
+        student_code_prefix: 'PRE',
+        student_code_year_format: 'YY',
+        student_code_sequence_length: 6,
+        default_class_capacity: 22,
+        teacher_student_ratio: 11,
+        waitlist_enabled: false,
+      }),
     }))
   })
 })

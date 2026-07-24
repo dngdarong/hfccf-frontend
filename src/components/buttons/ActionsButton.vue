@@ -16,7 +16,7 @@
 
 import { computed, ref } from 'vue'
 import Menu from 'primevue/menu'
-import PrimeButton from 'primevue/button'
+import AppIconButton from '@/components/ui/AppIconButton.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -185,10 +185,10 @@ function toggleMenu(event) {
 <template>
   <div class="inline-flex">
     <!-- Action trigger button -->
-    <PrimeButton
+    <AppIconButton
       icon="pi pi-ellipsis-h"
-      rounded
-      severity="secondary"
+      variant="secondary"
+      size="sm"
       class="actions-button-trigger"
       :disabled="disabled"
       aria-haspopup="menu"
@@ -209,10 +209,6 @@ function toggleMenu(event) {
 </template>
 
 <style scoped>
-.actions-button-trigger:deep(.p-button-icon) {
-  font-size: 0.88rem;
-}
-
 /**
  * Popup menu container.
  */

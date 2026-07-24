@@ -1,13 +1,8 @@
 <script setup>
-import Select from 'primevue/select'
 import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineProps({
-  selectedType: {
-    type: String,
-    required: true,
-  },
   selectedTeamId: {
     type: String,
     required: true,
@@ -24,10 +19,6 @@ defineProps({
     type: String,
     required: true,
   },
-  typeOptions: {
-    type: Array,
-    required: true,
-  },
   teamOptions: {
     type: Array,
     required: true,
@@ -42,7 +33,7 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['update:selectedType', 'update:selectedTeamId', 'update:dateFrom', 'update:dateTo', 'update:searchQuery', 'apply', 'reset', 'back'])
+const emit = defineEmits(['update:selectedTeamId', 'update:dateFrom', 'update:dateTo', 'update:searchQuery', 'apply', 'reset', 'back'])
 
 const { t } = useLanguage()
 
@@ -62,30 +53,18 @@ function handleBack() {
 <template>
   <div class="att-history-filter-bar">
     <label class="att-history-filter-field">
-      <span class="att-history-filter-label">{{ t('sportAdminAttendanceHistoryPage.filters.type') }}</span>
-      <Select
-        :model-value="selectedType"
-        :options="typeOptions"
-        option-label="label"
-        option-value="value"
-        :placeholder="t('sportAdminAttendanceHistoryPage.placeholders.type')"
-        class="min-w-[180px]"
-        @update:model-value="emit('update:selectedType', $event)"
-      />
-    </label>
-
-    <label class="att-history-filter-field">
       <span class="att-history-filter-label">{{ t('sportAdminAttendanceHistoryPage.filters.team') }}</span>
-      <Select
-        :model-value="selectedTeamId"
-        :options="teamOptions"
-        option-label="label"
-        option-value="value"
-        :placeholder="t('sportAdminAttendanceHistoryPage.placeholders.team')"
+      <select
+        :value="selectedTeamId"
+        class="att-history-filter-input"
         :disabled="teamsLoading"
-        class="min-w-[220px]"
-        @update:model-value="emit('update:selectedTeamId', $event)"
-      />
+        @change="emit('update:selectedTeamId', $event.target.value)"
+      >
+        <option value="">{{ t('sportAdminAttendanceHistoryPage.placeholders.team') }}</option>
+        <option v-for="team in teamOptions" :key="team.value" :value="team.value">
+          {{ team.label }}
+        </option>
+      </select>
     </label>
 
     <label class="att-history-filter-field">

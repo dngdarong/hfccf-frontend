@@ -57,6 +57,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  compact: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const { t, te, language } = useLanguage()
@@ -213,14 +217,14 @@ function iconPath(status) {
     <!-- Cards / empty state -->
     <div
       v-else
-      class="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-3 max-sm:grid-cols-1 max-sm:gap-2.5"
+      class="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2.5 max-sm:grid-cols-1 max-sm:gap-2"
     >
       <template v-if="hasCards">
         <article
           v-for="(card, index) in normalizedCards"
           :key="cardKey(card, index)"
-          class="rounded-[0.95rem] border border-surface-200 border-l-4 bg-[linear-gradient(160deg,#ffffff_0%,#f7fbff_100%)] p-4 shadow-[0_12px_24px_rgba(4,52,80,0.05)] max-sm:rounded-[0.85rem] max-sm:p-[0.72rem]"
-          :class="accentClass(card.status)"
+          class="rounded-[0.95rem] border border-surface-200 border-l-4 bg-[linear-gradient(160deg,#ffffff_0%,#f7fbff_100%)] shadow-[0_12px_24px_rgba(4,52,80,0.05)] max-sm:rounded-[0.85rem]"
+          :class="[accentClass(card.status), compact ? 'p-3' : 'p-4 max-sm:p-[0.72rem]']"
         >
           <div class="flex items-center justify-between gap-2.5">
             <p
@@ -268,6 +272,7 @@ function iconPath(status) {
             </p>
 
             <StatusBadge
+              v-if="!compact"
               :status="normalizeStatus(card.status)"
               size="sm"
             />

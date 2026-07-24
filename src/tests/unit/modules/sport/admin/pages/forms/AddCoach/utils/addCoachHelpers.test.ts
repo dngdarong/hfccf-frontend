@@ -2,6 +2,23 @@ import { describe, expect, it } from 'vitest'
 import { getFormPayload, validateForm } from '@/modules/sport/admin/pages/forms/AddCoach/utils/addCoachHelpers'
 
 describe('addCoachHelpers', () => {
+  it('requires a full name with at least two parts for add validation', () => {
+    const message = validateForm(
+      {
+        name: 'Coach',
+        email: 'coach@example.com',
+        phone: '012345678',
+        status: 'active',
+        password: 'coach-pass',
+        confirmPassword: 'coach-pass',
+      },
+      true,
+      (key: string) => key,
+    )
+
+    expect(message).toBe('sportAddCoach.validation.fullNameRequired')
+  })
+
   it('omits password fields from edit payloads', () => {
     const payload = getFormPayload(
       {

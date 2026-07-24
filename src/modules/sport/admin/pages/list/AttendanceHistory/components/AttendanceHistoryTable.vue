@@ -2,7 +2,7 @@
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
-import { statusLabel, typeLabel, teamLabel } from '../utils/attendanceHistoryHelpers'
+import { statusLabel, teamLabel } from '../utils/attendanceHistoryHelpers'
 
 defineProps({
   records: {
@@ -39,7 +39,6 @@ function handlePageChange(page) {
         <thead>
           <tr>
             <th>{{ t('sportAdminAttendanceHistoryPage.columns.date') }}</th>
-            <th>{{ t('sportAdminAttendanceHistoryPage.columns.type') }}</th>
             <th>{{ t('sportAdminAttendanceHistoryPage.columns.team') }}</th>
             <th>{{ t('sportAdminAttendanceHistoryPage.columns.person') }}</th>
             <th>{{ t('sportAdminAttendanceHistoryPage.columns.status') }}</th>
@@ -54,7 +53,6 @@ function handlePageChange(page) {
             :class="index % 2 === 0 ? 'is-even' : 'is-odd'"
           >
             <td>{{ record.attendanceDate || '-' }}</td>
-            <td>{{ typeLabel(record.attendanceType, t) }}</td>
             <td>{{ record.teamName || teamLabel(record.teamId, teamOptions) || '-' }}</td>
             <td>{{ record.personName || record.playerName || record.coachName || '-' }}</td>
             <td>

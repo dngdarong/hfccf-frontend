@@ -7,6 +7,7 @@ import Column from 'primevue/column'
 import Select from 'primevue/select'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import Pagination from '@/components/data-display/Pagination.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { useMatchSquad } from '@/modules/sport/match-squads/composables/useMatchSquad'
@@ -32,8 +33,16 @@ const pageSubtitle = computed(() => t('sportMatchSquad.admin.subtitle'))
 const groupedSquad = computed(() => groupMatchSquadPlayers(squad.value?.players || []))
 const pageError = computed(() => error.value)
 const currentSquad = computed(() => squad.value)
+const currentPage = ref(1)
+const pageSize = 5
+const totalPages = computed(() => Math.max(Math.ceil(squads.value.length / pageSize), 1))
+const paginatedSquads = computed(() => squads.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))
 const canApprove = computed(() => currentSquad.value?.status === 'submitted')
 const canLock = computed(() => Boolean(currentSquad.value?.id) && currentSquad.value?.status !== 'locked')
+
+watch(() => squads.value.length, () => {
+  if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
+})
 
 async function refreshTeam() {
   if (!matchId.value || !teamId.value) {
@@ -151,7 +160,7 @@ onMounted(async () => {
             />
           </div>
 
-          <DataTable :value="squads" class="mt-6" data-key="id" striped-rows :loading="loading">
+          <DataTable :value="paginatedSquads" class="mt-6" data-key="id" striped-rows :loading="loading">
             <Column field="team.name" :header="t('sportMatchSquad.review.team')" />
             <Column field="status" :header="t('sportMatchSquad.review.status')">
               <template #body="{ data }">
@@ -160,6 +169,9 @@ onMounted(async () => {
             </Column>
             <Column field="playersCount" :header="t('sportMatchSquad.review.players')" />
           </DataTable>
+          <div v-if="totalPages > 1" class="mt-4 flex justify-end">
+            <Pagination v-model="currentPage" :total-pages="totalPages" />
+          </div>
         </template>
       </Card>
     </section>

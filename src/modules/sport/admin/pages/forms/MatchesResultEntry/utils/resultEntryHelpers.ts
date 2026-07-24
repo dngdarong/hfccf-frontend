@@ -5,6 +5,7 @@ import {
   FINAL_PERIOD,
   SCORING_EVENT_TYPES,
 } from '../constants/resultEntryConstants'
+import { formatMatchDateTimeParts } from '@/modules/sport/services/api/sportApiUtils'
 
 export function createResultValue(value: any = {}) {
   return {
@@ -63,17 +64,18 @@ export function calculateScore(events: any[] = [], match: any = {}) {
 }
 
 export function buildFixtureSummary(match: any = {}) {
-  const [matchDate = '-', matchTime = '-'] = String(match.schedule || '')
-    .trim()
-    .split(/\s+/)
+  const target = match ?? {}
+  const { date: matchDate, time: matchTime } = formatMatchDateTimeParts(
+    target.schedule || target.scheduledAt || target.scheduled_at,
+  )
 
   return {
-    homeTeam: String(match.homeTeam || '-'),
-    awayTeam: String(match.awayTeam || '-'),
+    homeTeam: String(target.homeTeam || '-'),
+    awayTeam: String(target.awayTeam || '-'),
     matchDate,
     matchTime,
-    venue: String(match.venue || '-'),
-    competition: String(match.tournament?.name || match.tournamentName || match.competitionType || '-'),
+    venue: String(target.venue || '-'),
+    competition: String(target.tournament?.name || target.tournamentName || target.competitionType || '-'),
   }
 }
 

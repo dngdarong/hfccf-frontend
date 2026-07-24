@@ -36,6 +36,17 @@ export function usePreschoolAcademicLifecycle() {
       currentContext.value = hasContext(payload.currentContext) ? payload.currentContext : {}
 
       return payload
+    } catch (error) {
+      // If access is denied to academic lifecycle settings, continue with empty data
+      if (error?.response?.status === 403) {
+        console.warn('Access denied to academic lifecycle settings')
+        academicYears.value = []
+        terms.value = []
+        currentContext.value = {}
+        return { academicYears: [], terms: [], currentContext: {} }
+      }
+      // Re-throw other errors
+      throw error
     } finally {
       loading.value = false
     }

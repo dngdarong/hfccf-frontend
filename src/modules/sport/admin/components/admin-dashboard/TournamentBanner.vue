@@ -27,6 +27,10 @@ const subtitle = computed(() => props.tournamentSubtitle || t('sportAdminDashboa
 const location = computed(() => props.tournamentLocation || '')
 const matches = computed(() => props.tournamentMatches ?? '00')
 const status = computed(() => props.tournamentStatus || t('sportAdminDashboard.quickPanels.liveLabel'))
+const statusClass = computed(() => {
+  const key = String(status.value).trim().toLowerCase()
+  return ['live', 'active', 'upcoming', 'completed', 'closed'].includes(key) ? key : 'default'
+})
 const actionLabel = computed(() => props.actionLabel || t('sportAdminDashboard.tournamentBanner.action'))
 const actionLink = computed(() => props.actionLink || defaultActionLink)
 const closeLabel = computed(() => t('common.close'))
@@ -62,8 +66,8 @@ const closeLabel = computed(() => t('common.close'))
     <div class="tournament-banner__body">
       <div class="tournament-banner__content">
         <div class="tournament-banner__meta">
-          <span class="tournament-banner__pill tournament-banner__pill--live">
-            <span class="tournament-banner__pulse" aria-hidden="true"></span>
+          <span :class="['tournament-banner__pill', `tournament-banner__pill--${statusClass}`]">
+            <span v-if="statusClass === 'live' || statusClass === 'active'" class="tournament-banner__pulse" aria-hidden="true"></span>
             {{ status }}
           </span>
           <span v-if="location" class="tournament-banner__pill tournament-banner__pill--ghost">
@@ -109,7 +113,7 @@ const closeLabel = computed(() => t('common.close'))
 .tournament-banner {
   position: relative;
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
   padding: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1.5rem;
@@ -216,6 +220,23 @@ const closeLabel = computed(() => t('common.close'))
 .tournament-banner__pill--live {
   background: rgba(237, 28, 36, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.tournament-banner__pill--active {
+  background: rgba(237, 28, 36, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.tournament-banner__pill--upcoming {
+  background: rgba(253, 193, 22, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.tournament-banner__pill--completed,
+.tournament-banner__pill--closed,
+.tournament-banner__pill--default {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .tournament-banner__pill--ghost {

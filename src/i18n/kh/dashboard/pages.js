@@ -6,6 +6,7 @@ export default {
   aboutDescription: 'ទំព័រនេះប្រើ layout សំខាន់ដែលបានចែករំលែក។',
   calendar: {
     pageTitle: 'កាលវិភាគ និងព្រឹត្តិការណ៍',
+    previewNotice: 'ប្រតិទិននេះបច្ចុប្បន្នជាការមើលជាមុន។ ការផ្លាស់ប្តូរមិនត្រូវបានរក្សាទុកទេ។',
     addEvent: 'បន្ថែមព្រឹត្តិការណ៍',
     highlight: {
       monthSnapshot: 'សង្ខេបប្រចាំខែ',

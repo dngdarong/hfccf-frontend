@@ -15,7 +15,7 @@
 import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useDashboardResolver } from '@/modules/dashboard/composables/useDashboardResolver'
 
 defineOptions({
@@ -111,3 +111,4 @@ function goToLogin() {
   box-shadow: 0 25px 60px -40px rgba(15, 23, 42, 0.45);
 }
 </style>
+

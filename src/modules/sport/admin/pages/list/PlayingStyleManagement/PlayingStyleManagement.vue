@@ -3,7 +3,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import Button from '@/components/buttons/Button.vue'
+import StatsCards from '@/components/data-display/StatsCards.vue'
 import Pagination from '@/components/data-display/Pagination.vue'
+import Loading from '@/components/feedback/Loading.vue'
+import StatusBadge from '@/components/badges/StatusBadge.vue'
+import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
+import AlertError from '@/components/alerts/AlertError.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { deleteSportPlayingStyle, fetchSportPlayingStyles } from '@/modules/sport/services/sportApi'
 
@@ -17,8 +23,12 @@ const { t } = useLanguage()
 const playingStyles = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
-const pageSize = 8
+const pageSize = 5
 const totalPlayingStyles = ref(0)
+const showDeleteConfirm = ref(false)
+const deletingStyle = ref(null)
+const deletingLoading = ref(false)
+const deleteError = ref('')
 
 const pageTitle = computed(() => t('sportPlayingStyleManagement.title'))
 const pageSubtitle = computed(() => t('sportPlayingStyleManagement.subtitle'))
@@ -34,24 +44,28 @@ const totalTeamsWithStyles = computed(
 const summaryCards = computed(() => [
   {
     id: 'total',
-    title: 'Total Styles',
+    title: t('sportPlayingStyleManagement.summary.total.title'),
     value: totalPlayingStyles.value,
-    badge: `${activePlayingStyles.value} active`,
-    icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+    label: t('sportPlayingStyleManagement.summary.total.badge', { count: activePlayingStyles.value }),
+    status: 'info',
   },
   {
     id: 'active',
-    title: 'Active Styles',
+    title: t('sportPlayingStyleManagement.summary.active.title'),
     value: activePlayingStyles.value,
-    badge: totalPlayingStyles.value > 0 ? `${(activePlayingStyles.value / totalPlayingStyles.value * 100).toFixed(0)}%` : '0%',
-    icon: 'M5 13l4 4L19 7',
+    label: t('sportPlayingStyleManagement.summary.active.badge', {
+      rate: totalPlayingStyles.value > 0
+        ? (activePlayingStyles.value / totalPlayingStyles.value * 100).toFixed(0)
+        : 0,
+    }),
+    status: 'success',
   },
   {
     id: 'teams',
-    title: 'Teams Using',
+    title: t('sportPlayingStyleManagement.summary.teams.title'),
     value: totalTeamsWithStyles.value,
-    badge: 'Across styles',
-    icon: 'M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5zm0 2c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z',
+    label: t('sportPlayingStyleManagement.summary.teams.badge'),
+    status: 'warning',
   },
 ])
 
@@ -72,26 +86,39 @@ async function loadPlayingStyles() {
     const response = await fetchSportPlayingStyles({ page: currentPage.value, perPage: pageSize })
     playingStyles.value = response.items || []
     totalPlayingStyles.value = response.pagination?.total || 0
-  } catch (error) {
-    console.error('Error loading playing styles:', error)
+  } catch {
+    // Error handling via API response
   } finally {
     loading.value = false
   }
 }
 
-async function onDeleteStyle(style) {
-  const confirmed = window.confirm(
-    `Are you sure you want to delete "${style.name}"?`,
-  )
-  if (confirmed) {
-    try {
-      await deleteSportPlayingStyle(style.id)
-      await loadPlayingStyles()
-    } catch (error) {
-      console.error('Error deleting playing style:', error)
-      alert('Failed to delete playing style')
-    }
+function onDeleteStyle(style) {
+  deletingStyle.value = style
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!deletingStyle.value) return
+
+  try {
+    deletingLoading.value = true
+    deleteError.value = ''
+    await deleteSportPlayingStyle(deletingStyle.value.id)
+    showDeleteConfirm.value = false
+    await loadPlayingStyles()
+  } catch {
+    deleteError.value = t('sportPlayingStyleManagement.errors.deleteFailed')
+  } finally {
+    deletingLoading.value = false
   }
+}
+
+function handleCancelDelete() {
+  showDeleteConfirm.value = false
+  deletingStyle.value = null
+  deleteError.value = ''
 }
 
 onMounted(() => {
@@ -104,61 +131,52 @@ onMounted(() => {
     <section class="playing-style-management-page">
       <HeaderSection :title="pageTitle" :subtitle="pageSubtitle" />
 
-      <div class="summary-cards-grid">
-        <div v-for="card in summaryCards" :key="card.id" class="summary-card">
-          <div class="summary-card-header">
-            <div>
-              <p class="summary-card-title">{{ card.title }}</p>
-              <p class="summary-card-value">{{ card.value }}</p>
-            </div>
-            <span class="summary-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path :d="card.icon" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-          </div>
-          <p class="summary-card-badge">{{ card.badge }}</p>
-        </div>
-      </div>
+      <StatsCards :cards="summaryCards" compact />
 
       <div class="shell">
         <div class="toolbar">
           <div>
-            <p class="toolbar-label">Playing Styles</p>
-            <p class="toolbar-summary">{{ playingStyles.length }} total</p>
+            <p class="toolbar-label">{{ t('sportPlayingStyleManagement.toolbar.label') }}</p>
+            <p class="toolbar-summary">{{ t('sportPlayingStyleManagement.toolbar.summary', { count: playingStyles.length }) }}</p>
           </div>
-          <button class="btn-primary" @click="goToAddStyle">
-            <span class="btn-icon">+</span>
-            New Style
-          </button>
+          <Button
+            type="button"
+            :label="t('sportPlayingStyleManagement.addButton')"
+            icon="pi pi-plus"
+            @click="goToAddStyle"
+          />
         </div>
 
-        <div v-if="playingStyles.length === 0" class="state-empty">
-          <p>No playing styles yet. Create one to get started.</p>
+        <div v-if="loading" class="state-loading">
+          <Loading />
+        </div>
+
+        <div v-else-if="playingStyles.length === 0" class="state-empty">
+          <p>{{ t('sportPlayingStyleManagement.table.noResults') }}</p>
         </div>
 
         <table v-else class="styles-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Teams</th>
-              <th>Actions</th>
+              <th>{{ t('sportPlayingStyleManagement.table.name') }}</th>
+              <th>{{ t('sportPlayingStyleManagement.table.status') }}</th>
+              <th>{{ t('sportPlayingStyleManagement.table.teams') }}</th>
+              <th>{{ t('sportPlayingStyleManagement.table.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="style in playingStyles" :key="style.id">
               <td class="name-cell">{{ style.name }}</td>
               <td>
-                <span :class="['status-badge', `status-${style.status}`]">
-                  {{ style.status }}
-                </span>
+                <StatusBadge :status="style.status" size="sm" />
               </td>
               <td>{{ style.teamsCount }}</td>
               <td class="actions-cell">
-                <button class="btn-small" @click="onEditStyle(style)">Edit</button>
-                <button class="btn-small btn-danger" @click="onDeleteStyle(style)">
-                  Delete
+                <button type="button" class="btn-small" @click="onEditStyle(style)">
+                  {{ t('sportPlayingStyleManagement.table.edit') }}
+                </button>
+                <button type="button" class="btn-small btn-danger" @click="onDeleteStyle(style)">
+                  {{ t('sportPlayingStyleManagement.table.delete') }}
                 </button>
               </td>
             </tr>
@@ -172,6 +190,27 @@ onMounted(() => {
             @change="loadPlayingStyles"
           />
         </div>
+
+        <!-- Delete Confirmation Dialog -->
+        <AlertQuestion
+          :show="showDeleteConfirm"
+          :title="t('sportPlayingStyleManagement.confirmDelete.title')"
+          :message="deletingStyle ? t('sportAdminSharedMessages.confirmations.deleteItem', { itemName: deletingStyle.name }) : ''"
+          :confirm-text="t('common.delete')"
+          :cancel-text="t('common.cancel')"
+          :loading="deletingLoading"
+          type="danger"
+          @confirm="handleConfirmDelete"
+          @cancel="handleCancelDelete"
+        />
+
+        <!-- Delete Error Message -->
+        <AlertError
+          v-if="deleteError"
+          :show="true"
+          :message="deleteError"
+          @close="deleteError = ''"
+        />
       </div>
     </section>
   </MainLayout>

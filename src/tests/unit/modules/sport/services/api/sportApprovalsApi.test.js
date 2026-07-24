@@ -3,6 +3,7 @@ import http from '@/services/http'
 import {
   approvePendingMatch,
   approvePendingPlayer,
+  createCoachTeamAssignment,
   deactivateCoachTeamAssignment,
   fetchPendingMatches,
   fetchPendingPlayers,
@@ -10,6 +11,7 @@ import {
   rejectPendingMatch,
   rejectPendingPlayer,
   saveCoachTeamAssignment,
+  updateCoachTeamAssignment,
 } from '@/modules/sport/services/api/sportApprovalsApi'
 
 vi.mock('@/services/http', () => ({
@@ -63,10 +65,20 @@ describe('sport approvals api', () => {
     await expect(listCoachTeamAssignments()).resolves.toMatchObject({ items: [{ id: 7, status: 'active' }] })
 
     http.post.mockResolvedValueOnce(stubResponse({ assignment: { id: 8 } }))
-    await expect(saveCoachTeamAssignment({ coach_user_id: 1, team_id: 2 })).resolves.toMatchObject({ assignment: { id: 8 } })
+    await expect(createCoachTeamAssignment({ coach_user_id: 1, team_id: 2 })).resolves.toMatchObject({ assignment: { id: 8 } })
 
     http.patch.mockResolvedValueOnce(stubResponse({ assignment: { id: 9 } }))
-    await expect(saveCoachTeamAssignment({ id: 9, status: 'inactive' })).resolves.toMatchObject({ assignment: { id: 9 } })
+    await expect(updateCoachTeamAssignment(9, { status: 'inactive' })).resolves.toMatchObject({ assignment: { id: 9 } })
+    expect(http.patch).toHaveBeenLastCalledWith(
+      '/sport/admin/coach-team-assignments/9',
+      expect.any(FormData),
+    )
+
+    http.post.mockResolvedValueOnce(stubResponse({ assignment: { id: 11 } }))
+    await expect(saveCoachTeamAssignment({ coach_user_id: 1, team_id: 2 })).resolves.toMatchObject({ assignment: { id: 11 } })
+
+    http.patch.mockResolvedValueOnce(stubResponse({ assignment: { id: 12 } }))
+    await expect(saveCoachTeamAssignment({ id: 12, status: 'active' })).resolves.toMatchObject({ assignment: { id: 12 } })
 
     http.delete.mockResolvedValueOnce(stubResponse(null))
     await expect(deactivateCoachTeamAssignment(10)).resolves.toBe(true)

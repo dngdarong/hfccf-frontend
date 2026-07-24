@@ -10,7 +10,6 @@ import sport from './sport'
 import preschool from './preschool'
 import english from './english'
 import reports from './reports/index.js'
-import assessment from './assessment'
 import governance from './governance'
 
 export default {
@@ -29,10 +28,9 @@ export default {
   },
   users,
   notifications,
-  reports,
   ...english,
   ...sport,
   ...preschool,
-  ...assessment,
   ...governance,
+  reports,
 }

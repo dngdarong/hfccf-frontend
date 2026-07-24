@@ -15,6 +15,7 @@ const mockSaveAssessment = vi.fn(() => Promise.resolve({ id: 21 }))
 const mockUpdateAssessment = vi.fn(() => Promise.resolve({ id: 21 }))
 const mockFinalizeAssessment = vi.fn(() => Promise.resolve({ id: 21 }))
 const mockArchiveAssessment = vi.fn(() => Promise.resolve({ id: 21 }))
+const mockGetCurrentUser = vi.fn()
 
 vi.mock('@/modules/preschool/composables/useAssessmentData', () => ({
   useAssessmentData: () => ({
@@ -48,13 +49,17 @@ vi.mock('@/modules/preschool/composables/useAssessmentReports', () => ({
   }),
 }))
 
+vi.mock('@/services/auth', () => ({
+  getCurrentUser: () => mockGetCurrentUser(),
+}))
+
 vi.mock('@/modules/preschool/stores/assessmentStore', () => ({
-  useAssessmentStore: () => ({
-    filters: {
-      studentId: null,
-      classId: null,
-      categoryId: null,
-      periodLabel: null,
+    useAssessmentStore: () => ({
+      filters: {
+        studentId: null,
+        classId: null,
+        categoryId: null,
+        periodLabel: null,
       status: 'all',
       searchQuery: '',
       dateFrom: null,
@@ -62,27 +67,28 @@ vi.mock('@/modules/preschool/stores/assessmentStore', () => ({
     },
     isFormOpen: ref(false),
     editingAssessment: ref(null),
-    saving: ref(false),
-    error: ref(null),
-    openCreateForm: vi.fn(),
-    openEditForm: vi.fn(),
-    closeForm: vi.fn(),
+      saving: ref(false),
+      error: ref(null),
+      openCreateForm: vi.fn(),
+      openEditForm: vi.fn(),
+      closeForm: vi.fn(),
     reset: vi.fn(),
     setFilter: vi.fn(),
     resetFilters: vi.fn(),
     saveAssessment: mockSaveAssessment,
-    updateAssessment: mockUpdateAssessment,
-    finalize: mockFinalizeAssessment,
-    archive: mockArchiveAssessment,
-    assessments: ref([]),
-  }),
-}))
+      updateAssessment: mockUpdateAssessment,
+      finalize: mockFinalizeAssessment,
+      archive: mockArchiveAssessment,
+      assessments: ref([]),
+      filteredAssessments: [{ id: 11, status: 'draft', score: 78, student: { fullName: 'Alice Student' } }],
+    }),
+  }))
 
 function stubs() {
   return {
     MainLayout: { template: '<div><slot /></div>' },
     HeaderSection: { props: ['title', 'subtitle'], template: '<header><h1>{{ title }}</h1><p>{{ subtitle }}</p></header>' },
-    Button: { template: '<button><slot /></button>' },
+    Button: { props: ['label'], template: '<button>{{ label }}<slot /></button>' },
     Select: { template: '<div class="select-stub" />' },
     DataTable: { template: '<div class="datatable-stub"><slot /></div>' },
     Column: { template: '<div class="column-stub"><slot /></div>' },
@@ -101,10 +107,12 @@ function stubs() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockGetCurrentUser.mockReturnValue({ role: 'teacher-preschool' })
 })
 
 describe('Preschool assessment pages', () => {
   it('mounts the assessment dashboard workspace', async () => {
+    mockGetCurrentUser.mockReturnValue({ role: 'teacher-preschool' })
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -123,6 +131,29 @@ describe('Preschool assessment pages', () => {
     expect(mockLoadLookupData).toHaveBeenCalled()
     expect(wrapper.text()).toContain('Assessment Dashboard')
     expect(wrapper.text()).toContain('Workspace Navigation')
+    expect(wrapper.text()).not.toContain('Workspace Settings')
+    expect(warnSpy).not.toHaveBeenCalled()
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it('shows the assessment settings action only for admin users', async () => {
+    mockGetCurrentUser.mockReturnValue({ role: 'adminpreschool' })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const wrapper = mountWithPlugins(AssessmentDashboard, {
+      messages: {
+        en: { common: enCommon, ...enPreschool },
+        kh: { common: enCommon, ...khPreschool },
+      },
+      global: {
+        stubs: stubs(),
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Workspace Settings')
     expect(warnSpy).not.toHaveBeenCalled()
     expect(errorSpy).not.toHaveBeenCalled()
   })
@@ -145,7 +176,7 @@ describe('Preschool assessment pages', () => {
 
     expect(mockLoadLookupData).toHaveBeenCalled()
     expect(wrapper.text()).toContain('Assessment List')
-    expect(wrapper.text()).toContain('Choose a student to begin.')
+    expect(wrapper.text()).toContain('Select a student to view or create assessments.')
     expect(warnSpy).not.toHaveBeenCalled()
     expect(errorSpy).not.toHaveBeenCalled()
   })
@@ -173,5 +204,3 @@ describe('Preschool assessment pages', () => {
     expect(errorSpy).not.toHaveBeenCalled()
   })
 })
-
-

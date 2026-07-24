@@ -17,7 +17,21 @@ export function filterPlayers(
     let isMatch = true
 
     if (query) {
-      const haystack = normalize(player.name)
+      const haystack = normalize(
+        [
+          player.playerCode,
+          player.name,
+          player.position,
+          player.primaryPosition,
+          player.team,
+          player.division,
+          player.status,
+          player.phone,
+          player.jerseyNumber,
+        ]
+          .filter((value) => value !== undefined && value !== null)
+          .join(' '),
+      )
       isMatch = haystack.includes(query)
     }
 

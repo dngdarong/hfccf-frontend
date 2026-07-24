@@ -1,5 +1,54 @@
-import http from '@/services/http'
-import { unwrapApiData, unwrapApiItems, unwrapApiPagination } from '@/services/api'
+const PAYMENT_SETTINGS_STORAGE_KEY = 'hfccf.preschool.payment-settings'
+const FEE_TYPES_STORAGE_KEY = 'hfccf.preschool.payment-fee-types'
+const PAYMENT_METHODS_STORAGE_KEY = 'hfccf.preschool.payment-methods'
+const BILLING_RULES_STORAGE_KEY = 'hfccf.preschool.payment-billing-rules'
+
+const DEFAULT_PAYMENT_SETTINGS = {
+  invoicePrefix: 'INV',
+  receiptPrefix: 'RCT',
+  nextInvoiceNumber: 1,
+  nextReceiptNumber: 1,
+  lateFeeEnabled: true,
+  lateFeeType: 'fixed',
+  lateFeeAmount: 5,
+  gracePeriodDays: 5,
+  prorationEnabled: false,
+}
+
+const DEFAULT_BILLING_RULES = [
+  {
+    id: 'due_day_of_month',
+    ruleName: 'Due Day',
+    ruleCode: 'due_day_of_month',
+    ruleValue: '1',
+    description: '',
+    isActive: true,
+  },
+  {
+    id: 'grace_period_days',
+    ruleName: 'Grace Period',
+    ruleCode: 'grace_period_days',
+    ruleValue: '5',
+    description: '',
+    isActive: true,
+  },
+  {
+    id: 'invoice_generation_day',
+    ruleName: 'Invoice Generation Day',
+    ruleCode: 'invoice_generation_day',
+    ruleValue: '1',
+    description: '',
+    isActive: true,
+  },
+  {
+    id: 'late_fee_enabled',
+    ruleName: 'Late Fee Enabled',
+    ruleCode: 'late_fee_enabled',
+    ruleValue: 'true',
+    description: '',
+    isActive: true,
+  },
+]
 
 function normalizeText(value) {
   return String(value ?? '').trim()
@@ -25,15 +74,47 @@ function resolveId(input) {
   return String(input?.id || '').trim()
 }
 
-function unwrapRecord(payload = {}, keys = []) {
-  for (const key of keys) {
-    const value = payload?.[key]
-    if (value && typeof value === 'object') {
-      return value
+function readStoredJson(key, fallback) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return fallback
     }
-  }
 
-  return payload
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+
+    return JSON.parse(raw)
+  } catch {
+    return fallback
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Ignore storage failures and keep the page usable.
+  }
+}
+
+function cloneRows(rows = []) {
+  return Array.isArray(rows) ? rows.map((row) => ({ ...row })) : []
+}
+
+function createEmptyListResponse(items = []) {
+  return {
+    items,
+    pagination: {
+      page: 1,
+      perPage: Math.max(items.length, 1),
+      total: items.length,
+      totalPages: items.length ? 1 : 0,
+    },
+  }
 }
 
 function resolveStatus(record = {}) {
@@ -122,19 +203,6 @@ export function normalizeBillingRule(record = {}) {
   }
 }
 
-function normalizeListResponse(response, normalizer, fallbackPage = 1, fallbackPerPage = 20) {
-  const items = unwrapApiItems(response)
-  return {
-    items: items.map(normalizer),
-    pagination: unwrapApiPagination(response, fallbackPage, fallbackPerPage, items.length),
-  }
-}
-
-function normalizeRecordResponse(response, keys) {
-  const payload = unwrapApiData(response) || {}
-  return unwrapRecord(payload, keys)
-}
-
 function buildPaymentSettingsPayload(settings = {}) {
   return {
     invoice_prefix: normalizeText((settings.invoicePrefix ?? settings.invoice_prefix) || 'INV'),
@@ -171,108 +239,153 @@ function buildPaymentMethodPayload(method = {}) {
   }
 }
 
-function buildBillingRulesPayload(rules = []) {
-  return {
-    rules: Array.isArray(rules)
-      ? rules.map((rule) => ({
-        rule_name: normalizeText(rule.ruleName ?? rule.rule_name),
-        rule_code: normalizeText(rule.ruleCode ?? rule.rule_code),
-        rule_value: normalizeText(rule.ruleValue ?? rule.rule_value),
-        description: normalizeText(rule.description),
-        is_active: normalizeBoolean(rule.isActive ?? rule.is_active, true),
-      }))
-      : [],
-  }
-}
-
 export async function fetchPaymentSettings(options = {}) {
-  const response = await http.get('/preschool/settings/payments', {
-    signal: options.signal,
-  })
-
-  const payload = unwrapApiData(response) || {}
-  return normalizePaymentSettings(payload.settings || payload)
+  void options.signal
+  return normalizePaymentSettings(
+    readStoredJson(PAYMENT_SETTINGS_STORAGE_KEY, DEFAULT_PAYMENT_SETTINGS),
+  )
 }
 
 export async function updatePaymentSettings(settings = {}) {
-  const response = await http.put('/preschool/settings/payments', buildPaymentSettingsPayload(settings))
-  const payload = unwrapApiData(response) || {}
-  return normalizePaymentSettings(payload.settings || payload)
+  const payload = buildPaymentSettingsPayload(settings)
+  const next = normalizePaymentSettings({
+    ...DEFAULT_PAYMENT_SETTINGS,
+    ...readStoredJson(PAYMENT_SETTINGS_STORAGE_KEY, DEFAULT_PAYMENT_SETTINGS),
+    invoicePrefix: payload.invoice_prefix,
+    receiptPrefix: payload.receipt_prefix,
+    nextInvoiceNumber: payload.next_invoice_number,
+    nextReceiptNumber: payload.next_receipt_number,
+    lateFeeEnabled: payload.late_fee_enabled,
+    lateFeeType: payload.late_fee_type,
+    lateFeeAmount: payload.late_fee_amount,
+    gracePeriodDays: payload.grace_period_days,
+    prorationEnabled: payload.proration_enabled,
+  })
+
+  writeStoredJson(PAYMENT_SETTINGS_STORAGE_KEY, next)
+  return next
 }
 
 export async function fetchFeeTypes(options = {}) {
-  const response = await http.get('/preschool/settings/payments/fee-types', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizeFeeType)
+  void options.signal
+  return createEmptyListResponse(
+    cloneRows(readStoredJson(FEE_TYPES_STORAGE_KEY, [])),
+  )
 }
 
 export async function createFeeType(feeType = {}) {
-  const response = await http.post('/preschool/settings/payments/fee-types', buildFeeTypePayload(feeType))
-  const payload = unwrapApiData(response) || {}
-  return normalizeFeeType(normalizeRecordResponse(response, ['fee_type', 'feeType', 'data']) || payload)
+  const next = normalizeFeeType({
+    id: resolveId(feeType) || Date.now().toString(),
+    ...buildFeeTypePayload(feeType),
+    status: normalizeBoolean(feeType.isActive ?? feeType.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = cloneRows(readStoredJson(FEE_TYPES_STORAGE_KEY, []))
+  items.unshift(next)
+  writeStoredJson(FEE_TYPES_STORAGE_KEY, items)
+  return next
 }
 
 export async function updateFeeType(feeTypeOrId, feeType = {}) {
   const feeTypeId = resolveId(feeTypeOrId)
-  const response = await http.put(
-    `/preschool/settings/payments/fee-types/${encodeURIComponent(feeTypeId)}`,
-    buildFeeTypePayload(feeType),
-  )
-  const payload = unwrapApiData(response) || {}
-  return normalizeFeeType(normalizeRecordResponse(response, ['fee_type', 'feeType', 'data']) || payload)
+  const next = normalizeFeeType({
+    id: feeTypeId,
+    ...buildFeeTypePayload(feeType),
+    status: normalizeBoolean(feeType.isActive ?? feeType.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = cloneRows(readStoredJson(FEE_TYPES_STORAGE_KEY, []))
+  const index = items.findIndex((item) => String(item.id) === String(feeTypeId))
+  if (index >= 0) {
+    items.splice(index, 1, next)
+  } else {
+    items.unshift(next)
+  }
+  writeStoredJson(FEE_TYPES_STORAGE_KEY, items)
+  return next
 }
 
 export async function archiveFeeType(feeTypeOrId) {
   const feeTypeId = resolveId(feeTypeOrId)
-  const response = await http.post(`/preschool/settings/payments/fee-types/${encodeURIComponent(feeTypeId)}/archive`)
-  const payload = unwrapApiData(response) || {}
-  return normalizeFeeType(normalizeRecordResponse(response, ['fee_type', 'feeType', 'data']) || payload)
+  const items = cloneRows(readStoredJson(FEE_TYPES_STORAGE_KEY, []))
+  const index = items.findIndex((item) => String(item.id) === String(feeTypeId))
+  if (index >= 0) {
+    items[index] = normalizeFeeType({
+      ...items[index],
+      isActive: false,
+      status: 'archived',
+    })
+    writeStoredJson(FEE_TYPES_STORAGE_KEY, items)
+    return items[index]
+  }
+
+  return normalizeFeeType({ id: feeTypeId, isActive: false, status: 'archived' })
 }
 
 export async function fetchPaymentMethods(options = {}) {
-  const response = await http.get('/preschool/settings/payments/payment-methods', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizePaymentMethod)
+  void options.signal
+  return createEmptyListResponse(
+    cloneRows(readStoredJson(PAYMENT_METHODS_STORAGE_KEY, [])),
+  )
 }
 
 export async function createPaymentMethod(method = {}) {
-  const response = await http.post('/preschool/settings/payments/payment-methods', buildPaymentMethodPayload(method))
-  const payload = unwrapApiData(response) || {}
-  return normalizePaymentMethod(normalizeRecordResponse(response, ['payment_method', 'paymentMethod', 'data']) || payload)
+  const next = normalizePaymentMethod({
+    id: resolveId(method) || Date.now().toString(),
+    ...buildPaymentMethodPayload(method),
+    status: normalizeBoolean(method.isActive ?? method.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = cloneRows(readStoredJson(PAYMENT_METHODS_STORAGE_KEY, []))
+  items.unshift(next)
+  writeStoredJson(PAYMENT_METHODS_STORAGE_KEY, items)
+  return next
 }
 
 export async function updatePaymentMethod(methodOrId, method = {}) {
   const methodId = resolveId(methodOrId)
-  const response = await http.put(
-    `/preschool/settings/payments/payment-methods/${encodeURIComponent(methodId)}`,
-    buildPaymentMethodPayload(method),
-  )
-  const payload = unwrapApiData(response) || {}
-  return normalizePaymentMethod(normalizeRecordResponse(response, ['payment_method', 'paymentMethod', 'data']) || payload)
+  const next = normalizePaymentMethod({
+    id: methodId,
+    ...buildPaymentMethodPayload(method),
+    status: normalizeBoolean(method.isActive ?? method.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = cloneRows(readStoredJson(PAYMENT_METHODS_STORAGE_KEY, []))
+  const index = items.findIndex((item) => String(item.id) === String(methodId))
+  if (index >= 0) {
+    items.splice(index, 1, next)
+  } else {
+    items.unshift(next)
+  }
+  writeStoredJson(PAYMENT_METHODS_STORAGE_KEY, items)
+  return next
 }
 
 export async function archivePaymentMethod(methodOrId) {
   const methodId = resolveId(methodOrId)
-  const response = await http.post(`/preschool/settings/payments/payment-methods/${encodeURIComponent(methodId)}/archive`)
-  const payload = unwrapApiData(response) || {}
-  return normalizePaymentMethod(normalizeRecordResponse(response, ['payment_method', 'paymentMethod', 'data']) || payload)
+  const items = cloneRows(readStoredJson(PAYMENT_METHODS_STORAGE_KEY, []))
+  const index = items.findIndex((item) => String(item.id) === String(methodId))
+  if (index >= 0) {
+    items[index] = normalizePaymentMethod({
+      ...items[index],
+      isActive: false,
+      status: 'archived',
+    })
+    writeStoredJson(PAYMENT_METHODS_STORAGE_KEY, items)
+    return items[index]
+  }
+
+  return normalizePaymentMethod({ id: methodId, isActive: false, status: 'archived' })
 }
 
 export async function fetchBillingRules(options = {}) {
-  const response = await http.get('/preschool/settings/payments/billing-rules', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizeBillingRule)
+  void options.signal
+  const stored = readStoredJson(BILLING_RULES_STORAGE_KEY, DEFAULT_BILLING_RULES)
+  return createEmptyListResponse(cloneRows(stored).map(normalizeBillingRule))
 }
 
 export async function updateBillingRules(rules = []) {
-  const response = await http.put('/preschool/settings/payments/billing-rules', buildBillingRulesPayload(rules))
-  const payload = unwrapApiData(response) || {}
-  const items = Array.isArray(payload.items) ? payload.items : Array.isArray(payload.rules) ? payload.rules : []
-  return items.map(normalizeBillingRule)
+  const next = Array.isArray(rules) ? rules.map(normalizeBillingRule) : []
+  writeStoredJson(BILLING_RULES_STORAGE_KEY, next)
+  return next
 }

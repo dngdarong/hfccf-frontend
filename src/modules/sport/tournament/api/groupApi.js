@@ -1,46 +1,31 @@
-import http from '@/services/http'
 import {
-  buildTournamentGroupsDrawPayload,
-  normalizeTournamentGroupsResponse,
-} from './groupMappers'
+  fetchTournamentGroups,
+  drawTournamentGroups as apiDrawTournamentGroups,
+  finalizeTournamentGroups as apiFinalizeTournamentGroups,
+} from './tournamentApi'
+import { buildTournamentGroupsDrawPayload } from './groupMappers'
 
 export async function getTournamentGroups(tournamentId, options = {}) {
-  const id = String(tournamentId ?? '').trim()
-  if (!id) return normalizeTournamentGroupsResponse({}, options.fallbackTournament || null)
-
-  const response = await http.get(`/sport/tournaments/${encodeURIComponent(id)}/groups`, {
-    signal: options.signal,
-  })
-
-  return normalizeTournamentGroupsResponse(response, options.fallbackTournament || null)
+  const response = await fetchTournamentGroups(tournamentId, options)
+  return {
+    ...response,
+    groupDraw: {
+      groups: response.groups,
+      locked: response.groups.every((group) => group.finalized),
+      settings: {
+        groupCount: response.groups.length,
+        qualificationCount: response.groups[0]?.qualificationSlots || 1,
+      },
+    },
+  }
 }
 
 export async function drawTournamentGroups(tournamentId, payload = {}, options = {}) {
-  const id = String(tournamentId ?? '').trim()
-  if (!id) return normalizeTournamentGroupsResponse({}, options.fallbackTournament || null)
-
-  const response = await http.post(
-    `/sport/tournaments/${encodeURIComponent(id)}/groups/draw`,
-    buildTournamentGroupsDrawPayload(payload),
-    {
-      signal: options.signal,
-    },
-  )
-
-  return normalizeTournamentGroupsResponse(response, options.fallbackTournament || null)
+  const response = await apiDrawTournamentGroups(tournamentId, buildTournamentGroupsDrawPayload(payload), options)
+  return { ...response, groupDraw: { groups: response.groups, locked: false, settings: { groupCount: response.groups.length, qualificationCount: response.groups[0]?.qualificationSlots || 1 } } }
 }
 
 export async function finalizeTournamentGroups(tournamentId, options = {}) {
-  const id = String(tournamentId ?? '').trim()
-  if (!id) return normalizeTournamentGroupsResponse({}, options.fallbackTournament || null)
-
-  const response = await http.post(
-    `/sport/tournaments/${encodeURIComponent(id)}/groups/finalize`,
-    {},
-    {
-      signal: options.signal,
-    },
-  )
-
-  return normalizeTournamentGroupsResponse(response, options.fallbackTournament || null)
+  const response = await apiFinalizeTournamentGroups(tournamentId, {}, options)
+  return { ...response, groupDraw: { groups: response.groups, locked: true, settings: { groupCount: response.groups.length, qualificationCount: response.groups[0]?.qualificationSlots || 1 } } }
 }

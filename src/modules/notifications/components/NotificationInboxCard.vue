@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Loading from '@/components/feedback/Loading.vue'
 import NotificationItem from '@/modules/notifications/components/NotificationItem.vue'
 import NotificationEmptyState from '@/modules/notifications/components/NotificationEmptyState.vue'
@@ -203,3 +203,4 @@ function notificationKey(item, index) {
   }
 }
 </style>
+

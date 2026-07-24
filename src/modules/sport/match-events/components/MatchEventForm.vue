@@ -332,7 +332,7 @@ function onSubmit() {
     </div>
 
     <div class="flex items-center justify-end gap-2">
-      <Button type="submit" variant="solid" size="md" :loading="loading" :disabled="readonly || loading">
+      <Button type="submit" variant="primary" size="md" :loading="loading" :disabled="readonly || loading">
         {{ form.id ? t('sportMatchesManagement.resultsEntry.events.updateEvent') : t('sportMatchesManagement.resultsEntry.events.addEvent') }}
       </Button>
     </div>

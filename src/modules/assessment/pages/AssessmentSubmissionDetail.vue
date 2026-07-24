@@ -5,9 +5,9 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Button from '@/components/buttons/Button.vue'
 import Tag from 'primevue/tag'
-import Dropdown from 'primevue/dropdown'
 import Divider from 'primevue/divider'
 import Textarea from 'primevue/textarea'
+import Select from 'primevue/select'
 import { useLanguage } from '@/composables/useLanguage'
 import { assessmentSubmissionApi } from '../services/assessmentSubmissionApi'
 import { assessmentPrintApi } from '../services/assessmentPrintApi'
@@ -227,7 +227,7 @@ watch(selectedPrintTemplateId, () => {
               <p>{{ t('printDesigner.preview.subtitle') }}</p>
             </div>
             <div class="submission-print__actions">
-              <Dropdown
+              <Select
                 v-model="selectedPrintTemplateId"
                 :options="previewTemplateOptions"
                 option-label="label"

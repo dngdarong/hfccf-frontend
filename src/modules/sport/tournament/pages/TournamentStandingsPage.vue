@@ -1,7 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import { useLanguage } from '@/composables/useLanguage'
@@ -12,6 +12,7 @@ import TournamentFixtureGroupTabs from '@/modules/sport/tournament/components/fi
 import { getTournamentStateMeta } from '@/modules/sport/tournament/composables/useTournamentStateMachine'
 import { useTournamentCatalog } from '@/modules/sport/tournament/composables/useTournamentCatalog'
 import { useTournamentStandings } from '@/modules/sport/tournament/composables/useTournamentStandings'
+import { fetchTournamentStandings, recalculateTournamentStandings } from '@/modules/sport/tournament/api/tournamentApi'
 
 defineOptions({
   name: 'SportTournamentStandingsPage',
@@ -20,10 +21,12 @@ defineOptions({
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
-const { getTournamentById } = useTournamentCatalog()
+const { getTournamentById, loadTournament, setTournamentRecord } = useTournamentCatalog()
 
 const tournamentId = computed(() => String(route.params.id || '').trim())
 const tournament = computed(() => (tournamentId.value ? getTournamentById(tournamentId.value) : null))
+const isRecalculating = ref(false)
+const errorMessage = ref('')
 const stateMeta = computed(() => getTournamentStateMeta(tournament.value?.state))
 
 const {
@@ -56,6 +59,29 @@ function goToResults() {
   if (!tournament.value?.id) return
   router.push({ name: 'dashboard-sport-admin-tournaments-results', params: { id: tournament.value.id } })
 }
+
+onMounted(async () => {
+  if (!tournamentId.value) return
+  const detail = await loadTournament(tournamentId.value)
+  const result = await fetchTournamentStandings(tournamentId.value)
+  setTournamentRecord({ ...detail, standings: result.standings })
+})
+
+async function recalculate() {
+  if (isRecalculating.value || !tournamentId.value) return
+  isRecalculating.value = true
+  errorMessage.value = ''
+  try {
+    await recalculateTournamentStandings(tournamentId.value)
+    const detail = await loadTournament(tournamentId.value)
+    const result = await fetchTournamentStandings(tournamentId.value)
+    setTournamentRecord({ ...detail, standings: result.standings })
+  } catch (cause) {
+    errorMessage.value = cause?.message || t('sportTournament.standings.notFoundMessage')
+  } finally {
+    isRecalculating.value = false
+  }
+}
 </script>
 
 <template>
@@ -64,6 +90,7 @@ function goToResults() {
       <HeaderSection :title="pageTitle" :subtitle="pageSubtitle" />
 
       <div v-if="tournament" class="sport-tournament-standings__content">
+        <p v-if="errorMessage" class="sport-tournament-standings__error" role="alert">{{ errorMessage }}</p>
         <div class="sport-tournament-standings__hero">
           <div class="sport-tournament-standings__hero-copy">
             <p class="sport-tournament-standings__page-label">{{ t('sportTournament.standings.title') }}</p>
@@ -101,6 +128,7 @@ function goToResults() {
             <Button type="button" class="rounded-xl" outlined :label="t('sportTournament.standings.backToDetail')" @click="goBack" />
             <Button type="button" class="rounded-xl" outlined :label="t('sportTournament.standings.goToFixtures')" @click="goToFixtures" />
             <Button type="button" class="rounded-xl" severity="info" :label="t('sportTournament.standings.goToResults')" @click="goToResults" />
+            <Button type="button" class="rounded-xl" severity="success" :label="t('sportTournament.standings.recalculate')" :disabled="isRecalculating" @click="recalculate" />
           </div>
         </div>
 
@@ -298,3 +326,4 @@ function goToResults() {
   }
 }
 </style>
+

@@ -10,8 +10,15 @@ import {
 
 export function useTournamentStandings(tournament) {
   const selectedGroupId = ref('')
-  const standingsSnapshot = computed(() => calculateTournamentStandings({ tournament: tournament?.value || tournament || {} }))
-  const groupStandings = computed(() => standingsSnapshot.value.groups)
+  const groupStandings = computed(() => {
+    const rows = Array.isArray((tournament?.value || tournament)?.standings) ? (tournament?.value || tournament).standings : []
+    return Object.values(rows.reduce((groups, row) => {
+      const id = String(row.groupId || 'overall')
+      groups[id] ||= { groupId: id, groupName: row.groupName || row.groupCode || id, rows: [] }
+      groups[id].rows.push(row)
+      return groups
+    }, {}))
+  })
 
   const groupOptions = computed(() =>
     groupStandings.value.map((group) => ({
@@ -45,8 +52,8 @@ export function useTournamentStandings(tournament) {
     groupStandings,
     groupOptions,
     selectedGroupStandings,
-    totalMatches: computed(() => standingsSnapshot.value.totalMatches),
-    completedMatches: computed(() => standingsSnapshot.value.completedMatches),
+    totalMatches: computed(() => Number((tournament?.value || tournament)?.matchesCount || 0)),
+    completedMatches: computed(() => groupStandings.value.reduce((total, group) => total + group.rows.reduce((sum, row) => sum + Number(row.played || 0), 0), 0)),
   }
 }
 

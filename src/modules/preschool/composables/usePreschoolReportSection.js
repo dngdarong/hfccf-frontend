@@ -14,9 +14,11 @@ export function usePreschoolReportSection(fetcher, exportSection, options = {}) 
   const filters = ref({
     academicYearId: '',
     termId: '',
+    reportPeriodId: '',
     dateFrom: '',
     dateTo: '',
     classId: '',
+    studentId: '',
     teacherId: '',
     status: '',
     ...options.defaultFilters,
@@ -46,7 +48,7 @@ export function usePreschoolReportSection(fetcher, exportSection, options = {}) 
   const selectedFormat = ref('csv')
 
   const visibleFilters = computed(() => options.visibleFilters || ['academicYear', 'term', 'dateRange', 'class', 'teacher', 'status'])
-  const filterOptions = computed(() => options.filterOptions || {})
+  const filterOptions = computed(() => report.value.filters || options.filterOptions || {})
 
   async function loadReport() {
     loading.value = true
@@ -88,15 +90,17 @@ export function usePreschoolReportSection(fetcher, exportSection, options = {}) 
   }
 
   function resetFilters() {
-    filters.value = {
-      academicYearId: '',
-      termId: '',
-      dateFrom: '',
-      dateTo: '',
-      classId: '',
-      teacherId: '',
-      status: '',
-      ...options.defaultFilters,
+      filters.value = {
+        academicYearId: '',
+        termId: '',
+        reportPeriodId: '',
+        dateFrom: '',
+        dateTo: '',
+        classId: '',
+        studentId: '',
+        teacherId: '',
+        status: '',
+        ...options.defaultFilters,
     }
 
     return loadReport()
@@ -109,12 +113,15 @@ export function usePreschoolReportSection(fetcher, exportSection, options = {}) 
     try {
       const payload = await exportReport(exportSection, selectedFormat.value, filters.value)
       if (typeof document !== 'undefined') {
-        const mimeType = selectedFormat.value === 'pdf'
-          ? 'application/pdf'
+        const mimeType = payload.mimeType || (selectedFormat.value === 'pdf'
+          ? 'text/html;charset=utf-8'
           : selectedFormat.value === 'excel'
             ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            : 'text/csv;charset=utf-8'
-        const blob = new Blob([payload.content || ''], { type: mimeType })
+            : 'text/csv;charset=utf-8')
+        const content = payload.encoding === 'base64' && typeof window !== 'undefined'
+          ? Uint8Array.from(window.atob(payload.content || ''), (char) => char.charCodeAt(0))
+          : payload.content || ''
+        const blob = new Blob([content], { type: mimeType })
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url

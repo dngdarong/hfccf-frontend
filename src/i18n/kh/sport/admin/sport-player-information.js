@@ -32,7 +32,9 @@ export default {
         deleteMessage: 'តើអ្នកប្រាកដថាចង់លុប {name} ទេ?',
         deletedMessage: 'បានលុប {name}។',
         defaultName: 'កីឡាករនេះ',
+        deleteFailed: 'មិនអាចលុបកីឡាករបាននៅពេលនេះទេ។',
       },
+      loadFailed: 'មិនអាចផ្ទុកបញ្ជីកីឡាករបាននៅពេលនេះទេ។',
       highlights: {
         visiblePlayers: 'កីឡាករដែលបង្ហាញ',
         divisions: 'ចំនួនកម្រិតប្រកួត',

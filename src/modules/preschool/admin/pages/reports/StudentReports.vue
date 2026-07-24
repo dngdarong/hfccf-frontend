@@ -8,7 +8,10 @@ import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Button from '@/components/buttons/Button.vue'
 import Select from 'primevue/select'
 import { useLanguage } from '@/composables/useLanguage'
-import { usePreschoolReports } from '@/modules/preschool/composables/usePreschoolReports'
+import {
+  PRESCHOOL_REPORT_PERIOD_TYPE_OPTIONS,
+  usePreschoolReports,
+} from '@/modules/preschool/composables/usePreschoolReports'
 import ReportPeriodStatusBadge from '@/modules/preschool/shared/components/report/ReportPeriodStatusBadge.vue'
 import StudentProgressReport from '@/modules/preschool/shared/components/report/StudentProgressReport.vue'
 
@@ -25,31 +28,51 @@ const {
   isTeacher,
   loadLookupData,
   loadStudentReport,
+  loadReportPeriodOptions,
   loading,
   reportBundle,
   reportPeriods,
   reportPeriodLockMessage,
   selectedReportPeriod,
+  selectedPeriodType,
   selectedPeriodLabel,
   selectedStudentId,
+  setSelectedPeriodType,
   setSelectedPeriodLabel,
   setSelectedStudentId,
   studentOptions,
 } = usePreschoolReports()
 
+const periodTypeOptions = PRESCHOOL_REPORT_PERIOD_TYPE_OPTIONS.map((option) => ({
+  ...option,
+  label: t(`preschoolReportsPage.periodTypes.${option.value}`),
+}))
+
 /** Load the report whenever the user picks a period — no separate "Refresh" needed. */
+async function refreshReport(studentId = selectedStudentId.value, periodLabel = selectedPeriodLabel.value, periodType = selectedPeriodType.value) {
+  if (studentId && periodLabel) {
+    await loadStudentReport(studentId, periodLabel, periodType)
+  }
+}
+
+async function handlePeriodTypeChange(periodType) {
+  setSelectedPeriodType(periodType)
+  setSelectedPeriodLabel('')
+  await loadReportPeriodOptions(selectedStudentId.value, periodType)
+  await refreshReport(selectedStudentId.value, selectedPeriodLabel.value || reportPeriods.value[0]?.label || '', periodType)
+}
+
 async function handlePeriodChange(label) {
   setSelectedPeriodLabel(label)
-  if (selectedStudentId.value && label) {
-    await loadStudentReport(selectedStudentId.value, label)
-  }
+  await refreshReport(selectedStudentId.value, label, selectedPeriodType.value)
 }
 
 /** Reset period and reload the period list when a different student is picked. */
 async function handleStudentChange(studentId) {
   setSelectedStudentId(studentId)
   setSelectedPeriodLabel('')
-  await loadStudentReport(studentId)
+  await loadReportPeriodOptions(studentId, selectedPeriodType.value)
+  await refreshReport(studentId, selectedPeriodLabel.value || reportPeriods.value[0]?.label || '', selectedPeriodType.value)
 }
 
 function goBack() {
@@ -61,14 +84,17 @@ function goBack() {
 onMounted(async () => {
   const studentId = String(route.query.studentId || '').trim()
   const periodLabel = String(route.query.period || '').trim()
+  const periodType = String(route.query.periodType || 'term').trim() || 'term'
 
   if (studentId) setSelectedStudentId(studentId)
   if (periodLabel) setSelectedPeriodLabel(periodLabel)
+  setSelectedPeriodType(periodType)
 
   await loadLookupData()
+  await loadReportPeriodOptions(selectedStudentId.value, periodType)
 
   if (selectedStudentId.value) {
-    await loadStudentReport(selectedStudentId.value, selectedPeriodLabel.value)
+    await loadStudentReport(selectedStudentId.value, selectedPeriodLabel.value || reportPeriods.value[0]?.label || '', periodType)
   }
 })
 </script>
@@ -86,6 +112,21 @@ onMounted(async () => {
            Period auto-loads the report on change — no separate Refresh step. -->
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('preschoolStudentReportsPage.filters.periodType') }}
+            </span>
+            <Select
+              :model-value="selectedPeriodType"
+              :options="periodTypeOptions"
+              option-label="label"
+              option-value="value"
+              class="w-full"
+              :placeholder="t('preschoolStudentReportsPage.placeholders.periodType')"
+              :disabled="loading"
+              @update:model-value="handlePeriodTypeChange"
+            />
+          </label>
 
           <!-- Student picker -->
           <label class="flex flex-col gap-1.5">

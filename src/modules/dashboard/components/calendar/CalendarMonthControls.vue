@@ -38,13 +38,13 @@ defineProps({
       <IconButton
         icon="pi pi-angle-left"
         :aria-label="prevLabel"
-        variant="soft"
+        variant="ghost"
         @click="$emit('previous')"
       />
       <IconButton
         icon="pi pi-angle-right"
         :aria-label="nextLabel"
-        variant="soft"
+        variant="ghost"
         @click="$emit('next')"
       />
       <button type="button" class="calendar-month-controls__today" @click="$emit('today')">

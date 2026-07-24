@@ -81,9 +81,41 @@ function stubs() {
     HeaderSection: { props: ['title', 'subtitle'], template: '<header><h1>{{ title }}</h1><p>{{ subtitle }}</p></header>' },
     Button: { props: ['label'], template: '<button>{{ label }}<slot /></button>' },
     PreschoolSettingsSectionCard: { template: '<section><slot /></section>' },
-    PreschoolAcademicYearManager: { template: '<div data-testid="year-manager" />' },
-    PreschoolTermManager: { template: '<div data-testid="term-manager" />' },
-    PreschoolAcademicYearDialog: { template: '<div data-testid="year-dialog" />' },
+    PreschoolAcademicYearManager: {
+      props: ['academicYears', 'currentContext', 'loading', 'saving'],
+      emits: ['open-add', 'open-edit', 'activate', 'close', 'archive'],
+      template: '<div data-testid="year-manager"><button type="button" @click="$emit(\'open-add\')">Add Academic Year</button></div>',
+    },
+    PreschoolTermManager: {
+      props: ['terms', 'loading', 'saving'],
+      emits: ['open-add', 'open-edit', 'activate', 'close', 'archive'],
+      template: '<div data-testid="term-manager" />',
+    },
+    PreschoolAcademicYearDialog: {
+      props: ['visible', 'title', 'draft', 'statusOptions', 'errors'],
+      emits: ['cancel', 'save', 'update:draft'],
+      template: `
+        <div v-if="visible" data-testid="year-dialog">
+          <span data-testid="year-status">{{ draft.status }}</span>
+          <span data-testid="year-error">{{ errors.status || '' }}</span>
+          <button
+            type="button"
+            data-testid="set-year-fields"
+            @click="$emit('update:draft', {
+              ...draft,
+              code: 'AY-2025-2026-DATE',
+              name: '2025 - 2026',
+              description: 'Date check',
+              startDate: new Date(2025, 0, 1),
+              endDate: new Date(2025, 11, 31),
+            })"
+          >
+            Set Year
+          </button>
+          <button type="button" data-testid="save-year" @click="$emit('save')">Save Academic Year</button>
+        </div>
+      `,
+    },
     PreschoolTermDialog: { template: '<div data-testid="term-dialog" />' },
   }
 }
@@ -106,5 +138,57 @@ describe('PreschoolAcademicSettingsPage', () => {
     expect(wrapper.text()).toContain('01/06/2025 - 31/08/2025')
     expect(wrapper.find('[data-testid="year-manager"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="term-manager"]').exists()).toBe(true)
+  })
+
+  it('defaults new academic years to a persisted status and submits date-only values', async () => {
+    const wrapper = mountWithPlugins(PreschoolAcademicSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-testid="year-manager"] button').trigger('click')
+    expect(wrapper.get('[data-testid="year-status"]').text()).toBe('active')
+
+    await wrapper.get('[data-testid="set-year-fields"]').trigger('click')
+    await wrapper.get('[data-testid="save-year"]').trigger('click')
+    await flushPromises()
+
+    expect(mockCreateYear).toHaveBeenCalledWith(expect.objectContaining({
+      code: 'AY-2025-2026-DATE',
+      name: '2025 - 2026',
+      description: 'Date check',
+      start_date: '2025-01-01',
+      end_date: '2025-12-31',
+      status: 'active',
+      is_current: false,
+    }))
+  })
+
+  it('maps backend validation errors onto the academic year dialog safely', async () => {
+    mockCreateYear.mockRejectedValueOnce({
+      response: {
+        data: {
+          errors: {
+            status: ['The selected status is invalid.'],
+          },
+        },
+      },
+    })
+
+    const wrapper = mountWithPlugins(PreschoolAcademicSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-testid="year-manager"] button').trigger('click')
+    await wrapper.get('[data-testid="set-year-fields"]').trigger('click')
+    await wrapper.get('[data-testid="save-year"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="year-error"]').text()).toContain('The selected status is invalid.')
   })
 })

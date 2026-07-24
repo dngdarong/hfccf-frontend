@@ -1,11 +1,11 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import Select from 'primevue/select'
-import Button from 'primevue/button'
 
 import Calendar from '@/assets/icons/Calendar.vue'
+import AppIconButton from '@/components/ui/AppIconButton.vue'
 import { useNavbarLocale } from '@/components/navigation/composables/useNavbarLocale'
-import { localePt, menuButtonPt } from '@/components/navigation/config/navbar.config'
+import { localePt } from '@/components/navigation/config/navbar.config'
 import NotificationBell from '@/modules/notifications/components/NotificationBell.vue'
 
 defineOptions({
@@ -71,20 +71,18 @@ function goToRoute(name) {
     </div>
 
     <div class="flex shrink-0 items-center gap-2 max-[768px]:gap-1.5 max-[480px]:gap-1">
-      <Button
+      <AppIconButton
         type="button"
-        severity="secondary"
-        text
-        rounded
-        class="icon-btn max-[480px]:hidden"
-        :pt="menuButtonPt"
+        variant="ghost"
+        size="md"
+        class="max-[480px]:hidden"
         :aria-label="calendarLabel"
         @click="goToRoute('calendar')"
       >
         <template #icon>
           <Calendar :size="18" />
         </template>
-      </Button>
+      </AppIconButton>
 
       <NotificationBell />
 

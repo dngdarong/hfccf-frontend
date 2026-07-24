@@ -213,4 +213,24 @@ describe('PreschoolAttendanceSettingsPage', () => {
 
     expect(archiveCalendarEventDraft).toHaveBeenCalledWith(1)
   })
+
+  it('shows a safe error state when attendance configuration loading fails', async () => {
+    loadAttendanceConfiguration.mockRejectedValueOnce(new Error('API endpoint not found.'))
+    getCalendarEventsCount.mockReturnValue(0)
+    getAttendanceConfigurationSnapshot.mockReturnValue({
+      settings: createDefaultAttendanceSettings(),
+      calendarEvents: [],
+    })
+
+    const wrapper = mountWithPlugins(PreschoolAttendanceSettingsPage, {
+      messages: { en: enPreschool },
+      global: { stubs: stubs() },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="attendance-settings-error"]').text()).toContain('API endpoint not found.')
+    expect(wrapper.text()).not.toContain('National Holiday')
+    expect(wrapper.text()).toContain('Calendar Events: 0')
+  })
 })

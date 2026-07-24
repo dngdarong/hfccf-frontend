@@ -9,13 +9,8 @@ export default {
     excused: 'Excused',
     excusedShort: 'E',
   },
-  sportAttendanceType: {
-    player: 'Player',
-    coach: 'Coach',
-  },
   sportAttendanceShared: {
     playersEyebrow: 'Players',
-    coachesEyebrow: 'Coaches',
     historyEyebrow: 'History',
     progress: 'Progress',
     activeFilters: 'Active filters',
@@ -23,15 +18,11 @@ export default {
   },
   sportAttendanceHubPage: {
     title: 'Attendance Management',
-    subtitle: 'Track player and coach attendance, then review records from a single workflow.',
+    subtitle: 'Track player attendance, then review records from a single workflow.',
     cards: {
       players: {
         title: 'Player Attendance',
         description: 'Mark daily attendance for athletes by team.',
-      },
-      coaches: {
-        title: 'Coach Attendance',
-        description: 'Record attendance for active coaches each day.',
       },
       idcard: {
         title: 'Generate ID Card',
@@ -39,7 +30,7 @@ export default {
       },
       history: {
         title: 'Attendance History',
-        description: 'Review saved attendance records by type, team, and date.',
+        description: 'Review saved attendance records by team and date.',
       },
     },
   },
@@ -53,9 +44,12 @@ export default {
     placeholders: {
       team: 'Select a team',
       note: 'Add a note',
+      reason: 'Reason (optional)',
     },
     columns: {
       player: 'Player',
+      dateOfBirth: 'Date of Birth',
+      gender: 'Gender',
       status: 'Status',
       note: 'Note',
     },
@@ -77,55 +71,28 @@ export default {
       skippedNote: 'Only players with a selected status will be saved.',
     },
   },
-  sportAdminCoachAttendancePage: {
-    title: 'Coach Attendance',
-    subtitle: 'Mark attendance for coaches for the selected date.',
-    filters: {
-      date: 'Date',
-    },
-    placeholders: {
-      note: 'Add a note',
-    },
-    columns: {
-      coach: 'Coach',
-      status: 'Status',
-      note: 'Note',
-    },
-    summary: '{marked} of {total} coaches marked',
-    actions: {
-      back: 'Back',
-      markAllPresent: 'Mark All Present',
-      markAllAbsent: 'Mark All Absent',
-      clearAll: 'Clear All',
-      saving: 'Saving...',
-      save: 'Save Attendance',
-    },
+  sportCoachPlayerAttendancePage: {
+    title: 'Player Attendance',
+    subtitle: 'Choose one of your assigned teams and mark each player for the selected date.',
     messages: {
-      noCoaches: 'No coaches were found.',
-      loadFailed: 'Unable to load coach attendance.',
-      saveFailed: 'Unable to save coach attendance.',
-      saved: 'Coach attendance saved.',
-      skippedNote: 'Only coaches with a selected status will be saved.',
+      noTeams: 'No active team assignments were found for your account.',
     },
   },
   sportAdminAttendanceHistoryPage: {
     title: 'Attendance History',
-    subtitle: 'Search attendance records by person type, team, and date range.',
+    subtitle: 'Search player attendance records by team and date range.',
     filters: {
-      type: 'Type',
       team: 'Team',
       from: 'From',
       to: 'To',
       search: 'Search',
     },
     placeholders: {
-      type: 'Choose a type',
       team: 'All teams',
       search: 'Search by name or note',
     },
     columns: {
       date: 'Date',
-      type: 'Type',
       team: 'Team',
       person: 'Person',
       status: 'Status',

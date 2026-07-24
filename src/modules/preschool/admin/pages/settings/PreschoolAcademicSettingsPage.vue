@@ -10,6 +10,7 @@ import PreschoolAcademicYearManager from '@/modules/preschool/shared/components/
 import PreschoolSettingsSectionCard from '@/modules/preschool/shared/components/settings/PreschoolSettingsSectionCard.vue'
 import PreschoolTermDialog from '@/modules/preschool/shared/components/settings/PreschoolTermDialog.vue'
 import PreschoolTermManager from '@/modules/preschool/shared/components/settings/PreschoolTermManager.vue'
+import { formatLifecycleDate } from './utils/preschoolSettingsHelpers'
 
 defineOptions({
   name: 'PreschoolAcademicSettingsPage',
@@ -51,7 +52,6 @@ const termDraftErrors = ref({})
 const editingTermIndex = ref(-1)
 
 const statusOptions = computed(() => [
-  { label: t('preschoolAcademicSettingsPage.statuses.draft'), value: 'draft' },
   { label: t('preschoolAcademicSettingsPage.statuses.active'), value: 'active' },
   { label: t('preschoolAcademicSettingsPage.statuses.closed'), value: 'closed' },
   { label: t('preschoolAcademicSettingsPage.statuses.archived'), value: 'archived' },
@@ -73,7 +73,7 @@ function createAcademicYearDraft() {
     description: '',
     startDate: null,
     endDate: null,
-    status: 'draft',
+    status: 'active',
     isCurrent: false,
   }
 }
@@ -87,7 +87,7 @@ function createTermDraft() {
     description: '',
     startDate: null,
     endDate: null,
-    status: 'draft',
+    status: 'active',
     isCurrent: false,
   }
 }
@@ -197,7 +197,7 @@ function openEditYear(index) {
     description: nextYear.description || nextYear.notes || '',
     startDate: nextYear.startDate ? new Date(nextYear.startDate) : null,
     endDate: nextYear.endDate ? new Date(nextYear.endDate) : null,
-    status: nextYear.status || 'draft',
+    status: nextYear.status || 'active',
     isCurrent: Boolean(nextYear.isCurrent),
   }
   yearDraftErrors.value = {}
@@ -215,23 +215,44 @@ async function saveYearDraft() {
   yearDraftErrors.value = result.errors
   if (!result.isValid) return
 
+  errorMessage.value = ''
+
   const payload = {
     code: String(yearDraft.value.code || '').trim(),
     name: String(yearDraft.value.name || '').trim(),
     description: String(yearDraft.value.description || '').trim(),
-    start_date: formatIsoDate(yearDraft.value.startDate),
-    end_date: formatIsoDate(yearDraft.value.endDate),
+    start_date: formatLifecycleDate(yearDraft.value.startDate),
+    end_date: formatLifecycleDate(yearDraft.value.endDate),
     status: yearDraft.value.status,
     is_current: Boolean(yearDraft.value.isCurrent),
   }
 
-  if (yearDialogMode.value === 'edit' && editingYearIndex.value > -1) {
-    await updateYear(yearDraft.value.id, payload)
-  } else {
-    await createYear(payload)
-  }
+  try {
+    if (yearDialogMode.value === 'edit' && editingYearIndex.value > -1) {
+      await updateYear(yearDraft.value.id, payload)
+    } else {
+      await createYear(payload)
+    }
 
-  closeYearDialog()
+    closeYearDialog()
+  } catch (error) {
+    const validationErrors = mapBackendValidationErrors(error, {
+      code: 'code',
+      name: 'name',
+      description: 'description',
+      start_date: 'startDate',
+      end_date: 'endDate',
+      status: 'status',
+      is_current: 'isCurrent',
+    })
+
+    if (Object.keys(validationErrors).length > 0) {
+      yearDraftErrors.value = validationErrors
+      return
+    }
+
+    errorMessage.value = error?.response?.data?.message || error?.message || 'Unable to save academic year.'
+  }
 }
 
 async function activateYearRow(index) {
@@ -277,7 +298,7 @@ function openEditTerm(index) {
     description: nextTerm.description || nextTerm.notes || '',
     startDate: nextTerm.startDate ? new Date(nextTerm.startDate) : null,
     endDate: nextTerm.endDate ? new Date(nextTerm.endDate) : null,
-    status: nextTerm.status || 'draft',
+    status: nextTerm.status || 'active',
     isCurrent: Boolean(nextTerm.isCurrent),
   }
   termDraftErrors.value = {}
@@ -295,24 +316,47 @@ async function saveTermDraft() {
   termDraftErrors.value = result.errors
   if (!result.isValid) return
 
+  errorMessage.value = ''
+
   const payload = {
     academic_year_id: termDraft.value.academicYearId,
     code: String(termDraft.value.code || '').trim(),
     name: String(termDraft.value.name || '').trim(),
     description: String(termDraft.value.description || '').trim(),
-    start_date: formatIsoDate(termDraft.value.startDate),
-    end_date: formatIsoDate(termDraft.value.endDate),
+    start_date: formatLifecycleDate(termDraft.value.startDate),
+    end_date: formatLifecycleDate(termDraft.value.endDate),
     status: termDraft.value.status,
     is_current: Boolean(termDraft.value.isCurrent),
   }
 
-  if (termDialogMode.value === 'edit' && editingTermIndex.value > -1) {
-    await updateTerm(termDraft.value.id, payload)
-  } else {
-    await createTerm(payload)
-  }
+  try {
+    if (termDialogMode.value === 'edit' && editingTermIndex.value > -1) {
+      await updateTerm(termDraft.value.id, payload)
+    } else {
+      await createTerm(payload)
+    }
 
-  closeTermDialog()
+    closeTermDialog()
+  } catch (error) {
+    const validationErrors = mapBackendValidationErrors(error, {
+      academic_year_id: 'academicYearId',
+      code: 'code',
+      name: 'name',
+      description: 'description',
+      start_date: 'startDate',
+      end_date: 'endDate',
+      status: 'status',
+      is_current: 'isCurrent',
+      sort_order: 'sortOrder',
+    })
+
+    if (Object.keys(validationErrors).length > 0) {
+      termDraftErrors.value = validationErrors
+      return
+    }
+
+    errorMessage.value = error?.response?.data?.message || error?.message || 'Unable to save term.'
+  }
 }
 
 async function activateTermRow(index) {
@@ -333,17 +377,27 @@ async function archiveTermRow(index) {
   await archiveTerm(nextTerm.id)
 }
 
-function formatIsoDate(value) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 10)
-}
-
 function statusLabel(record) {
   if (!record) return t('preschoolAcademicSettingsPage.emptyStates.noAcademicYears')
-  const key = record.isCurrent ? 'current' : String(record.status || 'draft').toLowerCase()
+  const key = record.isCurrent ? 'current' : String(record.status || 'active').toLowerCase()
   return t(`preschoolAcademicSettingsPage.statuses.${key}`)
+}
+
+function mapBackendValidationErrors(error, fieldMap = {}) {
+  const responseErrors = error?.validationErrors
+    || error?.response?.data?.data?.errors
+    || error?.response?.data?.errors
+    || {}
+
+  const mapped = {}
+
+  Object.entries(responseErrors).forEach(([field, messages]) => {
+    const value = Array.isArray(messages) ? messages[0] : messages
+    const mappedField = fieldMap[field] || field
+    mapped[mappedField] = String(value || '')
+  })
+
+  return mapped
 }
 
 onMounted(async () => {

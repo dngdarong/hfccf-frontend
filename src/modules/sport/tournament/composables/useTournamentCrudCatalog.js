@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/services/api'
-import { cloneTournamentRecord, createMockTournaments, createTournamentDraft } from '../mocks/tournaments.mock'
 import { canTransitionTournament, normalizeTournamentState } from './useTournamentStateMachine'
 import {
   archiveTournament as apiArchiveTournament,
@@ -24,27 +23,11 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value))
 }
 
-function createLocalId() {
-  const suffix = Math.random().toString(36).slice(2, 8)
-  return `tournament-local-${Date.now()}-${suffix}`
-}
-
-function isFallbackableError(error) {
-  const status = Number(error?.status || error?.response?.status || 0)
-  return Boolean(error?.isNetworkError || error?.code === 'NETWORK_ERROR' || status === 0 || status === 404 || status >= 500)
-}
-
-function seedRecords() {
-  return createMockTournaments().map((record) => normalizeTournamentRecord(record))
-}
-
-const records = ref(seedRecords())
-const mode = ref('mock')
+const records = ref([])
+const mode = ref('remote')
 const isLoading = ref(false)
 const isSaving = ref(false)
 const error = ref('')
-
-let hasAttemptedRemoteLoad = false
 
 function findRecordIndex(id) {
   const targetId = String(id ?? '').trim()
@@ -63,11 +46,11 @@ function upsertRecord(record, { replace = false, fallback = null } = {}) {
       : normalizeTournamentRecord({ ...records.value[index], ...normalized }, records.value[index])
 
     records.value.splice(index, 1, merged)
-    return cloneTournamentRecord(merged)
+    return deepClone(merged)
   }
 
   records.value.unshift(normalized)
-  return cloneTournamentRecord(normalized)
+  return deepClone(normalized)
 }
 
 function removeRecord(id) {
@@ -82,13 +65,16 @@ function setRemoteRecords(items = []) {
   records.value = items.map((item) => normalizeTournamentRecord(item))
 }
 
+function setTournamentRecord(record) {
+  return record?.id ? upsertRecord(record, { replace: true }) : null
+}
+
 function resetTournamentCrudCatalog() {
-  records.value = seedRecords()
-  mode.value = 'mock'
+  records.value = []
+  mode.value = 'remote'
   isLoading.value = false
   isSaving.value = false
   error.value = ''
-  hasAttemptedRemoteLoad = false
 }
 
 async function loadTournaments(params = {}, options = {}) {
@@ -98,7 +84,6 @@ async function loadTournaments(params = {}, options = {}) {
   try {
     const response = await apiListTournaments(params, options)
     mode.value = 'remote'
-    hasAttemptedRemoteLoad = true
     setRemoteRecords(response.items || [])
 
     return {
@@ -106,26 +91,8 @@ async function loadTournaments(params = {}, options = {}) {
       pagination: response.pagination,
     }
   } catch (cause) {
-    if (!isFallbackableError(cause)) {
-      error.value = getApiErrorMessage(cause, 'Failed to load tournaments.')
-      throw cause
-    }
-
-    mode.value = 'mock'
-    if (!hasAttemptedRemoteLoad || !records.value.length) {
-      records.value = seedRecords()
-    }
-    hasAttemptedRemoteLoad = true
-
-    return {
-      items: tournaments.value,
-      pagination: {
-        page: 1,
-        perPage: records.value.length || 10,
-        total: records.value.length,
-        totalPages: 1,
-      },
-    }
+    error.value = getApiErrorMessage(cause, 'Failed to load tournaments.')
+    throw cause
   } finally {
     isLoading.value = false
   }
@@ -142,31 +109,13 @@ async function loadTournament(id, options = {}) {
     const record = await apiGetTournament(tournamentId, options)
     if (record?.id) {
       mode.value = 'remote'
-      hasAttemptedRemoteLoad = true
       return upsertRecord(record, { replace: true })
     }
 
     return null
   } catch (cause) {
-    if (!isFallbackableError(cause)) {
-      error.value = getApiErrorMessage(cause, 'Failed to load tournament.')
-      throw cause
-    }
-
-    mode.value = 'mock'
-    hasAttemptedRemoteLoad = true
-
-    const existing = getTournamentById(tournamentId)
-    if (existing?.id) {
-      return existing
-    }
-
-    const fallback = createMockTournaments().find((item) => String(item.id) === tournamentId)
-    if (fallback?.id) {
-      return upsertRecord(fallback, { replace: true })
-    }
-
-    return null
+    error.value = getApiErrorMessage(cause, 'Failed to load tournament.')
+    throw cause
   } finally {
     isLoading.value = false
   }
@@ -179,25 +128,10 @@ async function createTournament(payload = {}) {
   try {
     const record = await apiCreateTournament(payload)
     mode.value = 'remote'
-    hasAttemptedRemoteLoad = true
     return upsertRecord(record, { replace: true, fallback: payload })
   } catch (cause) {
-    if (!isFallbackableError(cause)) {
-      error.value = getApiErrorMessage(cause, 'Failed to create tournament.')
-      throw cause
-    }
-
-    mode.value = 'mock'
-    const localRecord = normalizeTournamentRecord({
-      ...createTournamentDraft(),
-      ...deepClone(payload),
-      id: payload?.id || createLocalId(),
-      state: payload?.state || payload?.status || 'draft',
-      status: payload?.state || payload?.status || 'draft',
-    })
-
-    records.value.unshift(localRecord)
-    return cloneTournamentRecord(localRecord)
+    error.value = getApiErrorMessage(cause, 'Failed to create tournament.')
+    throw cause
   } finally {
     isSaving.value = false
   }
@@ -213,26 +147,11 @@ async function updateTournament(id, payload = {}) {
   try {
     const record = await apiUpdateTournament(tournamentId, payload)
     mode.value = 'remote'
-    hasAttemptedRemoteLoad = true
     const current = getTournamentById(tournamentId)
     return upsertRecord(record, { replace: true, fallback: current || payload })
   } catch (cause) {
-    if (!isFallbackableError(cause)) {
-      error.value = getApiErrorMessage(cause, 'Failed to update tournament.')
-      throw cause
-    }
-
-    mode.value = 'mock'
-    const current = getTournamentById(tournamentId) || createTournamentDraft()
-    const localRecord = normalizeTournamentRecord({
-      ...deepClone(current),
-      ...deepClone(payload),
-      id: tournamentId,
-      state: payload?.state || payload?.status || current.state,
-      status: payload?.state || payload?.status || current.state,
-    }, current)
-
-    return upsertRecord(localRecord, { replace: true, fallback: current })
+    error.value = getApiErrorMessage(cause, 'Failed to update tournament.')
+    throw cause
   } finally {
     isSaving.value = false
   }
@@ -248,19 +167,13 @@ async function deleteTournament(id) {
   try {
     const deleted = await apiDeleteTournament(tournamentId)
     mode.value = 'remote'
-    hasAttemptedRemoteLoad = true
     if (deleted) {
       removeRecord(tournamentId)
     }
     return deleted
   } catch (cause) {
-    if (!isFallbackableError(cause)) {
-      error.value = getApiErrorMessage(cause, 'Failed to delete tournament.')
-      throw cause
-    }
-
-    mode.value = 'mock'
-    return removeRecord(tournamentId)
+    error.value = getApiErrorMessage(cause, 'Failed to delete tournament.')
+    throw cause
   } finally {
     isSaving.value = false
   }
@@ -270,18 +183,13 @@ async function archiveTournament(id) {
   try {
     const archived = await apiArchiveTournament(id)
     mode.value = 'remote'
-    hasAttemptedRemoteLoad = true
     if (archived) {
       removeRecord(id)
     }
     return archived
   } catch (cause) {
-    if (!isFallbackableError(cause)) {
-      error.value = getApiErrorMessage(cause, 'Failed to archive tournament.')
-      throw cause
-    }
-
-    return deleteTournament(id)
+    error.value = getApiErrorMessage(cause, 'Failed to archive tournament.')
+    throw cause
   }
 }
 
@@ -305,15 +213,15 @@ function transitionTournament(id, nextState) {
   }, current)
 
   records.value.splice(index, 1, updated)
-  return cloneTournamentRecord(updated)
+  return deepClone(updated)
 }
 
 function getTournamentById(id) {
   const index = findRecordIndex(id)
-  return index >= 0 ? cloneTournamentRecord(records.value[index]) : null
+  return index >= 0 ? deepClone(records.value[index]) : null
 }
 
-const tournaments = computed(() => records.value.map((record) => cloneTournamentRecord(record)))
+const tournaments = computed(() => records.value.map((record) => deepClone(record)))
 
 export function useTournamentCrudCatalog() {
   return {
@@ -331,5 +239,6 @@ export function useTournamentCrudCatalog() {
     error,
     mode,
     resetTournamentCrudCatalog,
+    setTournamentRecord,
   }
 }

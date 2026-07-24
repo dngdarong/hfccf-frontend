@@ -20,6 +20,9 @@ const mockLoadClassSchedule = vi.fn(() => Promise.resolve())
 const mockLoadTeacherOptions = vi.fn(() => Promise.resolve())
 const mockLoadTeacherSchedule = vi.fn(() => Promise.resolve())
 const mockLoadMySchedule = vi.fn(() => Promise.resolve())
+const mockFetchTodayAttendanceSessions = vi.fn(() => Promise.resolve({ items: [] }))
+const mockGenerateAttendanceSessions = vi.fn(() => Promise.resolve([]))
+const mockOpenAttendanceSession = vi.fn(() => Promise.resolve({}))
 
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({
@@ -88,6 +91,12 @@ vi.mock('@/modules/preschool/composables/usePreschoolTeacherSchedule', () => ({
   }),
 }))
 
+vi.mock('@/modules/preschool/services/api/preschoolAttendanceSessionApi', () => ({
+  fetchTodayAttendanceSessions: (...args) => mockFetchTodayAttendanceSessions(...args),
+  generateAttendanceSessions: (...args) => mockGenerateAttendanceSessions(...args),
+  openAttendanceSession: (...args) => mockOpenAttendanceSession(...args),
+}))
+
 function stubs() {
   return {
     MainLayout: { template: '<div><slot /></div>' },
@@ -128,6 +137,7 @@ describe('Preschool schedule pages', () => {
 
     expect(mockLoadLookups).toHaveBeenCalled()
     expect(mockLoadSchedules).toHaveBeenCalled()
+    expect(mockFetchTodayAttendanceSessions).toHaveBeenCalled()
     expect(wrapper.text()).toContain('Schedule management')
     expect(warnSpy).not.toHaveBeenCalled()
     expect(errorSpy).not.toHaveBeenCalled()
@@ -172,6 +182,7 @@ describe('Preschool schedule pages', () => {
     expect(mockLoadClassOptions).toHaveBeenCalled()
     expect(mockLoadTeacherOptions).toHaveBeenCalled()
     expect(mockLoadMySchedule).toHaveBeenCalled()
+    expect(mockFetchTodayAttendanceSessions).toHaveBeenCalled()
     expect(classWrapper.text()).toContain('Class timetable')
     expect(teacherWrapper.text()).toContain('Teacher timetable')
     expect(selfWrapper.text()).toContain('My schedule')
@@ -179,4 +190,3 @@ describe('Preschool schedule pages', () => {
     expect(errorSpy).not.toHaveBeenCalled()
   })
 })
-

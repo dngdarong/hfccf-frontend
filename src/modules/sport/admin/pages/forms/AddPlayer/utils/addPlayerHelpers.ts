@@ -5,6 +5,13 @@ export function playerStatusLabel(status: string | null | undefined, t: any, te:
   return te(key) ? t(key) : String(status || '')
 }
 
+export function getRegistrationStatusLabel(status: string | null | undefined, t: any, te: any): string {
+  const key = `sportAddPlayer.sportsProfileStatus.registrationStatusOptions.${String(status || '')
+    .replace(/[\s-]+/g, '_')
+    .toLowerCase()}`
+  return te(key) ? t(key) : String(status || '')
+}
+
 export function validate(form: any, t: any): string {
   if (!form.name.trim()) return t('sportAddPlayer.validation.nameRequired')
   if (!form.team.trim()) return t('sportAddPlayer.validation.teamRequired')

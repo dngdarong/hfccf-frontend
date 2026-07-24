@@ -1,9 +1,9 @@
 <script setup>
 import { computed, useSlots } from 'vue'
-import PrimeButton from 'primevue/button'
 import Avatar from '@/components/navigation/Avatar.vue'
 import LogoutButton from '@/components/buttons/LogoutButton.vue'
 import SidebarNavigation from '@/components/navigation/SidebarNavigation.vue'
+import AppIconButton from '@/components/ui/AppIconButton.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { getSidebarToneClass } from '@/services/accessControl'
 import { useUserStore } from '@/store/userStore'
@@ -18,6 +18,10 @@ const { t } = useLanguage()
 
 defineProps({
   collapsed: {
+    type: Boolean,
+    default: false,
+  },
+  isMobile: {
     type: Boolean,
     default: false,
   },
@@ -40,25 +44,6 @@ const currentUserDisplayUsername = computed(() => {
 })
 const sidebarToneClass = computed(() => getSidebarToneClass(currentUser.value))
 const hasHeaderSlot = computed(() => Boolean(slots.header))
-const togglePt = {
-  root: {
-    class: [
-      '!border',
-      '!border-surface-200',
-      '!bg-white',
-      '!text-surface-500',
-      '!shadow-[0_10px_22px_-22px_rgba(15,23,42,0.14)]',
-      'transition-all',
-      'duration-200',
-      'hover:enabled:!border-brand-300',
-      'hover:enabled:!bg-slate-100',
-      'hover:enabled:!text-sky-800',
-      'focus-visible:!outline-none',
-      'focus-visible:!shadow-focus',
-    ],
-  },
-}
-
 function onToggleSidebar() {
   emit('toggle-sidebar')
 }
@@ -99,17 +84,15 @@ function onLogout() {
               </div>
             </slot>
           </div>
-          <PrimeButton
+          <AppIconButton
             type="button"
-            severity="secondary"
-            text
-            rounded
-            class="sidebar-toggle-btn hidden h-8 w-8 min-h-0 !p-1.5 min-[769px]:flex"
-            :pt="togglePt"
+            variant="ghost"
+            size="sm"
+            class="sidebar-toggle-btn hidden min-[769px]:flex"
             :aria-label="t('common.navigation.toggleSidebar')"
             @click="onToggleSidebar"
           >
-            <template #icon>
+            <template #default>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-full w-full">
                 <path
                   stroke-linecap="round"
@@ -119,7 +102,7 @@ function onLogout() {
                 />
               </svg>
             </template>
-          </PrimeButton>
+          </AppIconButton>
         </div>
       </div>
 

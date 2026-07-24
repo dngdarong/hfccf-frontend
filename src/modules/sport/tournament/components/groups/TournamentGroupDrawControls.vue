@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -30,6 +30,10 @@ defineProps({
   lastGeneratedAt: {
     type: String,
     default: '',
+  },
+  pending: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -91,7 +95,7 @@ function actionLabel(key) {
         type="button"
         class="group-controls__mode-button"
         :class="{ 'group-controls__mode-button--active': mode === 'automatic' }"
-        :disabled="!canEdit || locked"
+        :disabled="pending || !canEdit || locked"
         @click="emit('update:mode', 'automatic')"
       >
         {{ t('sportTournament.groups.mode.automatic') }}
@@ -100,7 +104,7 @@ function actionLabel(key) {
         type="button"
         class="group-controls__mode-button"
         :class="{ 'group-controls__mode-button--active': mode === 'manual' }"
-        :disabled="!canEdit || locked"
+        :disabled="pending || !canEdit || locked"
         @click="emit('update:mode', 'manual')"
       >
         {{ t('sportTournament.groups.mode.manual') }}
@@ -130,7 +134,7 @@ function actionLabel(key) {
           class="w-full rounded-xl"
           :severity="actionTone(action.key)"
           :label="actionLabel(action.labelKey)"
-          :disabled="locked || !canEdit || (action.key === 'finalize' && !canFinalize)"
+          :disabled="pending || locked || !canEdit || (action.key === 'finalize' && !canFinalize)"
           @click="emit(action.key)"
         />
       </article>
@@ -260,3 +264,4 @@ function actionLabel(key) {
   }
 }
 </style>
+

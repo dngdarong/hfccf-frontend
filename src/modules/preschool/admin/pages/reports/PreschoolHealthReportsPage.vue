@@ -17,6 +17,7 @@ const { t } = useLanguage()
     :fetcher="fetchHealthReports"
     rows-key="incidents"
     chart-key="alerts"
+    :visible-filters="['academicYear', 'term', 'dateRange', 'class', 'student', 'status']"
     :chart-title="t('preschoolReportsCenterPage.charts.healthAlerts')"
     :chart-subtitle="t('preschoolReportsCenterPage.sections.health.subtitle')"
     :table-columns="[

@@ -27,8 +27,16 @@ export function buildInfoCards(t: any, student: any, profileClasses: any[]) {
 }
 
 export function getStatusLabel(t: any, student: any): string {
-  const key = String(student?.status || '').toLowerCase()
-  return t(`preschoolStudentInfoPage.options.${key}`) || (student?.status || DEFAULT_FALLBACK)
+  const key = String(student?.status || '').trim().toLowerCase()
+
+  if (!key) {
+    return student?.status || DEFAULT_FALLBACK
+  }
+
+  const translationKey = `preschoolStudentInfoPage.options.${key}`
+  const translated = t(translationKey)
+
+  return translated === translationKey ? (student?.status || DEFAULT_FALLBACK) : translated
 }
 
 export function getStatusClass(status: any): string {

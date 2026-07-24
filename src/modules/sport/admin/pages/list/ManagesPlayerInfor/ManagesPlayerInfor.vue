@@ -9,9 +9,10 @@ import { useRoute, useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import SearchFilterBar from '@/components/forms/SearchFilterBar.vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
+import AlertError from '@/components/alerts/AlertError.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import { deleteSportPlayer, fetchSportPlayers } from '@/modules/sport/services/sportApi'
 
@@ -57,6 +58,8 @@ const statusKeyPrefix = STATUS_KEY_PREFIX
 const isDeleteOpen = ref(false)
 const selectedPlayer = ref(null)
 const isDeleting = ref(false)
+const showError = ref(false)
+const errorMessage = ref('')
 const showDeleteSuccess = ref(false)
 const deleteSuccessMessage = ref('')
 const playerRecords = ref([])
@@ -100,6 +103,25 @@ function onCancelDelete() {
   selectedPlayer.value = null
 }
 
+function showLoadError() {
+  errorMessage.value = t('sportPlayerInformation.loadFailed')
+  showError.value = true
+}
+
+async function loadPlayerRecords() {
+  const perPage = 100
+  const firstResponse = await fetchSportPlayers({ page: 1, perPage })
+  const items = [...(firstResponse.items || [])]
+  const totalPages = Math.max(Number(firstResponse.pagination?.totalPages || 1), 1)
+
+  for (let page = 2; page <= totalPages; page += 1) {
+    const response = await fetchSportPlayers({ page, perPage })
+    items.push(...(response.items || []))
+  }
+
+  playerRecords.value = items
+}
+
 async function onConfirmDelete() {
   if (isDeleting.value) return
   isDeleting.value = true
@@ -111,14 +133,21 @@ async function onConfirmDelete() {
   }
 
   const name = String(selectedPlayer.value?.name || '').trim()
-  await deleteSportPlayer(id).catch(() => null)
-  playerRecords.value = playerRecords.value.filter((item) => item.id !== id)
+  try {
+    await deleteSportPlayer(id)
+    playerRecords.value = playerRecords.value.filter((item) => item.id !== id)
+    errorMessage.value = ''
+    showError.value = false
 
-  // Feedback stays on the list page.
-  deleteSuccessMessage.value = t('sportPlayerInformation.confirm.deletedMessage', {
-    name: name || t('sportPlayerInformation.confirm.defaultName'),
-  })
-  showDeleteSuccess.value = true
+    // Feedback stays on the list page.
+    deleteSuccessMessage.value = t('sportPlayerInformation.confirm.deletedMessage', {
+      name: name || t('sportPlayerInformation.confirm.defaultName'),
+    })
+    showDeleteSuccess.value = true
+  } catch {
+    errorMessage.value = t('sportPlayerInformation.confirm.deleteFailed')
+    showError.value = true
+  }
 
   onCancelDelete()
   isDeleting.value = false
@@ -240,8 +269,9 @@ watch(
 )
 
 onMounted(() => {
-  void fetchSportPlayers({ perPage: 100 }).then((response) => {
-    playerRecords.value = response.items || []
+  void loadPlayerRecords().catch(() => {
+    playerRecords.value = []
+    showLoadError()
   })
 })
 </script>
@@ -330,6 +360,14 @@ onMounted(() => {
       :button-text="t('common.close')"
       @close="showDeleteSuccess = false"
     />
+
+    <AlertError
+      :show="showError"
+      :title="t('common.error')"
+      :message="errorMessage"
+      :button-text="t('common.close')"
+      @close="showError = false"
+    />
   </MainLayout>
 </template>
 
@@ -371,3 +409,4 @@ onMounted(() => {
   }
 }
 </style>
+

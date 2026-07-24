@@ -32,7 +32,9 @@ export default {
       deleteMessage: 'Are you sure you want to delete {name}?',
       deletedMessage: 'Deleted {name}.',
       defaultName: 'this player',
+      deleteFailed: 'Unable to delete player right now.',
     },
+    loadFailed: 'Unable to load player records right now.',
     highlights: {
       visiblePlayers: 'Visible players',
       divisions: 'Divisions',
@@ -64,4 +66,3 @@ export default {
     },
   },
 }
-

@@ -27,10 +27,30 @@ const { t, te } = useLanguage()
 function safeText(key, fallback) {
   return te(key) ? t(key) : fallback
 }
+
+function resolveTo(card) {
+  if (card.to) {
+    return card.to
+  }
+
+  if (card.routeName) {
+    return { name: card.routeName }
+  }
+
+  return null
+}
+
+function resolveDescription(card) {
+  if (card.descriptionKey) {
+    return safeText(card.descriptionKey, card.descriptionFallback || card.description || '')
+  }
+
+  return card.description || card.descriptionFallback || ''
+}
 </script>
 
 <template>
-  <RouterLink :to="props.card.to" class="preschool-form-management-card">
+  <RouterLink :to="resolveTo(props.card)" class="preschool-form-management-card">
     <Card :class="['preschool-form-management-card__surface', props.cardClass]">
       <template #content>
         <div class="preschool-form-management-card__content">
@@ -43,7 +63,7 @@ function safeText(key, fallback) {
               <h4>{{ safeText(props.card.titleKey, props.card.titleFallback) }}</h4>
               <span>{{ badge }}</span>
             </div>
-            <p>{{ props.card.description }}</p>
+            <p>{{ resolveDescription(props.card) }}</p>
           </div>
         </div>
       </template>

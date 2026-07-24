@@ -213,6 +213,7 @@ onMounted(async () => {
                 <th class="px-4 py-3 font-semibold">{{ getTypeColumnLabel() }}</th>
                 <th class="px-4 py-3 font-semibold">{{ t('preschoolAdminAttendanceHistoryPage.columns.class') }}</th>
                 <th class="px-4 py-3 font-semibold">{{ t('preschoolAdminAttendanceHistoryPage.columns.date') }}</th>
+                <th class="px-4 py-3 font-semibold">{{ t('preschoolAttendanceSessionsPage.title') }}</th>
                 <th class="px-4 py-3 font-semibold">{{ t('preschoolAdminAttendanceHistoryPage.columns.status') }}</th>
                 <th class="px-4 py-3 font-semibold">{{ t('preschoolAdminAttendanceHistoryPage.columns.note') }}</th>
                 <th class="px-4 py-3 font-semibold">{{ t('preschoolAdminAttendanceHistoryPage.columns.recordedBy') }}</th>
@@ -232,6 +233,20 @@ onMounted(async () => {
                 </td>
                 <td class="px-4 py-3 text-slate-700">
                   {{ formatDate(record.attendanceDate) }}
+                </td>
+                <td class="px-4 py-3 text-slate-600">
+                  <div v-if="record.attendanceSession || record.attendanceSessionId" class="space-y-0.5">
+                    <p class="font-medium text-slate-900">
+                      {{ record.attendanceSession?.className || record.className || '—' }}
+                    </p>
+                    <p class="text-xs text-slate-400">
+                      {{ record.attendanceSession?.attendanceDate || record.attendanceDate || '—' }}
+                      <span v-if="record.attendanceSession?.startTime || record.attendanceSession?.endTime">
+                        · {{ record.attendanceSession?.startTime || '--:--' }} - {{ record.attendanceSession?.endTime || '--:--' }}
+                      </span>
+                    </p>
+                  </div>
+                  <span v-else class="text-xs text-slate-400">{{ t('preschoolAttendanceSessionsPage.manualSession') }}</span>
                 </td>
                 <td class="px-4 py-3">
                   <span

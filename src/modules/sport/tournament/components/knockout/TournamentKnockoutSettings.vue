@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import InputNumber from 'primevue/inputnumber'
 import ToggleButton from 'primevue/togglebutton'
 import { computed } from 'vue'
@@ -211,3 +211,4 @@ function updateField(field, value) {
   }
 }
 </style>
+

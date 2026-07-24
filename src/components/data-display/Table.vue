@@ -17,6 +17,7 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useSlots } from 'vue'
+import AppBadge from '@/components/ui/AppBadge.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import RolesBadge from '@/components/badges/RolesBadge.vue'
 import PermissionBadge from '@/components/badges/PermissionBadge.vue'
@@ -328,6 +329,26 @@ function paymentTone(value) {
           <span class="text-[12px] text-surface-700 sm:text-sm">
             {{ formatDateTime(data.createdAt || data.created_at) }}
           </span>
+        </template>
+
+        <!-- Compact class name cell -->
+        <template v-else-if="column.key === 'className'">
+          <div
+            class="inline-flex max-w-[14rem] items-center gap-1 overflow-hidden align-middle"
+            :title="String(data.classTooltip || plainValue(data, column) || '-').trim() || '-'"
+          >
+            <span class="min-w-0 flex-1 truncate text-[12px] text-surface-700 sm:text-sm">
+              {{ String(data.className || plainValue(data, column) || '-').trim() || '-' }}
+            </span>
+            <AppBadge
+              v-if="Number(data.classCount || 0) > 1"
+              class="shrink-0"
+              size="xs"
+              variant="neutral"
+              :label="`+${Math.max(Number(data.extraClassCount || 0), 0)}`"
+              :title="String(data.classTooltip || plainValue(data, column) || '-').trim() || '-'"
+            />
+          </div>
         </template>
 
         <!-- Row actions -->

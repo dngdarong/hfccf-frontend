@@ -1,361 +1,446 @@
-<script setup>
-import Button from '@/components/buttons/Button.vue'
-import { useLanguage } from '@/composables/useLanguage'
-import { formatDate } from '@/utils/date'
-
-defineOptions({
-  name: 'GuardianCommunicationTimeline',
-})
-
-defineProps({
-  title: { type: String, default: '' },
-  subtitle: { type: String, default: '' },
-  communications: { type: Array, default: () => [] },
-  summary: { type: Object, default: () => ({}) },
-  loading: { type: Boolean, default: false },
-  emptyText: { type: String, default: '' },
-  compact: { type: Boolean, default: false },
-  showActions: { type: Boolean, default: false },
-})
-
-const emit = defineEmits(['mark-sent', 'acknowledge', 'cancel', 'refresh'])
-
-const { t } = useLanguage()
-
-function statusLabel(status) {
-  const key = String(status || 'draft').toLowerCase()
-  return t(`preschoolGuardianCommunicationPage.status.${key}`)
-}
-
-function severityLabel(severity) {
-  const key = String(severity || 'medium').toLowerCase()
-  return t(`preschoolGuardianCommunicationPage.severity.${key}`)
-}
-
-function channelLabel(channel) {
-  const key = String(channel || 'manual_note').toLowerCase()
-  return t(`preschoolGuardianCommunicationPage.channels.${key}`)
-}
-
-function sourceLabel(item) {
-  const sourceType = String(item?.sourceType || '').toLowerCase()
-  if (sourceType) {
-    return t(`preschoolGuardianCommunicationPage.sources.${sourceType}`)
-  }
-
-  return item?.sourceLabel || t('preschoolGuardianCommunicationPage.labels.relatedEvent')
-}
-
-function isActionable(item) {
-  return ['queued', 'draft', 'failed'].includes(String(item?.status || '').toLowerCase())
-}
-</script>
-
 <template>
-  <section class="guardian-communication-timeline">
-    <header class="guardian-communication-timeline__header">
-      <div>
-        <p class="guardian-communication-timeline__eyebrow">
-          {{ t('preschoolGuardianCommunicationPage.title') }}
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <header class="border-b border-slate-200 px-5 py-4 sm:px-6">
+      <div class="flex flex-col gap-1">
+        <h2 class="text-lg font-semibold text-slate-900">
+          {{ resolvedTitle }}
+        </h2>
+        <p v-if="resolvedSubtitle" class="text-sm text-slate-500">
+          {{ resolvedSubtitle }}
         </p>
-        <h3 class="guardian-communication-timeline__title">
-          {{ title || t('preschoolGuardianCommunicationPage.timelineTitle') }}
-        </h3>
-        <p v-if="subtitle" class="guardian-communication-timeline__subtitle">
-          {{ subtitle }}
+      </div>
+    </header>
+
+    <div class="p-5 sm:p-6">
+      <div v-if="loading" class="space-y-3">
+        <div v-for="index in 3" :key="index" class="animate-pulse rounded-xl border border-slate-200 p-4">
+          <div class="mb-3 h-4 w-1/4 rounded bg-slate-100"></div>
+          <div class="space-y-2">
+            <div class="h-3 w-full rounded bg-slate-100"></div>
+            <div class="h-3 w-5/6 rounded bg-slate-100"></div>
+            <div class="h-3 w-2/3 rounded bg-slate-100"></div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="!groupedItems.length" class="rounded-xl border border-dashed border-slate-200 p-8 text-center">
+        <p class="text-sm font-medium text-slate-700">
+          {{ resolvedEmptyTitle }}
+        </p>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ resolvedEmptySubtitle }}
         </p>
       </div>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        rounded="xl"
-        :label="t('common.refresh')"
-        :disabled="loading"
-        @click="emit('refresh')"
-      />
-    </header>
-
-    <div class="guardian-communication-timeline__summary">
-      <article class="guardian-communication-timeline__summary-card">
-        <p>{{ t('preschoolGuardianCommunicationPage.status.total') }}</p>
-        <strong>{{ summary.total ?? communications.length }}</strong>
-      </article>
-      <article class="guardian-communication-timeline__summary-card">
-        <p>{{ t('preschoolGuardianCommunicationPage.status.queued') }}</p>
-        <strong>{{ summary.queued ?? 0 }}</strong>
-      </article>
-      <article class="guardian-communication-timeline__summary-card">
-        <p>{{ t('preschoolGuardianCommunicationPage.status.sent') }}</p>
-        <strong>{{ summary.sent ?? 0 }}</strong>
-      </article>
-      <article class="guardian-communication-timeline__summary-card">
-        <p>{{ t('preschoolGuardianCommunicationPage.status.acknowledged') }}</p>
-        <strong>{{ summary.acknowledged ?? 0 }}</strong>
-      </article>
-    </div>
-
-    <div v-if="loading" class="guardian-communication-timeline__state">
-      {{ t('preschoolGuardianCommunicationPage.messages.loading') }}
-    </div>
-
-    <div v-else-if="!communications.length" class="guardian-communication-timeline__state guardian-communication-timeline__state--empty">
-      {{ emptyText || t('preschoolGuardianCommunicationPage.messages.noCommunicationYet') }}
-    </div>
-
-    <div v-else class="guardian-communication-timeline__list">
-      <article
-        v-for="item in communications"
-        :key="item.id"
-        class="guardian-communication-timeline__item"
-        :class="{ 'guardian-communication-timeline__item--compact': compact }"
-      >
-        <div class="guardian-communication-timeline__item-top">
-          <div class="guardian-communication-timeline__copy">
-            <p class="guardian-communication-timeline__item-title">{{ item.subject }}</p>
-            <p class="guardian-communication-timeline__item-message">
-              {{ item.message }}
-            </p>
-          </div>
-          <div class="guardian-communication-timeline__badges">
-            <span class="guardian-communication-timeline__badge" :data-status="item.status">
-              {{ statusLabel(item.status) }}
-            </span>
-            <span class="guardian-communication-timeline__badge" :data-severity="item.severity">
-              {{ severityLabel(item.severity) }}
+      <div v-else class="space-y-5">
+        <section
+          v-for="group in groupedItems"
+          :key="group.key"
+          data-testid="guardian-contact-group"
+          class="space-y-3"
+        >
+          <div class="flex items-center gap-3">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {{ group.label }}
+            </h3>
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {{ group.items.length }}
             </span>
           </div>
-        </div>
 
-        <div class="guardian-communication-timeline__meta">
-          <span>{{ t('preschoolGuardianCommunicationPage.labels.channel') }}: {{ channelLabel(item.channel) }}</span>
-          <span>{{ t('preschoolGuardianCommunicationPage.labels.relatedEvent') }}: {{ sourceLabel(item) }}</span>
-          <span>{{ formatDate(item.createdAt) || item.createdAt || '-' }}</span>
-        </div>
+          <div class="space-y-4 border-l border-slate-200 pl-4 sm:pl-5">
+            <article
+              v-for="item in group.items"
+              :key="item.id"
+              data-testid="guardian-contact-record"
+              class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-slate-300"
+            >
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="min-w-0 flex-1 space-y-4">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <AppBadge :variant="resolveStatusVariant(item.status)">
+                      {{ item.statusLabel }}
+                    </AppBadge>
+                    <AppBadge variant="info">
+                      {{ item.methodLabel }}
+                    </AppBadge>
+                    <AppBadge
+                      v-if="item.followUpStatusLabel"
+                      :variant="item.followUpStatusVariant"
+                    >
+                      {{ item.followUpStatusLabel }}
+                    </AppBadge>
+                    <AppBadge
+                      v-if="item.outcomeLabel"
+                      variant="success"
+                    >
+                      {{ item.outcomeLabel }}
+                    </AppBadge>
+                  </div>
 
-        <div v-if="showActions && isActionable(item)" class="guardian-communication-timeline__actions">
-          <Button
-            v-if="item.status !== 'sent'"
-            type="button"
-            variant="secondary"
-            size="sm"
-            rounded="xl"
-            :label="t('preschoolGuardianCommunicationPage.actions.markSent')"
-            @click="emit('mark-sent', item)"
-          />
-          <Button
-            v-if="item.status !== 'acknowledged'"
-            type="button"
-            variant="secondary"
-            size="sm"
-            rounded="xl"
-            :label="t('preschoolGuardianCommunicationPage.actions.markAcknowledged')"
-            @click="emit('acknowledge', item)"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            rounded="xl"
-            :label="t('preschoolGuardianCommunicationPage.actions.cancel')"
-            @click="emit('cancel', item)"
-          />
-        </div>
-      </article>
+                  <div class="grid gap-3 text-sm text-slate-600 sm:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.dateTime') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.dateTimeLabel }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.student') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.studentLabel }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.guardian') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.guardianLabel }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.reason') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.reasonLabel }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.staffMember') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.staffLabel }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.sourceEvent') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.sourceEventLabel }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      {{ t('preschoolGuardianCommunicationPage.labels.summary') }}
+                    </p>
+                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                      {{ item.summaryLabel }}
+                    </p>
+                  </div>
+
+                  <div class="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.outcome') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.outcomeLabel }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {{ t('preschoolGuardianCommunicationPage.labels.followUpDate') }}
+                      </p>
+                      <p class="mt-1 font-medium text-slate-900">
+                        {{ item.followUpDateLabel }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="showActions" class="flex shrink-0 flex-wrap gap-2 lg:flex-col lg:items-stretch">
+                  <AppButton
+                    size="sm"
+                    variant="secondary"
+                    @click="$emit('sent', item.raw)"
+                  >
+                    {{ t('preschoolGuardianCommunicationPage.actions.markCompleted') }}
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="secondary"
+                    @click="$emit('acknowledged', item.raw)"
+                  >
+                    {{ t('preschoolGuardianCommunicationPage.actions.markFollowedUp') }}
+                  </AppButton>
+                  <AppButton
+                    size="sm"
+                    variant="ghost"
+                    @click="$emit('cancelled', item.raw)"
+                  >
+                    {{ t('preschoolGuardianCommunicationPage.actions.closeLog') }}
+                  </AppButton>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
     </div>
   </section>
 </template>
 
-<style scoped>
-.guardian-communication-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+<script setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import AppBadge from '@/components/ui/AppBadge.vue'
+import AppButton from '@/components/ui/AppButton.vue'
+import { formatDate, formatDatetime } from '@/utils/date'
+
+import {
+  isToday,
+  parseGuardianContactLogMessage,
+  toDisplayValue
+} from '@/modules/preschool/admin/pages/guardian/contactLogUtils'
+
+const props = defineProps({
+  items: {
+    type: Array,
+    default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    default: ''
+  },
+  subtitle: {
+    type: String,
+    default: ''
+  },
+  emptyTitle: {
+    type: String,
+    default: ''
+  },
+  emptySubtitle: {
+    type: String,
+    default: ''
+  },
+  showActions: {
+    type: Boolean,
+    default: false
+  }
+})
+
+defineEmits(['sent', 'acknowledged', 'cancelled'])
+
+const { t } = useI18n()
+
+const resolvedTitle = computed(() => props.title || t('preschoolGuardianCommunicationPage.timelineTitle'))
+const resolvedSubtitle = computed(() => props.subtitle || t('preschoolGuardianCommunicationPage.timelineSubtitle'))
+const resolvedEmptyTitle = computed(() => props.emptyTitle || t('preschoolGuardianCommunicationPage.messages.noCommunicationYet'))
+const resolvedEmptySubtitle = computed(() => props.emptySubtitle || t('preschoolGuardianCommunicationPage.messages.noCommunicationDescription'))
+
+function resolveLabel(value, fallback = '—') {
+  return toDisplayValue(value) === '—' ? fallback : toDisplayValue(value)
 }
 
-.guardian-communication-timeline__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 1rem;
+function resolveStatusLabel(item) {
+  const status = String(item.status || '').toLowerCase()
+
+  if (status === 'queued') return t('preschoolGuardianCommunicationPage.status.queued')
+  if (status === 'sent') return t('preschoolGuardianCommunicationPage.status.sent')
+  if (status === 'acknowledged') return t('preschoolGuardianCommunicationPage.status.acknowledged')
+  if (status === 'failed') return t('preschoolGuardianCommunicationPage.status.failed')
+  if (status === 'cancelled') return t('preschoolGuardianCommunicationPage.status.cancelled')
+
+  return t('common.unknown')
 }
 
-.guardian-communication-timeline__eyebrow {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #7c3aed;
+function resolveStatusVariant(status) {
+  const normalized = String(status || '').toLowerCase()
+
+  if (['sent', 'acknowledged', 'resolved', 'closed', 'done'].includes(normalized)) {
+    return 'success'
+  }
+
+  if (normalized === 'failed') {
+    return 'danger'
+  }
+
+  if (normalized === 'cancelled') {
+    return 'neutral'
+  }
+
+  if (normalized === 'queued' || normalized === 'draft') {
+    return 'warning'
+  }
+
+  return 'neutral'
 }
 
-.guardian-communication-timeline__title {
-  margin: 0.2rem 0 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #0f172a;
+function resolveMethodLabel(item, parsed) {
+  return resolveLabel(parsed?.method || item.channel || item.sourceType)
 }
 
-.guardian-communication-timeline__subtitle {
-  margin: 0.25rem 0 0;
-  color: #64748b;
-  font-size: 0.92rem;
+function resolveReasonLabel(item, parsed) {
+  return resolveLabel(parsed?.reason || item.subject)
 }
 
-.guardian-communication-timeline__summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+function resolveSummaryLabel(item, parsed) {
+  return resolveLabel(parsed?.summary || item.message)
 }
 
-.guardian-communication-timeline__summary-card,
-.guardian-communication-timeline__item,
-.guardian-communication-timeline__state {
-  border: 1px solid #dbe3ef;
-  border-radius: 1rem;
-  background: #fff;
-  box-shadow: 0 16px 32px -26px rgba(15, 23, 42, 0.45);
+function resolveOutcomeLabel(item, parsed) {
+  return resolveLabel(parsed?.outcome)
 }
 
-.guardian-communication-timeline__summary-card {
-  padding: 0.9rem 1rem;
+function resolveFollowUpDateLabel(item, parsed) {
+  const value = parsed?.followUpDate || item.followUpDate
+
+  if (!value) {
+    return '—'
+  }
+
+  const formatted = formatDatetime(value)
+  return formatted || toDisplayValue(value)
 }
 
-.guardian-communication-timeline__summary-card p {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #64748b;
+function resolveFollowUpBadge(item, parsed) {
+  if (!parsed?.followUpRequired && !item.followUpRequired) {
+    return ''
+  }
+
+  if (parsed?.followUpDate && isToday(parsed.followUpDate)) {
+    return t('preschoolGuardianCommunicationPage.followUpStatuses.today')
+  }
+
+  return t('preschoolGuardianCommunicationPage.followUpStatuses.required')
 }
 
-.guardian-communication-timeline__summary-card strong {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1.45rem;
-  color: #0f172a;
-}
+function resolveFollowUpStatus(item, parsed) {
+  const status = String(item.status || '').toLowerCase()
+  const followUpRequired = Boolean(parsed?.followUpRequired || item.followUpRequired)
+  const followUpDate = parsed?.followUpDate || item.followUpDate
 
-.guardian-communication-timeline__state {
-  padding: 1rem;
-  color: #64748b;
-  text-align: center;
-}
+  if (['sent', 'acknowledged', 'resolved', 'closed', 'cancelled', 'done'].includes(status)) {
+    return {
+      label: t('preschoolGuardianCommunicationPage.followUpStatuses.completed'),
+      variant: 'success'
+    }
+  }
 
-.guardian-communication-timeline__state--empty {
-  border-style: dashed;
-}
+  if (!followUpRequired) {
+    return {
+      label: '',
+      variant: 'neutral'
+    }
+  }
 
-.guardian-communication-timeline__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+  if (followUpDate && isToday(followUpDate)) {
+    return {
+      label: t('preschoolGuardianCommunicationPage.followUpStatuses.today'),
+      variant: 'warning'
+    }
+  }
 
-.guardian-communication-timeline__item {
-  padding: 1rem;
-}
+  if (followUpDate && new Date(followUpDate).getTime() < new Date(new Date().setHours(0, 0, 0, 0)).getTime()) {
+    return {
+      label: t('preschoolGuardianCommunicationPage.followUpStatuses.overdue'),
+      variant: 'danger'
+    }
+  }
 
-.guardian-communication-timeline__item--compact {
-  padding: 0.85rem;
-}
+  if (followUpDate) {
+    return {
+      label: t('preschoolGuardianCommunicationPage.followUpStatuses.upcoming'),
+      variant: 'info'
+    }
+  }
 
-.guardian-communication-timeline__item-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 1rem;
-}
-
-.guardian-communication-timeline__copy {
-  min-width: 0;
-}
-
-.guardian-communication-timeline__item-title {
-  margin: 0;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.guardian-communication-timeline__item-message {
-  margin: 0.25rem 0 0;
-  color: #475569;
-  font-size: 0.92rem;
-}
-
-.guardian-communication-timeline__badges {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  justify-content: end;
-}
-
-.guardian-communication-timeline__badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.35rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  background: #eef2ff;
-  color: #3730a3;
-}
-
-.guardian-communication-timeline__badge[data-severity='high'],
-.guardian-communication-timeline__badge[data-severity='critical'] {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.guardian-communication-timeline__badge[data-status='queued'],
-.guardian-communication-timeline__badge[data-status='draft'] {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.guardian-communication-timeline__badge[data-status='sent'],
-.guardian-communication-timeline__badge[data-status='acknowledged'] {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.guardian-communication-timeline__badge[data-status='failed'] {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.guardian-communication-timeline__meta {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-top: 0.85rem;
-  font-size: 0.82rem;
-  color: #64748b;
-}
-
-.guardian-communication-timeline__actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.85rem;
-}
-
-@media (max-width: 960px) {
-  .guardian-communication-timeline__summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  return {
+    label: t('preschoolGuardianCommunicationPage.followUpStatuses.required'),
+    variant: 'warning'
   }
 }
 
-@media (max-width: 640px) {
-  .guardian-communication-timeline__header,
-  .guardian-communication-timeline__item-top {
-    flex-direction: column;
+function resolveStudentLabel(item, parsed) {
+  return resolveLabel(parsed?.student || item.studentName || item.student?.fullName || item.student?.name || item.student?.code)
+}
+
+function resolveGuardianLabel(item, parsed) {
+  return resolveLabel(parsed?.guardian || item.guardianName || item.guardian?.fullName || item.guardian?.name || item.guardian?.code)
+}
+
+function resolveStaffLabel(item, parsed) {
+  return resolveLabel(parsed?.staff || item.staffName || item.createdByName || item.createdBy?.fullName || item.createdBy?.name)
+}
+
+function resolveSourceEventLabel(item, parsed) {
+  if (item.sourceType === 'attendance' && item.communicationType === 'repeated_absence') {
+    return `${t('preschoolGuardianCommunicationPage.sources.attendance')} · ${t('preschoolGuardianCommunicationPage.sources.repeatedAbsence')}`
   }
 
-  .guardian-communication-timeline__summary {
-    grid-template-columns: 1fr;
-  }
+  return resolveLabel(parsed?.sourceEvent || item.relatedEvent?.name || item.sourceEvent || item.sourceType)
 }
-</style>
+
+const normalizedItems = computed(() =>
+  [...props.items]
+    .map(item => {
+      const parsed = parseGuardianContactLogMessage(item.message)
+      const createdAt = item.createdAt || item.created_at || item.updatedAt || item.updated_at
+      const followUpStatus = resolveFollowUpStatus(item, parsed)
+
+      return {
+        raw: item,
+        id: item.id || createdAt || Math.random().toString(36).slice(2),
+        parsed,
+        dateKey: createdAt ? new Date(createdAt).toISOString().slice(0, 10) : 'unknown',
+        dateTimeLabel: createdAt ? formatDatetime(createdAt) : '—',
+        dateLabel: createdAt ? formatDate(createdAt) : '—',
+        studentLabel: resolveStudentLabel(item, parsed),
+        guardianLabel: resolveGuardianLabel(item, parsed),
+        methodLabel: resolveMethodLabel(item, parsed),
+        reasonLabel: resolveReasonLabel(item, parsed),
+        summaryLabel: resolveSummaryLabel(item, parsed),
+        outcomeLabel: resolveOutcomeLabel(item, parsed),
+        followUpDateLabel: resolveFollowUpDateLabel(item, parsed),
+        followUpBadge: resolveFollowUpBadge(item, parsed),
+        followUpStatusLabel: followUpStatus.label,
+        followUpStatusVariant: followUpStatus.variant,
+        staffLabel: resolveStaffLabel(item, parsed),
+        sourceEventLabel: resolveSourceEventLabel(item, parsed),
+        statusLabel: resolveStatusLabel(item)
+      }
+    })
+    .sort((left, right) => {
+      const leftTime = new Date(left.raw.createdAt || left.raw.created_at || left.raw.updatedAt || left.raw.updated_at || 0).getTime()
+      const rightTime = new Date(right.raw.createdAt || right.raw.created_at || right.raw.updatedAt || right.raw.updated_at || 0).getTime()
+      return rightTime - leftTime
+    })
+)
+
+const groupedItems = computed(() => {
+  const groups = []
+
+  normalizedItems.value.forEach((item) => {
+    const group = groups.find(entry => entry.key === item.dateKey)
+
+    if (group) {
+      group.items.push(item)
+      return
+    }
+
+    groups.push({
+      key: item.dateKey,
+      label: item.dateLabel,
+      items: [item]
+    })
+  })
+
+  return groups
+})
+</script>

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Tag from 'primevue/tag'
 import NotificationTypeIcon from '@/modules/notifications/components/NotificationTypeIcon.vue'
 import { useLanguage } from '@/composables/useLanguage'
@@ -312,3 +312,4 @@ function handleClick() {
   }
 }
 </style>
+

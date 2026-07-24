@@ -75,9 +75,17 @@ export function getApiErrorMessage(error, fallbackMessage) {
     return 'Unable to reach the backend API. Check that the backend is running and the API URL is correct.'
   }
 
-  if (error?.validationErrors) {
-    return fallbackMessage
+  const responseData = error?.response?.data || error?.data || {}
+  const validationErrors = error?.validationErrors || responseData?.data?.errors || responseData?.errors
+  if (validationErrors && typeof validationErrors === 'object') {
+    const firstError = Object.values(validationErrors).flat().find(Boolean)
+    if (firstError) return String(firstError)
   }
 
-  return error?.message || error?.response?.data?.message || error?.response?.data?.error || fallbackMessage
+  return error?.message || responseData?.message || responseData?.error || fallbackMessage
+}
+
+export function getApiValidationErrors(error) {
+  const responseData = error?.response?.data || error?.data || {}
+  return error?.validationErrors || responseData?.data?.errors || responseData?.errors || {}
 }

@@ -124,7 +124,6 @@ const sectionDefinitions = computed(() => [
   },
   {
     key: 'assessments',
-    routeName: 'dashboard-preschool-admin-settings-assessments',
     eyebrow: t('preschoolSettingsPage.dashboard.sections.assessments.eyebrow'),
     title: t('preschoolSettingsPage.dashboard.sections.assessments.title'),
     subtitle: t('preschoolSettingsPage.dashboard.sections.assessments.subtitle'),

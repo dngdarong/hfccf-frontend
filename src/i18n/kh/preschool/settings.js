@@ -101,6 +101,11 @@ const overrides = {
       required: 'វាលនេះត្រូវតែបំពេញ។',
       positive: 'សូមបញ្ចូលលេខវិជ្ជមាន។',
       range: 'អាយុអតិបរមាត្រូវធំជាង ឬស្មើអាយុអប្បបរមា។',
+      invalidTimezone: 'សូមជ្រើសល្វែងម៉ោងដែលគាំទ្រ។',
+      unsupportedLanguage: 'សូមជ្រើសភាសាដែលគាំទ្រ។',
+      invalidDateFormat: 'សូមជ្រើសទម្រង់កាលបរិច្ឆេទដែលគាំទ្រ។',
+      invalidTimeFormat: 'សូមជ្រើសទម្រង់ម៉ោងដែលគាំទ្រ។',
+      invalidYearFormat: 'សូមជ្រើសទម្រង់ឆ្នាំដែលគាំទ្រ។',
     },
   },
   preschoolSettingsPage: {
@@ -127,6 +132,72 @@ const overrides = {
           action: 'បើកចំណូលចិត្ត',
         },
       },
+    },
+  },
+  preschoolClassLevelsPage: {
+    eyebrow: 'ការកំណត់ថ្នាក់',
+    title: 'កម្រិតថ្នាក់',
+    subtitle: 'គ្រប់គ្រងកម្រិតថ្នាក់មត្តេយ្យដែលអាចកំណត់បានសម្រាប់ទម្រង់ថ្នាក់ និងការចុះឈ្មោះ។',
+    description: 'បន្ថែមកម្រិតថ្មីនៅទីនេះ ហើយប្រើវានៅពេលបង្កើតថ្នាក់ដោយមិនចាំបាច់ hardcode បញ្ជីជម្រើស។',
+    actions: {
+      add: 'បន្ថែមកម្រិតថ្នាក់',
+      save: 'រក្សាទុកកម្រិតថ្នាក់',
+      deactivate: 'បិទដំណើរការ',
+      restore: 'ស្តារឡើងវិញ',
+    },
+    status: {
+      active: 'សកម្ម',
+      inactive: 'មិនសកម្ម',
+    },
+    labels: {
+      sortOrder: 'លំដាប់: {value}',
+    },
+    emptyStates: {
+      none: 'មិនមានកម្រិតថ្នាក់ទេ។',
+      noKhmer: 'មិនទាន់មានឈ្មោះខ្មែរ',
+    },
+    dialog: {
+      addTitle: 'បន្ថែមកម្រិតថ្នាក់',
+      editTitle: 'កែសម្រួលកម្រិតថ្នាក់',
+      subtitle: 'ប្រើលេខកូដខ្លី និងឯកតា ដើម្បីឲ្យការបង្កើតកូដថ្នាក់អាចយកទៅប្រើបានដោយសុវត្ថិភាព។',
+    },
+    fields: {
+      nameEn: 'ឈ្មោះកម្រិត EN',
+      nameKh: 'ឈ្មោះកម្រិត KH',
+      code: 'លេខកូដកម្រិត',
+      sortOrder: 'លំដាប់',
+      isActive: 'សកម្ម',
+    },
+    placeholders: {
+      nameEn: 'Nursery',
+      nameKh: 'មត្តេយ្យកម្រិតតូច',
+      code: 'NUR',
+      sortOrder: '0',
+    },
+    help: {
+      isActive: 'កម្រិតដែលមិនសកម្មនៅតែរក្សាទុកសម្រាប់កំណត់ត្រា ប៉ុន្តែមិនបង្ហាញក្នុងការជ្រើសរើសថ្នាក់ថ្មី។',
+    },
+    validation: {
+      required: 'វាលនេះត្រូវតែបំពេញ។',
+      max: 'ត្រូវមានត្រឹម 10 តួអក្សរ ឬតិចជាងនេះ។',
+      positive: 'សូមបញ្ចូលលេខ 0 ឬច្រើនជាងនេះ។',
+      alphaNumeric: 'ប្រើតែលេខកូដអក្សរធំ និងលេខប៉ុណ្ណោះ។',
+    },
+  },
+  preschoolAssessmentSettingsPage: {
+    fields: {
+      periodType: 'ប្រភេទរយៈពេល',
+    },
+    periodTypes: {
+      monthly: 'ប្រចាំខែ',
+      term: 'តាម term',
+      annual: 'ប្រចាំឆ្នាំ',
+    },
+    help: {
+      termOptional: 'អាចទុកទទេសម្រាប់រយៈពេលប្រចាំខែ ឬប្រចាំឆ្នាំ។',
+    },
+    placeholders: {
+      termOptional: 'ជាជម្រើសសម្រាប់ប្រចាំខែ ឬប្រចាំឆ្នាំ',
     },
   },
 }

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import Button from '@/components/buttons/Button.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 defineOptions({
@@ -29,38 +30,54 @@ const isKh = computed(() => language.value === 'KH')
 
 <template>
   <div :class="isKh ? 'add-class-form-actions add-class-form-actions--kh' : 'add-class-form-actions'">
-    <button
-      v-if="isViewMode"
-      type="button"
-      class="add-class-form-actions__action add-class-form-actions__action--secondary"
-      @click="$emit('back')"
-    >
-      {{ t('preschoolAddClass.backToClasses') }}
-    </button>
-    <button
-      v-if="isViewMode"
-      type="button"
-      class="add-class-form-actions__action add-class-form-actions__action--primary"
-      @click="$emit('edit')"
-    >
-      {{ t('preschoolAddClass.editAction') }}
-    </button>
-    <button
-      v-else
-      type="button"
-      class="add-class-form-actions__action add-class-form-actions__action--secondary"
-      @click="$emit('back')"
-    >
-      {{ t('preschoolAddClass.backToClasses') }}
-    </button>
-    <button
-      v-if="isEditMode"
-      type="submit"
-      class="add-class-form-actions__action add-class-form-actions__action--primary"
-      :disabled="isSubmitting"
-    >
-      {{ isSubmitting ? t('preschoolAddClass.saving') : t('preschoolAddClass.updateAction') }}
-    </button>
+    <template v-if="isViewMode">
+      <Button
+        type="button"
+        variant="outline"
+        size="md"
+        rounded="xl"
+        class="add-class-form-actions__action"
+        @click="$emit('back')"
+      >
+        {{ t('preschoolAddClass.backToClasses') }}
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="md"
+        rounded="xl"
+        class="add-class-form-actions__action add-class-form-actions__action--primary"
+        @click="$emit('edit')"
+      >
+        {{ t('preschoolAddClass.editAction') }}
+      </Button>
+    </template>
+    <template v-else>
+      <Button
+        type="button"
+        variant="outline"
+        size="md"
+        rounded="xl"
+        class="add-class-form-actions__action"
+        @click="$emit('back')"
+      >
+        {{ isEditMode ? t('preschoolAddClass.backToClasses') : t('preschoolAddClass.cancelAction') }}
+      </Button>
+      <Button
+        type="submit"
+        variant="primary"
+        size="md"
+        rounded="xl"
+        class="add-class-form-actions__action add-class-form-actions__action--primary"
+        :disabled="isSubmitting"
+      >
+        {{ isSubmitting
+          ? t('preschoolAddClass.saving')
+          : isEditMode
+            ? t('preschoolAddClass.updateAction')
+            : t('preschoolAddClass.createClass') }}
+      </Button>
+    </template>
   </div>
 </template>
 
@@ -73,40 +90,11 @@ const isKh = computed(() => language.value === 'KH')
 }
 
 .add-class-form-actions__action {
-  min-height: 2.8rem;
-  width: 100%;
-  border-radius: 0.9rem;
-  border: 1px solid transparent;
-  font-size: 0.95rem;
-  font-weight: 800;
-  transition: all 0.18s ease;
+  min-width: 10rem;
 }
 
 .add-class-form-actions__action--primary {
-  background: #00aeef;
-  border-color: #00aeef;
-  color: #fff;
-}
-
-.add-class-form-actions__action--primary:hover:enabled {
-  background: #0284c7;
-  border-color: #0284c7;
-}
-
-.add-class-form-actions__action--secondary {
-  background: #fff;
-  border-color: #cbd5e1;
-  color: #334155;
-}
-
-.add-class-form-actions__action--secondary:hover:enabled {
-  background: #f8fafc;
-  border-color: #94a3b8;
-}
-
-.add-class-form-actions__action:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+  box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.65);
 }
 
 .add-class-form-actions--kh .add-class-form-actions__action {
@@ -117,12 +105,13 @@ const isKh = computed(() => language.value === 'KH')
 @media (min-width: 640px) {
   .add-class-form-actions {
     flex-direction: row;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   .add-class-form-actions__action {
     width: auto;
-    min-width: 10rem;
   }
 }
 </style>

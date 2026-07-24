@@ -9,7 +9,6 @@ import { useLanguage } from '@/composables/useLanguage'
 import AttendanceHistoryHero from './components/AttendanceHistoryHero.vue'
 import AttendanceHistoryFilterBar from './components/AttendanceHistoryFilterBar.vue'
 import AttendanceHistoryTable from './components/AttendanceHistoryTable.vue'
-import { typeLabel } from './utils/attendanceHistoryHelpers'
 import { fetchSportAttendance, fetchSportTeams } from '@/modules/sport/services/sportApi'
 
 defineOptions({
@@ -20,7 +19,6 @@ const { t } = useLanguage()
 const router = useRouter()
 const toast = useToast()
 
-const selectedType = ref('player')
 const selectedTeamId = ref('')
 const searchQuery = ref('')
 const dateFrom = ref('')
@@ -28,7 +26,7 @@ const dateTo = ref('')
 const teamOptions = ref([])
 const records = ref([])
 const currentPage = ref(1)
-const pageSize = 20
+const pageSize = 5
 const pagination = ref({
   page: 1,
   perPage: pageSize,
@@ -42,18 +40,12 @@ const errorMessage = ref('')
 const resultCount = computed(() => Number(pagination.value.total) || records.value.length)
 const activeFiltersCount = computed(() => {
   return [
-    selectedType.value !== 'player',
     selectedTeamId.value !== '',
     searchQuery.value.trim() !== '',
     dateFrom.value !== '',
     dateTo.value !== '',
   ].filter(Boolean).length
 })
-
-const typeOptions = computed(() => [
-  { label: t('sportAttendanceType.player'), value: 'player' },
-  { label: t('sportAttendanceType.coach'), value: 'coach' },
-])
 
 async function loadTeams() {
   teamsLoading.value = true
@@ -76,7 +68,6 @@ async function loadHistory(page = currentPage.value) {
 
   try {
     const response = await fetchSportAttendance({
-      attendanceType: selectedType.value,
       teamId: selectedTeamId.value,
       search: searchQuery.value,
       dateFrom: dateFrom.value,
@@ -108,7 +99,6 @@ function applyFilters() {
 
 async function resetFilters() {
   suppressFilterWatch.value = true
-  selectedType.value = 'player'
   selectedTeamId.value = ''
   searchQuery.value = ''
   dateFrom.value = ''
@@ -126,9 +116,11 @@ function goToPage(page) {
 
 const heroStats = computed(() => [
   {
-    key: 'type',
-    label: t('sportAdminAttendanceHistoryPage.filters.type'),
-    value: typeLabel(selectedType.value, t),
+    key: 'team',
+    label: t('sportAdminAttendanceHistoryPage.filters.team'),
+    value: selectedTeamId.value
+      ? (teamOptions.value.find((option) => String(option.value) === String(selectedTeamId.value))?.label || selectedTeamId.value)
+      : t('sportAdminAttendanceHistoryPage.placeholders.team'),
   },
   {
     key: 'filters',
@@ -142,7 +134,7 @@ const heroStats = computed(() => [
   },
 ])
 
-watch([selectedType, selectedTeamId, dateFrom, dateTo], () => {
+watch([selectedTeamId, searchQuery, dateFrom, dateTo], () => {
   if (suppressFilterWatch.value) {
     return
   }
@@ -167,16 +159,13 @@ onMounted(() => {
       <AttendanceHistoryHero :stats="heroStats" />
 
       <AttendanceHistoryFilterBar
-        :selected-type="selectedType"
         :selected-team-id="selectedTeamId"
         :date-from="dateFrom"
         :date-to="dateTo"
         :search-query="searchQuery"
-        :type-options="typeOptions"
         :team-options="teamOptions"
         :teams-loading="teamsLoading"
         :loading="loading"
-        @update:selected-type="selectedType = $event"
         @update:selected-team-id="selectedTeamId = $event"
         @update:date-from="dateFrom = $event"
         @update:date-to="dateTo = $event"
@@ -191,7 +180,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="loading" class="att-history-empty">
-        {{ t('preschoolReportsShared.loading') }}
+        {{ t('loading') }}
       </div>
 
       <div v-else-if="!records.length" class="att-history-empty">

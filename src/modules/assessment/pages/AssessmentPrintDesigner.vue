@@ -8,9 +8,9 @@ import Tag from 'primevue/tag'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
 import Checkbox from 'primevue/checkbox'
 import Divider from 'primevue/divider'
+import Select from 'primevue/select'
 import { useLanguage } from '@/composables/useLanguage'
 import { assessmentPrintApi } from '../services/assessmentPrintApi'
 import { useConfirm } from 'primevue/useconfirm'
@@ -1003,19 +1003,19 @@ watch(() => route.params.id, () => {
               </label>
               <label class="print-field">
                 <span>{{ t('printDesigner.templateSettings.format') }}</span>
-                <Dropdown v-model="templateForm.format" :options="formatOptions" option-label="label" option-value="value" class="w-full" />
+                <Select v-model="templateForm.format" :options="formatOptions" option-label="label" option-value="value" class="w-full" />
               </label>
               <label class="print-field">
                 <span>{{ t('printDesigner.templateSettings.pageSize') }}</span>
-                <Dropdown v-model="templateForm.page_size" :options="pageSizeOptions" option-label="label" option-value="value" class="w-full" />
+                <Select v-model="templateForm.page_size" :options="pageSizeOptions" option-label="label" option-value="value" class="w-full" />
               </label>
               <label class="print-field">
                 <span>{{ t('printDesigner.templateSettings.orientation') }}</span>
-                <Dropdown v-model="templateForm.orientation" :options="orientationOptions" option-label="label" option-value="value" class="w-full" />
+                <Select v-model="templateForm.orientation" :options="orientationOptions" option-label="label" option-value="value" class="w-full" />
               </label>
               <label class="print-field">
                 <span>{{ t('printDesigner.templateSettings.status') }}</span>
-                <Dropdown v-model="templateForm.status" :options="statusOptions" option-label="label" option-value="value" class="w-full" />
+                <Select v-model="templateForm.status" :options="statusOptions" option-label="label" option-value="value" class="w-full" />
               </label>
             </div>
 
@@ -1138,7 +1138,7 @@ watch(() => route.params.id, () => {
             <div v-if="selectedBlock" class="print-block-editor">
               <label class="print-field">
                 <span>{{ t('printDesigner.blockEditor.type') }}</span>
-                <Dropdown
+                <Select
                   :model-value="selectedBlock.type"
                   :options="blockOptions"
                   option-label="label"

@@ -234,6 +234,16 @@ export async function saveStudentMedicalProfile(studentId, payload = {}) {
   return data.medicalProfile || null
 }
 
+export async function deleteStudentMedicalProfile(studentId) {
+  const id = resolveId(studentId)
+  if (!id) {
+    throw new Error('Student id is required.')
+  }
+
+  await http.delete(`/preschool/students/${encodeURIComponent(id)}/health/medical-profile`)
+  return true
+}
+
 export async function fetchStudentHealthAllergies(studentId, filters = {}) {
   const id = resolveId(studentId)
   if (!id) return []

@@ -1,0 +1,426 @@
+/* Export compatibility: Override unsupported CSS colors for html2pdf */
+.report-export-content {
+  color-scheme: light;
+}
+
+.report-export-content * {
+  color: inherit;
+  background-color: transparent !important;
+}
+
+/* Remove unsupported oklch() color functions */
+.report-export-content [style*="oklch"] {
+  color: #000 !important;
+  background-color: transparent !important;
+}
+
+/* Print Stylesheet for Reports */
+@media print {
+  /* Hide UI elements not needed in print */
+  .sport-admin-reports__filters,
+  .export-actions,
+  .filter-actions,
+  .p-tabview-nav,
+  .p-paginator,
+  button,
+  .navigation,
+  aside,
+  header {
+    display: none !important;
+  }
+
+  /* Optimize layout for print */
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Report styling */
+  .sport-admin-reports {
+    display: block !important;
+  }
+
+  .sport-admin-reports__report-content {
+    display: block !important;
+    page-break-inside: avoid;
+  }
+
+  .report-header {
+    border-bottom: 2px solid #000;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .report-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 16pt;
+    font-weight: bold;
+  }
+
+  .report-meta {
+    font-size: 9pt;
+    color: #333;
+  }
+
+  .report-meta span {
+    display: inline;
+    margin-right: 1rem;
+  }
+
+  /* Statistics grid */
+  .statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    page-break-inside: avoid;
+  }
+
+  .stat-card {
+    border: 1px solid #ddd;
+    padding: 1rem;
+    page-break-inside: avoid;
+  }
+
+  .stat-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: #666;
+  }
+
+  .stat-value {
+    font-size: 18pt;
+    font-weight: bold;
+    margin-top: 0.5rem;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #000;
+    padding: 0.5rem;
+    text-align: left;
+    font-size: 9pt;
+  }
+
+  table th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  table tr {
+    page-break-inside: avoid;
+  }
+
+  /* PrimeVue DataTable */
+  .p-datatable {
+    width: 100%;
+  }
+
+  .p-datatable .p-datatable-thead > tr > th {
+    background-color: #f0f0f0 !important;
+    border: 1px solid #000 !important;
+    padding: 0.5rem !important;
+  }
+
+  .p-datatable .p-datatable-tbody > tr > td {
+    border: 1px solid #ddd !important;
+    padding: 0.5rem !important;
+    font-size: 9pt;
+  }
+
+  .p-datatable .p-datatable-tbody > tr {
+    page-break-inside: avoid;
+  }
+
+  /* Tabs content */
+  .p-tabview-panels {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  .p-tabview-panels > .p-tabview-panel {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  /* Margins */
+  @page {
+    margin: 1cm;
+  }
+
+  /* Print colors */
+  .error-message {
+    color: red;
+    font-weight: bold;
+  }
+
+  .success-message {
+    color: green;
+    font-weight: bold;
+  }
+
+  /* Preschool Report Content */
+  .report-export-content {
+    display: block !important;
+    width: 100%;
+  }
+
+  /* Student Identity Card */
+  .student-identity-card {
+    page-break-inside: avoid;
+    border: 1px solid #000;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .student-identity-card h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .student-identity-card h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin: 0.5rem 0;
+  }
+
+  .student-identity-card p {
+    margin: 0.25rem 0;
+    font-size: 10pt;
+  }
+
+  /* Report Summary Cards */
+  .report-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    page-break-inside: avoid;
+  }
+
+  .summary-card {
+    border: 1px solid #999;
+    padding: 0.8rem;
+    page-break-inside: avoid;
+  }
+
+  .summary-card-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 0.3rem;
+  }
+
+  .summary-card-value {
+    font-size: 16pt;
+    font-weight: bold;
+    color: #000;
+  }
+
+  /* Report Sections */
+  .report-section {
+    margin-bottom: 1.5rem;
+    page-break-inside: avoid;
+  }
+
+  .report-section-title {
+    font-size: 12pt;
+    font-weight: bold;
+    border-bottom: 1px solid #000;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Attendance Report Specific */
+  .attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    border: 1px solid #000;
+    padding: 0.5rem;
+    text-align: left;
+    font-size: 9pt;
+  }
+
+  .attendance-table th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  .attendance-table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  /* Assessment Report Specific */
+  .assessment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+
+  .assessment-table th,
+  .assessment-table td {
+    border: 1px solid #000;
+    padding: 0.5rem;
+    text-align: left;
+    font-size: 9pt;
+  }
+
+  .assessment-table th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  .assessment-table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  /* Report Footer */
+  .report-footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #000;
+    font-size: 8pt;
+    color: #666;
+  }
+
+  .report-footer-date {
+    margin-bottom: 0.5rem;
+  }
+
+  .signature-line {
+    margin-top: 2rem;
+    border-top: 1px solid #000;
+    width: 200px;
+    font-size: 9pt;
+  }
+
+  /* Hide non-print UI in Preschool Reports */
+  .rounded-xl {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure SelectMenu and form elements don't print */
+  .p-select,
+  .p-inputtext,
+  [class*="input"],
+  [class*="select"],
+  label {
+    display: none !important;
+  }
+
+  /* Keep report content visible */
+  .report-export-content label,
+  .student-identity-card label,
+  .report-section label {
+    display: block !important;
+  }
+
+  /* PrimeVue Components in Print */
+  .p-select-label,
+  .p-select-trigger,
+  .p-inputtext-filled {
+    display: none !important;
+  }
+
+  /* Images in print */
+  img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure proper spacing for printed content */
+  h1 {
+    font-size: 16pt;
+    font-weight: bold;
+    margin: 1rem 0 0.5rem 0;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 1rem 0 0.5rem 0;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin: 0.8rem 0 0.5rem 0;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin: 0.5rem 0;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 12.7mm;
+  }
+
+  /* PDF Document Styling */
+  .pdf-document {
+    page-break-inside: avoid;
+  }
+
+  .pdf-header {
+    page-break-inside: avoid;
+    border-bottom: 2px solid #000 !important;
+  }
+
+  .pdf-section {
+    page-break-inside: avoid;
+  }
+
+  .pdf-footer {
+    page-break-inside: avoid;
+    border-top: 1px solid #000 !important;
+  }
+
+  /* Avoid breaking key elements */
+  .student-info-block,
+  .summary-block,
+  .attendance-block,
+  .assessment-block {
+    page-break-inside: avoid;
+  }
+
+  /* Print-specific text classes */
+  .print-only {
+    display: block !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

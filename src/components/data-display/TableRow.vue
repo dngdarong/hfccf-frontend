@@ -193,7 +193,26 @@ function usernameLabel(username) {
 function avatarSrc(row) {
   if (hasImageError.value) return ''
 
-  return resolveAvatarSource(row?.avatar || row?.avatarUrl || row?.profileImage || row?.photo)
+  return resolveAvatarSource(
+    row?.avatarUrl ||
+    row?.avatar ||
+    row?.avatar_url ||
+    row?.profile_photo_url ||
+    row?.profilePhotoUrl ||
+    row?.profile_image_url ||
+    row?.profileImageUrl ||
+    row?.photo_url ||
+    row?.photoUrl ||
+    row?.image_url ||
+    row?.imageUrl ||
+    row?.profileImage ||
+    row?.profile_image ||
+    row?.photo ||
+    row?.image ||
+    row?.thumbnail ||
+    row?.media?.url ||
+    row?.media?.path,
+  )
 }
 
 /**
@@ -328,10 +347,24 @@ function cellClass(column) {
  */
 watch(
   () => [
-    resolvedRow.value?.avatar,
     resolvedRow.value?.avatarUrl,
+    resolvedRow.value?.avatar,
+    resolvedRow.value?.avatar_url,
+    resolvedRow.value?.profile_photo_url,
+    resolvedRow.value?.profilePhotoUrl,
+    resolvedRow.value?.profile_image_url,
+    resolvedRow.value?.profileImageUrl,
+    resolvedRow.value?.photo_url,
+    resolvedRow.value?.photoUrl,
+    resolvedRow.value?.image_url,
+    resolvedRow.value?.imageUrl,
     resolvedRow.value?.profileImage,
+    resolvedRow.value?.profile_image,
     resolvedRow.value?.photo,
+    resolvedRow.value?.image,
+    resolvedRow.value?.thumbnail,
+    resolvedRow.value?.media?.url,
+    resolvedRow.value?.media?.path,
   ],
   () => {
     hasImageError.value = false

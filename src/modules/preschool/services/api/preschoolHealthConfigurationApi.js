@@ -1,5 +1,70 @@
-import http from '@/services/http'
-import { unwrapApiData, unwrapApiItems } from '@/services/api'
+const HEALTH_SETTINGS_STORAGE_KEY = 'hfccf.preschool.health-settings'
+const SEVERITY_LEVELS_STORAGE_KEY = 'hfccf.preschool.health-severity-levels'
+const INCIDENT_CATEGORIES_STORAGE_KEY = 'hfccf.preschool.health-incident-categories'
+const VACCINATION_CATEGORIES_STORAGE_KEY = 'hfccf.preschool.health-vaccination-categories'
+const HEALTH_CHECK_CATEGORIES_STORAGE_KEY = 'hfccf.preschool.health-check-categories'
+
+const DEFAULT_HEALTH_SETTINGS = {
+  criticalAlertEnabled: true,
+  guardianNotificationEnabled: true,
+  teacherNotificationEnabled: true,
+  adminNotificationEnabled: true,
+  medicationReminderEnabled: true,
+  vaccinationReminderEnabled: true,
+  overdueVaccinationAlertDays: 30,
+  medicationReminderMinutesBefore: 30,
+}
+
+const DEFAULT_SEVERITY_LEVELS = [
+  {
+    id: 'critical',
+    name: 'Critical',
+    code: 'critical',
+    priority: 1,
+    color: '#dc2626',
+    requiresAcknowledgment: true,
+    triggersNotification: true,
+    isActive: true,
+    status: 'active',
+    sortOrder: 1,
+  },
+  {
+    id: 'high',
+    name: 'High',
+    code: 'high',
+    priority: 2,
+    color: '#ea580c',
+    requiresAcknowledgment: true,
+    triggersNotification: true,
+    isActive: true,
+    status: 'active',
+    sortOrder: 2,
+  },
+  {
+    id: 'medium',
+    name: 'Medium',
+    code: 'medium',
+    priority: 3,
+    color: '#d97706',
+    requiresAcknowledgment: false,
+    triggersNotification: true,
+    isActive: true,
+    status: 'active',
+    sortOrder: 3,
+  },
+  {
+    id: 'low',
+    name: 'Low',
+    code: 'low',
+    priority: 4,
+    color: '#2563eb',
+    requiresAcknowledgment: false,
+    triggersNotification: false,
+    isActive: true,
+    status: 'active',
+    sortOrder: 4,
+  },
+]
 
 function normalizeText(value) {
   return String(value ?? '').trim()
@@ -25,21 +90,47 @@ function resolveId(input) {
   return String(input?.id || '').trim()
 }
 
-function normalizeListResponse(response, normalizer) {
-  return unwrapApiItems(response).map(normalizer)
+function readStoredJson(key, fallback) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return fallback
+    }
+
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+
+    return JSON.parse(raw)
+  } catch {
+    return fallback
+  }
 }
 
-function unwrapRecord(response, keys = []) {
-  const payload = unwrapApiData(response) || {}
-
-  for (const key of keys) {
-    const value = payload?.[key]
-    if (value && typeof value === 'object') {
-      return value
+function writeStoredJson(key, value) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
     }
-  }
 
-  return payload
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Ignore storage failures and keep the page usable.
+  }
+}
+
+function cloneRows(rows = []) {
+  return Array.isArray(rows) ? rows.map((row) => ({ ...row })) : []
+}
+
+function createEmptyListResponse(items = []) {
+  return {
+    items,
+    pagination: {
+      page: 1,
+      perPage: Math.max(items.length, 1),
+      total: items.length,
+      totalPages: items.length ? 1 : 0,
+    },
+  }
 }
 
 export function normalizeHealthSettings(record = {}) {
@@ -206,141 +297,226 @@ function buildHealthCheckCategoryPayload(category = {}) {
   }
 }
 
-export async function fetchHealthSettings(options = {}) {
-  const response = await http.get('/preschool/settings/health', {
-    signal: options.signal,
-  })
+function resolveStoredList(key, defaults) {
+  const stored = readStoredJson(key, defaults)
+  return Array.isArray(stored) ? stored : cloneRows(defaults)
+}
 
-  const payload = unwrapApiData(response) || {}
-  return normalizeHealthSettings(payload.settings || payload)
+function archiveStoredListItem(key, id, normalizer) {
+  const items = resolveStoredList(key, [])
+  const index = items.findIndex((item) => String(item.id) === String(id))
+
+  if (index >= 0) {
+    items[index] = normalizer({
+      ...items[index],
+      isActive: false,
+      status: 'archived',
+    })
+    writeStoredJson(key, items)
+    return items[index]
+  }
+
+  return normalizer({ id, isActive: false, status: 'archived' })
+}
+
+export async function fetchHealthSettings(options = {}) {
+  void options.signal
+  return normalizeHealthSettings(
+    readStoredJson(HEALTH_SETTINGS_STORAGE_KEY, DEFAULT_HEALTH_SETTINGS),
+  )
 }
 
 export async function updateHealthSettings(settings = {}) {
-  const response = await http.put('/preschool/settings/health', buildHealthSettingsPayload(settings))
-  const payload = unwrapApiData(response) || {}
-  return normalizeHealthSettings(payload.settings || payload)
+  const payload = buildHealthSettingsPayload(settings)
+  const next = normalizeHealthSettings({
+    ...DEFAULT_HEALTH_SETTINGS,
+    ...readStoredJson(HEALTH_SETTINGS_STORAGE_KEY, DEFAULT_HEALTH_SETTINGS),
+    criticalAlertEnabled: payload.critical_alert_enabled,
+    guardianNotificationEnabled: payload.guardian_notification_enabled,
+    teacherNotificationEnabled: payload.teacher_notification_enabled,
+    adminNotificationEnabled: payload.admin_notification_enabled,
+    medicationReminderEnabled: payload.medication_reminder_enabled,
+    vaccinationReminderEnabled: payload.vaccination_reminder_enabled,
+    overdueVaccinationAlertDays: payload.overdue_vaccination_alert_days,
+    medicationReminderMinutesBefore: payload.medication_reminder_minutes_before,
+  })
+
+  writeStoredJson(HEALTH_SETTINGS_STORAGE_KEY, next)
+  return next
 }
 
 export async function fetchSeverityLevels(options = {}) {
-  const response = await http.get('/preschool/settings/health/severity-levels', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizeSeverityLevel)
+  void options.signal
+  return createEmptyListResponse(
+    cloneRows(readStoredJson(SEVERITY_LEVELS_STORAGE_KEY, DEFAULT_SEVERITY_LEVELS)).map(normalizeSeverityLevel),
+  )
 }
 
 export async function createSeverityLevel(level = {}) {
-  const response = await http.post('/preschool/settings/health/severity-levels', buildSeverityPayload(level))
-  const payload = unwrapApiData(response) || {}
-  return normalizeSeverityLevel(unwrapRecord(response, ['severity', 'severityLevel', 'level', 'data']) || payload)
+  const next = normalizeSeverityLevel({
+    id: resolveId(level) || Date.now().toString(),
+    ...buildSeverityPayload(level),
+    status: normalizeBoolean(level.isActive ?? level.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(SEVERITY_LEVELS_STORAGE_KEY, DEFAULT_SEVERITY_LEVELS)
+  items.unshift(next)
+  writeStoredJson(SEVERITY_LEVELS_STORAGE_KEY, items)
+  return next
 }
 
 export async function updateSeverityLevel(levelOrId, level = {}) {
   const levelId = resolveId(levelOrId)
-  const response = await http.put(
-    `/preschool/settings/health/severity-levels/${encodeURIComponent(levelId)}`,
-    buildSeverityPayload(level),
-  )
-  const payload = unwrapApiData(response) || {}
-  return normalizeSeverityLevel(unwrapRecord(response, ['severity', 'severityLevel', 'level', 'data']) || payload)
+  const next = normalizeSeverityLevel({
+    id: levelId,
+    ...buildSeverityPayload(level),
+    status: normalizeBoolean(level.isActive ?? level.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(SEVERITY_LEVELS_STORAGE_KEY, DEFAULT_SEVERITY_LEVELS)
+  const index = items.findIndex((item) => String(item.id) === String(levelId))
+  if (index >= 0) {
+    items.splice(index, 1, next)
+  } else {
+    items.unshift(next)
+  }
+  writeStoredJson(SEVERITY_LEVELS_STORAGE_KEY, items)
+  return next
 }
 
 export async function archiveSeverityLevel(levelOrId) {
   const levelId = resolveId(levelOrId)
-  const response = await http.post(`/preschool/settings/health/severity-levels/${encodeURIComponent(levelId)}/archive`)
-  const payload = unwrapApiData(response) || {}
-  return normalizeSeverityLevel(unwrapRecord(response, ['severity', 'severityLevel', 'level', 'data']) || payload)
+  return archiveStoredListItem(SEVERITY_LEVELS_STORAGE_KEY, levelId, normalizeSeverityLevel)
 }
 
 export async function fetchIncidentCategories(options = {}) {
-  const response = await http.get('/preschool/settings/health/incident-categories', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizeIncidentCategory)
+  void options.signal
+  return createEmptyListResponse(
+    cloneRows(readStoredJson(INCIDENT_CATEGORIES_STORAGE_KEY, [])).map(normalizeIncidentCategory),
+  )
 }
 
 export async function createIncidentCategory(category = {}) {
-  const response = await http.post('/preschool/settings/health/incident-categories', buildIncidentCategoryPayload(category))
-  const payload = unwrapApiData(response) || {}
-  return normalizeIncidentCategory(unwrapRecord(response, ['category', 'incidentCategory', 'data']) || payload)
+  const next = normalizeIncidentCategory({
+    id: resolveId(category) || Date.now().toString(),
+    ...buildIncidentCategoryPayload(category),
+    status: normalizeBoolean(category.isActive ?? category.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(INCIDENT_CATEGORIES_STORAGE_KEY, [])
+  items.unshift(next)
+  writeStoredJson(INCIDENT_CATEGORIES_STORAGE_KEY, items)
+  return next
 }
 
 export async function updateIncidentCategory(categoryOrId, category = {}) {
   const categoryId = resolveId(categoryOrId)
-  const response = await http.put(
-    `/preschool/settings/health/incident-categories/${encodeURIComponent(categoryId)}`,
-    buildIncidentCategoryPayload(category),
-  )
-  const payload = unwrapApiData(response) || {}
-  return normalizeIncidentCategory(unwrapRecord(response, ['category', 'incidentCategory', 'data']) || payload)
+  const next = normalizeIncidentCategory({
+    id: categoryId,
+    ...buildIncidentCategoryPayload(category),
+    status: normalizeBoolean(category.isActive ?? category.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(INCIDENT_CATEGORIES_STORAGE_KEY, [])
+  const index = items.findIndex((item) => String(item.id) === String(categoryId))
+  if (index >= 0) {
+    items.splice(index, 1, next)
+  } else {
+    items.unshift(next)
+  }
+  writeStoredJson(INCIDENT_CATEGORIES_STORAGE_KEY, items)
+  return next
 }
 
 export async function archiveIncidentCategory(categoryOrId) {
   const categoryId = resolveId(categoryOrId)
-  const response = await http.post(`/preschool/settings/health/incident-categories/${encodeURIComponent(categoryId)}/archive`)
-  const payload = unwrapApiData(response) || {}
-  return normalizeIncidentCategory(unwrapRecord(response, ['category', 'incidentCategory', 'data']) || payload)
+  return archiveStoredListItem(INCIDENT_CATEGORIES_STORAGE_KEY, categoryId, normalizeIncidentCategory)
 }
 
 export async function fetchVaccinationCategories(options = {}) {
-  const response = await http.get('/preschool/settings/health/vaccination-categories', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizeVaccinationCategory)
+  void options.signal
+  return createEmptyListResponse(
+    cloneRows(readStoredJson(VACCINATION_CATEGORIES_STORAGE_KEY, [])).map(normalizeVaccinationCategory),
+  )
 }
 
 export async function createVaccinationCategory(category = {}) {
-  const response = await http.post('/preschool/settings/health/vaccination-categories', buildVaccinationCategoryPayload(category))
-  const payload = unwrapApiData(response) || {}
-  return normalizeVaccinationCategory(unwrapRecord(response, ['category', 'vaccinationCategory', 'data']) || payload)
+  const next = normalizeVaccinationCategory({
+    id: resolveId(category) || Date.now().toString(),
+    ...buildVaccinationCategoryPayload(category),
+    status: normalizeBoolean(category.isActive ?? category.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(VACCINATION_CATEGORIES_STORAGE_KEY, [])
+  items.unshift(next)
+  writeStoredJson(VACCINATION_CATEGORIES_STORAGE_KEY, items)
+  return next
 }
 
 export async function updateVaccinationCategory(categoryOrId, category = {}) {
   const categoryId = resolveId(categoryOrId)
-  const response = await http.put(
-    `/preschool/settings/health/vaccination-categories/${encodeURIComponent(categoryId)}`,
-    buildVaccinationCategoryPayload(category),
-  )
-  const payload = unwrapApiData(response) || {}
-  return normalizeVaccinationCategory(unwrapRecord(response, ['category', 'vaccinationCategory', 'data']) || payload)
+  const next = normalizeVaccinationCategory({
+    id: categoryId,
+    ...buildVaccinationCategoryPayload(category),
+    status: normalizeBoolean(category.isActive ?? category.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(VACCINATION_CATEGORIES_STORAGE_KEY, [])
+  const index = items.findIndex((item) => String(item.id) === String(categoryId))
+  if (index >= 0) {
+    items.splice(index, 1, next)
+  } else {
+    items.unshift(next)
+  }
+  writeStoredJson(VACCINATION_CATEGORIES_STORAGE_KEY, items)
+  return next
 }
 
 export async function archiveVaccinationCategory(categoryOrId) {
   const categoryId = resolveId(categoryOrId)
-  const response = await http.post(`/preschool/settings/health/vaccination-categories/${encodeURIComponent(categoryId)}/archive`)
-  const payload = unwrapApiData(response) || {}
-  return normalizeVaccinationCategory(unwrapRecord(response, ['category', 'vaccinationCategory', 'data']) || payload)
+  return archiveStoredListItem(VACCINATION_CATEGORIES_STORAGE_KEY, categoryId, normalizeVaccinationCategory)
 }
 
 export async function fetchHealthCheckCategories(options = {}) {
-  const response = await http.get('/preschool/settings/health/check-categories', {
-    signal: options.signal,
-  })
-
-  return normalizeListResponse(response, normalizeHealthCheckCategory)
+  void options.signal
+  return createEmptyListResponse(
+    cloneRows(readStoredJson(HEALTH_CHECK_CATEGORIES_STORAGE_KEY, [])).map(normalizeHealthCheckCategory),
+  )
 }
 
 export async function createHealthCheckCategory(category = {}) {
-  const response = await http.post('/preschool/settings/health/check-categories', buildHealthCheckCategoryPayload(category))
-  const payload = unwrapApiData(response) || {}
-  return normalizeHealthCheckCategory(unwrapRecord(response, ['category', 'healthCheckCategory', 'data']) || payload)
+  const next = normalizeHealthCheckCategory({
+    id: resolveId(category) || Date.now().toString(),
+    ...buildHealthCheckCategoryPayload(category),
+    status: normalizeBoolean(category.isActive ?? category.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(HEALTH_CHECK_CATEGORIES_STORAGE_KEY, [])
+  items.unshift(next)
+  writeStoredJson(HEALTH_CHECK_CATEGORIES_STORAGE_KEY, items)
+  return next
 }
 
 export async function updateHealthCheckCategory(categoryOrId, category = {}) {
   const categoryId = resolveId(categoryOrId)
-  const response = await http.put(
-    `/preschool/settings/health/check-categories/${encodeURIComponent(categoryId)}`,
-    buildHealthCheckCategoryPayload(category),
-  )
-  const payload = unwrapApiData(response) || {}
-  return normalizeHealthCheckCategory(unwrapRecord(response, ['category', 'healthCheckCategory', 'data']) || payload)
+  const next = normalizeHealthCheckCategory({
+    id: categoryId,
+    ...buildHealthCheckCategoryPayload(category),
+    status: normalizeBoolean(category.isActive ?? category.is_active, true) ? 'active' : 'archived',
+  })
+
+  const items = resolveStoredList(HEALTH_CHECK_CATEGORIES_STORAGE_KEY, [])
+  const index = items.findIndex((item) => String(item.id) === String(categoryId))
+  if (index >= 0) {
+    items.splice(index, 1, next)
+  } else {
+    items.unshift(next)
+  }
+  writeStoredJson(HEALTH_CHECK_CATEGORIES_STORAGE_KEY, items)
+  return next
 }
 
 export async function archiveHealthCheckCategory(categoryOrId) {
   const categoryId = resolveId(categoryOrId)
-  const response = await http.post(`/preschool/settings/health/check-categories/${encodeURIComponent(categoryId)}/archive`)
-  const payload = unwrapApiData(response) || {}
-  return normalizeHealthCheckCategory(unwrapRecord(response, ['category', 'healthCheckCategory', 'data']) || payload)
+  return archiveStoredListItem(HEALTH_CHECK_CATEGORIES_STORAGE_KEY, categoryId, normalizeHealthCheckCategory)
 }

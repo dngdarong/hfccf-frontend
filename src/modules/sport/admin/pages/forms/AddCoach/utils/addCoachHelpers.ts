@@ -35,7 +35,8 @@ export function permissionLabel(value: string | null | undefined, t: any): strin
 }
 
 export function validateForm(form: any, isAddMode: boolean, t: any): string {
-  if (!form.name.trim()) return t('sportAddCoach.validation.fullNameRequired')
+  const nameParts = String(form.name || '').trim().split(/\s+/).filter(Boolean)
+  if (nameParts.length < 2) return t('sportAddCoach.validation.fullNameRequired')
   if (!form.email.trim()) return t('sportAddCoach.validation.emailRequired')
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return t('sportAddCoach.validation.emailInvalid')
   if (!form.status) return t('sportAddCoach.validation.statusRequired')
@@ -54,7 +55,7 @@ export function getFormPayload(form: any, isAddMode = true): Record<string, any>
     phone: form.phone,
     status: form.status,
     avatar: form.profileImage,
-    removeAvatar: !form.profileImage ? false : false,
+    removeAvatar: !form.profileImage,
   }
 
   if (isAddMode) {

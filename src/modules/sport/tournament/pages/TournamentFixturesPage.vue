@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import AlertError from '@/components/alerts/AlertError.vue'
@@ -16,6 +16,7 @@ import TournamentGenerateFixturesPanel from '@/modules/sport/tournament/componen
 import { canEditTournamentConfiguration, getTournamentStateMeta } from '@/modules/sport/tournament/composables/useTournamentStateMachine'
 import { useTournamentCatalog } from '@/modules/sport/tournament/composables/useTournamentCatalog'
 import { useTournamentFixtures } from '@/modules/sport/tournament/composables/useTournamentFixtures'
+import { fetchTournamentFixtures, fetchTournamentStandings } from '@/modules/sport/tournament/api/tournamentApi'
 
 defineOptions({
   name: 'SportTournamentFixturesPage',
@@ -24,7 +25,7 @@ defineOptions({
 const router = useRouter()
 const route = useRoute()
 const { t } = useLanguage()
-const { getTournamentById, updateTournament, transitionTournament } = useTournamentCatalog()
+const { getTournamentById, loadTournament, setTournamentRecord } = useTournamentCatalog()
 
 const showError = ref(false)
 const showSuccess = ref(false)
@@ -56,10 +57,9 @@ const {
   applyPreview,
   resetFixtures,
   updateFixtureStatus,
-} = useTournamentFixtures(tournament, {
-  updateTournament,
-  transitionTournament,
-})
+  isGenerating,
+  isUpdating,
+} = useTournamentFixtures(tournament, { reloadTournament })
 
 const pageTitle = computed(() => tournament.value?.name || t('sportTournament.fixtures.notFoundTitle'))
 const pageSubtitle = computed(() => tournament.value?.description || t('sportTournament.fixtures.notFoundMessage'))
@@ -120,8 +120,8 @@ function handlePreview() {
   generatePreview()
 }
 
-function handleApply() {
-  const updated = applyPreview()
+async function handleApply() {
+  const updated = await applyPreview().catch(() => null)
   if (!updated?.id) {
     notifyError(t('sportTournament.fixtures.validation.saveFailed'))
     return
@@ -139,10 +139,10 @@ function handleReset() {
   notifySuccess(t('sportTournament.fixtures.success.reset'))
 }
 
-function handleStatusUpdate(payload) {
+async function handleStatusUpdate(payload) {
   if (!payload?.fixtureId || !payload?.status) return
 
-  const updated = updateFixtureStatus(payload.fixtureId, payload.status)
+  const updated = await updateFixtureStatus(payload.fixtureId, payload.status).catch(() => null)
   if (!updated?.id) {
     notifyError(t('sportTournament.fixtures.validation.saveFailed'))
     return
@@ -150,6 +150,24 @@ function handleStatusUpdate(payload) {
 
   notifySuccess(t('sportTournament.fixtures.success.statusUpdated'))
 }
+
+async function reloadTournament() {
+  const detail = await loadTournament(tournamentId.value)
+  const [fixtureResponse, standingsResponse] = await Promise.all([
+    fetchTournamentFixtures(tournamentId.value),
+    fetchTournamentStandings(tournamentId.value),
+  ])
+  setTournamentRecord({ ...detail, fixtures: fixtureResponse.matches, standings: standingsResponse.standings })
+}
+
+onMounted(async () => {
+  if (!tournamentId.value) return
+  try {
+    await reloadTournament()
+  } catch (error) {
+    notifyError(error?.message || t('sportTournament.fixtures.notFoundMessage'))
+  }
+})
 </script>
 
 <template>
@@ -205,6 +223,7 @@ function handleStatusUpdate(payload) {
             :model-value="settings"
             :can-generate="canGenerateFixtures"
             :can-reset="Boolean(previewFixtures.length) || !isViewOnly"
+            :pending="isGenerating || isUpdating"
             :preview-count="previewFixtures.length"
             :preview-matchdays="previewSummary?.matchdays || stats.matchdays"
             @update:modelValue="updateSettings"
@@ -526,3 +545,4 @@ function handleStatusUpdate(payload) {
   }
 }
 </style>
+

@@ -10,20 +10,25 @@ import {
 import { fetchSportPlayers } from '@/modules/sport/services/api/sportPlayersApi'
 import { getApiErrorMessage } from '@/services/api'
 
-export function usePlayerLifecycle() {
+export function usePlayerLifecycle(t = null) {
   const items = ref([])
   const history = ref({ player: null, memberships: [] })
   const loading = ref(false)
   const error = ref('')
 
-  async function runMutation(action, fallbackMessage) {
+  // Helper to get translated error message or fallback
+  const getErrorMsg = (i18nKey, fallback) => {
+    return t ? t(i18nKey) : fallback
+  }
+
+  async function runMutation(action, i18nKey, fallbackMessage) {
     loading.value = true
     error.value = ''
 
     try {
       return await action()
     } catch (cause) {
-      error.value = getApiErrorMessage(cause, fallbackMessage)
+      error.value = getApiErrorMessage(cause, getErrorMsg(i18nKey, fallbackMessage))
       throw cause
     } finally {
       loading.value = false
@@ -39,7 +44,7 @@ export function usePlayerLifecycle() {
       items.value = response.items || []
       return response
     } catch (cause) {
-      error.value = getApiErrorMessage(cause, 'Unable to load players.')
+      error.value = getApiErrorMessage(cause, getErrorMsg('sportAdminSharedMessages.errors.loadingPlayers', 'Unable to load players.'))
       items.value = []
       return { items: [], pagination: { page: 1, perPage: 10, total: 0, totalPages: 1 } }
     } finally {
@@ -56,7 +61,7 @@ export function usePlayerLifecycle() {
       history.value = response
       return response
     } catch (cause) {
-      error.value = getApiErrorMessage(cause, 'Unable to load player history.')
+      error.value = getApiErrorMessage(cause, getErrorMsg('sportAdminSharedMessages.errors.loadingFailed', 'Unable to load player history.'))
       history.value = { player: null, memberships: [] }
       return history.value
     } finally {
@@ -67,27 +72,41 @@ export function usePlayerLifecycle() {
   async function updateStatus(playerId, payload = {}, options = {}) {
     return runMutation(
       () => updatePlayerLifecycleStatus(playerId, payload, options),
+      'sportAdminSharedMessages.errors.savingFailed',
       'Unable to update player lifecycle status.',
     )
   }
 
   async function markInjury(playerId, payload = {}, options = {}) {
-    return runMutation(() => updatePlayerInjury(playerId, payload, options), 'Unable to update player injury status.')
+    return runMutation(
+      () => updatePlayerInjury(playerId, payload, options),
+      'sportAdminSharedMessages.errors.savingFailed',
+      'Unable to update player injury status.',
+    )
   }
 
   async function markSuspension(playerId, payload = {}, options = {}) {
     return runMutation(
       () => updatePlayerSuspension(playerId, payload, options),
+      'sportAdminSharedMessages.errors.savingFailed',
       'Unable to update player suspension status.',
     )
   }
 
   async function release(playerId, payload = {}, options = {}) {
-    return runMutation(() => releasePlayer(playerId, payload, options), 'Unable to release player.')
+    return runMutation(
+      () => releasePlayer(playerId, payload, options),
+      'sportAdminSharedMessages.errors.savingFailed',
+      'Unable to release player.',
+    )
   }
 
   async function archive(playerId, payload = {}, options = {}) {
-    return runMutation(() => archivePlayer(playerId, payload, options), 'Unable to archive player.')
+    return runMutation(
+      () => archivePlayer(playerId, payload, options),
+      'sportAdminSharedMessages.errors.savingFailed',
+      'Unable to archive player.',
+    )
   }
 
   return {

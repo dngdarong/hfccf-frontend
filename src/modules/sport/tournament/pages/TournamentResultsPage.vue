@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import AlertError from '@/components/alerts/AlertError.vue'
@@ -18,6 +18,7 @@ import { useTournamentCatalog } from '@/modules/sport/tournament/composables/use
 import { createFixtureResultDraft, useTournamentResults } from '@/modules/sport/tournament/composables/useTournamentResults'
 import { useTournamentStatistics } from '@/modules/sport/tournament/composables/useTournamentStatistics'
 import { getTournamentStateMeta } from '@/modules/sport/tournament/composables/useTournamentStateMachine'
+import { fetchTournamentResults } from '@/modules/sport/tournament/api/tournamentApi'
 
 defineOptions({
   name: 'SportTournamentResultsPage',
@@ -26,7 +27,7 @@ defineOptions({
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
-const { getTournamentById, updateTournament, transitionTournament } = useTournamentCatalog()
+const { getTournamentById, loadTournament, setTournamentRecord } = useTournamentCatalog()
 
 const showError = ref(false)
 const showSuccess = ref(false)
@@ -55,10 +56,9 @@ const {
   removeEvent,
   resetEventDraft,
   saveResult,
-} = useTournamentResults(tournament, {
-  updateTournament,
-  transitionTournament,
-})
+  isSaving,
+  isAddingEvent,
+} = useTournamentResults(tournament, { reloadTournament })
 
 const pageTitle = computed(() => tournament.value?.name || t('sportTournament.results.notFoundTitle'))
 const pageSubtitle = computed(() => tournament.value?.description || t('sportTournament.results.notFoundMessage'))
@@ -111,8 +111,8 @@ function notifySuccess(message) {
   showSuccess.value = true
 }
 
-function handleSave() {
-  const updated = saveResult()
+async function handleSave() {
+  const updated = await saveResult().catch(() => null)
   if (!updated?.id) {
     notifyError(t('sportTournament.results.validation.saveFailed'))
     return
@@ -126,13 +126,29 @@ function handleReset() {
   resetEventDraft(selectedFixture.value)
 }
 
-function handleAddEvent() {
-  const addedEvent = addEvent()
+async function handleAddEvent() {
+  const addedEvent = await addEvent().catch(() => null)
   if (!addedEvent?.id) {
     notifyError(t('sportTournament.results.validation.eventAddFailed'))
     return
   }
 }
+
+async function reloadTournament() {
+  const detail = await loadTournament(tournamentId.value)
+  const result = await fetchTournamentResults(tournamentId.value)
+  setTournamentRecord({ ...detail, fixtures: result.matches, standings: result.standings })
+  await tournamentStatistics.loadStatistics()
+}
+
+onMounted(async () => {
+  if (!tournamentId.value) return
+  try {
+    await reloadTournament()
+  } catch {
+    notifyError(t('sportTournament.results.notFoundMessage'))
+  }
+})
 </script>
 
 <template>
@@ -209,7 +225,7 @@ function handleAddEvent() {
               :fixture="selectedFixture || {}"
               :model-value="resultDraft"
               :status-options="statusOptions"
-              :disabled="!selectedFixture"
+              :disabled="!selectedFixture || isSaving"
               @update:modelValue="updateDraft"
               @save="handleSave"
               @reset="handleReset"
@@ -220,7 +236,7 @@ function handleAddEvent() {
               :side-options="eventSideOptions"
               :team-options="eventTeamOptions"
               :validation="eventDraftValidation"
-              :disabled="!selectedFixture"
+              :disabled="!selectedFixture || isAddingEvent"
               @add="handleAddEvent"
               @reset="resetEventDraft(selectedFixture)"
             />
@@ -444,3 +460,4 @@ function handleAddEvent() {
   }
 }
 </style>
+

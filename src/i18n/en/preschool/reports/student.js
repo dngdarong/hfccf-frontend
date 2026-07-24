@@ -5,12 +5,19 @@ export default {
     title: 'Student Reports',
     subtitle: 'Review finalized assessments, attendance, and teacher observations for a student.',
     filters: {
+      periodType: 'Period Type',
       student: 'Student',
       period: 'Reporting Period',
     },
     placeholders: {
+      periodType: 'Select period type',
       student: 'Select a student',
       period: 'Select a period',
+    },
+    periodTypes: {
+      monthly: 'Monthly',
+      term: 'Term',
+      annual: 'Annual',
     },
     actions: {
       back: 'Back',

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import Button from 'primevue/button'
+import { computed, onMounted, ref, watch } from 'vue'
+import Button from '@/components/buttons/Button.vue'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -8,6 +8,7 @@ import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import Pagination from '@/components/data-display/Pagination.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import {
@@ -24,6 +25,9 @@ const { t, language } = useLanguage()
 const { items, loadPlayers, loadHistory, updateStatus, markInjury, markSuspension, release, archive, loading, error } = usePlayerLifecycle()
 const selectedStatus = ref('')
 const selectedApproval = ref('')
+const currentPage = ref(1)
+const historyCurrentPage = ref(1)
+const pageSize = 5
 const historyDialog = ref(false)
 const historyPlayer = ref(null)
 const historyMemberships = ref([])
@@ -39,6 +43,18 @@ const filteredPlayers = computed(() => items.value.filter((player) => {
   if (selectedApproval.value && approval !== selectedApproval.value) return false
   return true
 }))
+const totalPages = computed(() => Math.max(Math.ceil(filteredPlayers.value.length / pageSize), 1))
+const paginatedPlayers = computed(() => filteredPlayers.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))
+const historyTotalPages = computed(() => Math.max(Math.ceil(historyMemberships.value.length / pageSize), 1))
+const paginatedHistoryMemberships = computed(() => historyMemberships.value.slice((historyCurrentPage.value - 1) * pageSize, historyCurrentPage.value * pageSize))
+
+watch(() => filteredPlayers.value.length, () => {
+  if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
+})
+
+watch(() => historyMemberships.value.length, () => {
+  if (historyCurrentPage.value > historyTotalPages.value) historyCurrentPage.value = historyTotalPages.value
+})
 
 const statusOptions = computed(() => [
   { label: t('sportPlayerLifecycle.filters.allStatuses'), value: '' },
@@ -93,6 +109,7 @@ async function openHistory(player) {
   const response = await loadHistory(player.id)
   historyPlayer.value = response.player || player
   historyMemberships.value = response.memberships || []
+  historyCurrentPage.value = 1
   historyDialog.value = true
 }
 
@@ -114,7 +131,7 @@ onMounted(async () => {
             <Select v-model="selectedApproval" :options="approvalOptions" option-label="label" option-value="value" :placeholder="t('sportPlayerLifecycle.filters.approval')" />
           </div>
 
-          <DataTable :value="filteredPlayers" class="mt-4" data-key="id" striped-rows :loading="loading">
+          <DataTable :value="paginatedPlayers" class="mt-4" data-key="id" striped-rows :loading="loading">
             <Column field="name" :header="t('sportPlayerLifecycle.common.player')" />
             <Column field="team.name" :header="t('sportPlayerLifecycle.common.team')" />
             <Column field="approvalStatus" :header="t('sportPlayerLifecycle.common.approval')">
@@ -140,6 +157,9 @@ onMounted(async () => {
               </template>
             </Column>
           </DataTable>
+          <div v-if="totalPages > 1" class="mt-4 flex justify-end">
+            <Pagination v-model="currentPage" :total-pages="totalPages" />
+          </div>
 
           <p v-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
         </template>
@@ -152,12 +172,15 @@ onMounted(async () => {
           <p class="m-0 text-sm text-slate-500">{{ t('sportPlayerLifecycle.history.player') }}</p>
           <p class="m-0 text-lg font-semibold text-slate-900">{{ historyPlayer?.name }}</p>
         </div>
-        <DataTable :value="historyMemberships" data-key="id" striped-rows>
+        <DataTable :value="paginatedHistoryMemberships" data-key="id" striped-rows>
           <Column field="team.name" :header="t('sportPlayerLifecycle.common.team')" />
           <Column field="status" :header="t('sportPlayerLifecycle.common.membershipStatus')" />
           <Column field="joinedAt" :header="t('sportPlayerLifecycle.history.joinedAt')" />
           <Column field="leftAt" :header="t('sportPlayerLifecycle.history.leftAt')" />
         </DataTable>
+        <div v-if="historyTotalPages > 1" class="mt-4 flex justify-end">
+          <Pagination v-model="historyCurrentPage" :total-pages="historyTotalPages" />
+        </div>
       </div>
     </Dialog>
   </MainLayout>
@@ -181,3 +204,4 @@ onMounted(async () => {
     'Noto Sans Khmer', 'Khmer OS Siemreap', 'Khmer OS Battambang', 'Leelawadee UI', sans-serif;
 }
 </style>
+

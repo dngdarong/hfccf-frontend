@@ -2,25 +2,11 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SidebarLink from '@/components/navigation/SidebarLink.vue'
+import AppBadge from '@/components/ui/AppBadge.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import sidebarNavData from '@/data/sidebar'
-import HomeIcon from '@/assets/icons/Home.vue'
-import CalendarIcon from '@/assets/icons/Calendar.vue'
-import AttendanceIcon from '@/assets/icons/Attendance.vue'
-import ClassIcon from '@/assets/icons/Class.vue'
-import EnrollmentsIcon from '@/assets/icons/Enrollments.vue'
-import FormsIcon from '@/assets/icons/Forms.vue'
-import GovernanceIcon from '@/assets/icons/Governance.vue'
-import HealthIcon from '@/assets/icons/Health.vue'
-import InventoryIcon from '@/assets/icons/Inventory.vue'
-import PaymentsIcon from '@/assets/icons/Payments.vue'
-import PerformanceIcon from '@/assets/icons/Performance.vue'
-import NotificationIcon from '@/assets/icons/Notification.vue'
-import UsersIcon from '@/assets/icons/Users.vue'
-import ReportsIcon from '@/assets/icons/Reports.vue'
-import SettingsIcon from '@/assets/icons/Settings.vue'
-import TournamentsIcon from '@/assets/icons/Tournaments.vue'
 import { buildSidebarSections } from '@/components/navigation/sidebarNavigation'
+import { resolveSidebarNavigationIconComponent } from '@/components/navigation/sidebarIcons'
 import { useUserStore } from '@/store/userStore'
 
 defineOptions({
@@ -38,26 +24,6 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
 const userStore = useUserStore()
-// Map icon keys from JSON config to concrete Vue components.
-const iconByName = {
-  home: HomeIcon,
-  calendar: CalendarIcon,
-  attendance: AttendanceIcon,
-  class: ClassIcon,
-  enrollments: EnrollmentsIcon,
-  forms: FormsIcon,
-  governance: GovernanceIcon,
-  health: HealthIcon,
-  inventory: InventoryIcon,
-  payments: PaymentsIcon,
-  performance: PerformanceIcon,
-  notification: NotificationIcon,
-  info: UsersIcon,
-  users: UsersIcon,
-  reports: ReportsIcon,
-  settings: SettingsIcon,
-  tournaments: TournamentsIcon,
-}
 
 const currentPath = computed(() => route.path)
 const currentRouteName = computed(() => String(route.name || ''))
@@ -105,23 +71,29 @@ loadSectionState()
 function decorateNavItem(item) {
   return {
     ...item,
-    iconComponent: iconByName[item.icon] || null,
+    iconComponent: resolveSidebarNavigationIconComponent(item),
     children: (item.children || []).map((child) => decorateNavItem(child)),
   }
 }
 
-function isPathActive(path) {
-  return (
-    currentPath.value === path ||
-    currentPath.value.startsWith(`${path}/`)
-  )
+function isPathActive(path, exact = false) {
+  if (!path) return false
+
+  if (exact) {
+    return currentPath.value === path
+  }
+
+  return currentPath.value === path || currentPath.value.startsWith(`${path}/`)
 }
 
 function isNavItemActive(item) {
+  const routeNames = Array.isArray(item.activeRouteNames) ? item.activeRouteNames : []
+  const exactActive = Boolean(item.exactActive)
+
   return (
     currentRouteName.value === item.routeName ||
-    (item.activeRouteNames || []).includes(currentRouteName.value) ||
-    isPathActive(item.routePath) ||
+    routeNames.includes(currentRouteName.value) ||
+    isPathActive(item.routePath, exactActive) ||
     (item.children || []).some((child) => isNavItemActive(child))
   )
 }
@@ -202,9 +174,7 @@ function getNavItemInactiveClass(item) {
             <p class="sidebar-section__label">{{ section.label }}</p>
             <p class="sidebar-section__caption">{{ section.caption }}</p>
           </div>
-          <span class="sidebar-section__count" aria-hidden="true">
-            {{ section.badge || countSectionItems(section) }}
-          </span>
+          <AppBadge class="sidebar-section__count" size="xs" variant="neutral" :label="String(section.badge || countSectionItems(section))" aria-hidden="true" />
           <i
             v-if="section.collapsible"
             class="pi text-[0.66rem] text-surface-400"
@@ -227,7 +197,7 @@ function getNavItemInactiveClass(item) {
             >
               <span v-if="!collapsed" class="sidebar-link-content">
                 <span class="truncate">{{ item.label }}</span>
-                <span v-if="item.badge" class="sidebar-link-badge">{{ item.badge }}</span>
+                <AppBadge v-if="item.badge" class="sidebar-link-badge" size="xs" variant="neutral" :label="item.badge" :title="item.badge" />
               </span>
               <span v-else class="sr-only">{{ `${section.label} ${item.label}` }}</span>
             </SidebarLink>
@@ -249,7 +219,7 @@ function getNavItemInactiveClass(item) {
               >
                 <span v-if="!collapsed" class="sidebar-link-content">
                   <span class="truncate">{{ child.label }}</span>
-                  <span v-if="child.badge" class="sidebar-link-badge">{{ child.badge }}</span>
+                  <AppBadge v-if="child.badge" class="sidebar-link-badge" size="xs" variant="neutral" :label="child.badge" :title="child.badge" />
                 </span>
                 <span v-else class="sr-only">{{ `${section.label} ${child.label}` }}</span>
               </SidebarLink>
@@ -355,22 +325,6 @@ function getNavItemInactiveClass(item) {
   box-shadow: 0 0 0 3px var(--sidebar-section-accent-weak);
 }
 
-.sidebar-section__count {
-  display: inline-flex;
-  min-width: 1.42rem;
-  height: 1.42rem;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--sidebar-section-accent) 24%, white);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--sidebar-section-accent) 10%, white);
-  color: var(--brand-surface-700);
-  font-size: 0.66rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
 .sidebar-section__label {
   margin: 0;
   overflow: hidden;
@@ -381,6 +335,10 @@ function getNavItemInactiveClass(item) {
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.sidebar-section__count {
+  min-width: 1.42rem;
 }
 
 .sidebar-section__caption {
@@ -431,23 +389,8 @@ function getNavItemInactiveClass(item) {
 }
 
 .sidebar-link-badge {
-  display: inline-flex;
   max-width: 5.6rem;
-  min-height: 1.15rem;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-base) 18%, white);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-base) 8%, white);
-  color: var(--brand-surface-600);
-  font-size: 0.6rem;
-  font-weight: 900;
-  line-height: 1;
-  padding: 0 0.38rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 :deep(.sidebar-link--secondary) {

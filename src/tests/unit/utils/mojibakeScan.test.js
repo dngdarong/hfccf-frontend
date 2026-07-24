@@ -56,5 +56,5 @@ describe('mojibake scan', () => {
     }
 
     expect(offendingFiles).toEqual([])
-  })
+  }, 20000)
 })

@@ -5,12 +5,19 @@ export default {
     title: 'របាយការណ៍ថ្នាក់',
     subtitle: 'ពិនិត្យការរីកចម្រើន វត្តមាន និងការសង្កេតរបស់ថ្នាក់ទាំងមូល។',
     filters: {
+      periodType: 'ប្រភេទរយៈពេល',
       class: 'ថ្នាក់',
       period: 'រយៈពេលរបាយការណ៍',
     },
     placeholders: {
+      periodType: 'ជ្រើសប្រភេទរយៈពេល',
       class: 'ជ្រើសថ្នាក់',
       period: 'ជ្រើសរយៈពេលរបាយការណ៍',
+    },
+    periodTypes: {
+      monthly: 'ប្រចាំខែ',
+      term: 'តាម term',
+      annual: 'ប្រចាំឆ្នាំ',
     },
     actions: {
       back: 'ត្រឡប់ទៅទិដ្ឋភាពទូទៅ',

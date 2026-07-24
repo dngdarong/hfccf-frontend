@@ -13,7 +13,6 @@ import { getApiErrorMessage } from '@/services/api'
 import PreschoolSettingsSectionCard from '@/modules/preschool/shared/components/settings/PreschoolSettingsSectionCard.vue'
 import {
   fetchPreferences,
-  normalizePreferences,
   updatePreferences,
 } from '@/modules/preschool/services/api/preschoolPreferencesApi'
 
@@ -28,7 +27,12 @@ const loading = ref(true)
 const saving = ref(false)
 const errorMessage = ref('')
 const saveErrors = ref({})
-const preferences = ref(createDefaultPreferences())
+const preferences = ref(createEmptyPreferences())
+
+const supportedLanguages = ['en', 'kh']
+const supportedDateFormats = ['Y-m-d', 'd/m/Y', 'm/d/Y', 'DD/MM/YYYY']
+const supportedTimeFormats = ['H:i', 'HH:mm']
+const supportedYearFormats = ['YY', 'YYYY']
 
 const languageOptions = computed(() => [
   { label: t('preschoolPreferencesSettingsPage.languages.english'), value: 'en' },
@@ -37,43 +41,98 @@ const languageOptions = computed(() => [
 
 const studentCodePreview = computed(() => buildStudentCodePreview(preferences.value))
 
-function createDefaultPreferences() {
-  return normalizePreferences({
-    timezone: 'Asia/Phnom_Penh',
-    default_language: 'en',
-    date_format: 'Y-m-d',
-    time_format: 'H:i',
-    minimum_enrollment_age_months: 24,
-    maximum_enrollment_age_months: 60,
-    auto_approve_enrollment: false,
-    student_code_prefix: 'PS',
-    student_code_year_format: 'YYYY',
-    student_code_sequence_length: 4,
-    default_class_capacity: 18,
-    teacher_student_ratio: 10,
-    waitlist_enabled: true,
-    minimum_guardians: 1,
-    maximum_guardians: 2,
-    primary_guardian_required: true,
-    pickup_authorization_required: true,
-    attendance_alert_enabled: true,
-    assessment_alert_enabled: true,
-    health_alert_enabled: true,
-    enrollment_notification_enabled: true,
-  })
+function createEmptyPreferences() {
+  return {
+    timezone: '',
+    defaultLanguage: '',
+    dateFormat: '',
+    timeFormat: '',
+    minimumEnrollmentAgeMonths: null,
+    maximumEnrollmentAgeMonths: null,
+    autoApproveEnrollment: false,
+    studentCodePrefix: '',
+    studentCodeYearFormat: '',
+    studentCodeSequenceLength: null,
+    defaultClassCapacity: null,
+    teacherStudentRatio: null,
+    waitlistEnabled: false,
+    minimumGuardians: null,
+    maximumGuardians: null,
+    primaryGuardianRequired: false,
+    pickupAuthorizationRequired: false,
+    attendanceAlertEnabled: false,
+    assessmentAlertEnabled: false,
+    healthAlertEnabled: false,
+    enrollmentNotificationEnabled: false,
+  }
 }
 
 function buildStudentCodePreview(settings = {}) {
-  const prefix = String(settings.studentCodePrefix || 'PS').trim().toUpperCase()
-  const format = String(settings.studentCodeYearFormat || 'YYYY').trim().toUpperCase()
-  const sequenceLength = Math.max(1, Number(settings.studentCodeSequenceLength || 4))
+  const prefix = String(settings.studentCodePrefix || '').trim().toUpperCase()
+  const format = String(settings.studentCodeYearFormat || '').trim().toUpperCase()
+  const sequenceLength = Number(settings.studentCodeSequenceLength)
+
+  if (!prefix || !supportedYearFormats.includes(format) || !Number.isInteger(sequenceLength) || sequenceLength < 1) {
+    return '—'
+  }
+
   const year = format === 'YY'
     ? new Date().getFullYear().toString().slice(-2)
     : format === 'YYYY'
       ? new Date().getFullYear().toString()
       : format
 
+  if (!year || year === format) {
+    return '—'
+  }
+
   return `${prefix}-${year}-${String(1).padStart(sequenceLength, '0')}`
+}
+
+function isSupportedTimezone(value) {
+  const timezone = String(value || '').trim()
+  if (!timezone) return false
+
+  if (typeof Intl.supportedValuesOf === 'function') {
+    return Intl.supportedValuesOf('timeZone').includes(timezone)
+  }
+
+  return timezone === 'Asia/Phnom_Penh'
+}
+
+function mapValidationMessage(value) {
+  const key = String(value || '').trim()
+  if (!key) return ''
+
+  const validationKeys = new Set([
+    'required',
+    'positive',
+    'range',
+    'invalidTimezone',
+    'unsupportedLanguage',
+    'invalidDateFormat',
+    'invalidTimeFormat',
+    'invalidYearFormat',
+  ])
+
+  return validationKeys.has(key)
+    ? t(`preschoolPreferencesSettingsPage.validation.${key}`)
+    : key
+}
+
+function mapBackendValidationErrors(error) {
+  const responseErrors = error?.validationErrors
+    || error?.response?.data?.data?.errors
+    || error?.response?.data?.errors
+    || {}
+  const mapped = {}
+
+  Object.entries(responseErrors).forEach(([field, messages]) => {
+    const value = Array.isArray(messages) ? messages[0] : messages
+    mapped[field.replace(/^preferences\./, '')] = String(value || '')
+  })
+
+  return mapped
 }
 
 function validatePreferencesDraft() {
@@ -81,22 +140,25 @@ function validatePreferencesDraft() {
   const minimumAge = Number(preferences.value.minimumEnrollmentAgeMonths)
   const maximumAge = Number(preferences.value.maximumEnrollmentAgeMonths)
 
-  if (!String(preferences.value.timezone || '').trim()) errors.timezone = 'required'
-  if (!String(preferences.value.defaultLanguage || '').trim()) errors.defaultLanguage = 'required'
-  if (!String(preferences.value.dateFormat || '').trim()) errors.dateFormat = 'required'
-  if (!String(preferences.value.timeFormat || '').trim()) errors.timeFormat = 'required'
+  if (!isSupportedTimezone(preferences.value.timezone)) errors.timezone = 'invalidTimezone'
+  if (!supportedLanguages.includes(String(preferences.value.defaultLanguage || '').trim())) errors.defaultLanguage = 'unsupportedLanguage'
+  if (!supportedDateFormats.includes(String(preferences.value.dateFormat || '').trim())) errors.dateFormat = 'invalidDateFormat'
+  if (!supportedTimeFormats.includes(String(preferences.value.timeFormat || '').trim())) errors.timeFormat = 'invalidTimeFormat'
   if (!(minimumAge >= 0)) errors.minimumEnrollmentAgeMonths = 'positive'
   if (!(maximumAge >= 0)) errors.maximumEnrollmentAgeMonths = 'positive'
   if (!errors.minimumEnrollmentAgeMonths && !errors.maximumEnrollmentAgeMonths && minimumAge > maximumAge) {
     errors.maximumEnrollmentAgeMonths = 'range'
   }
   if (!String(preferences.value.studentCodePrefix || '').trim()) errors.studentCodePrefix = 'required'
-  if (!String(preferences.value.studentCodeYearFormat || '').trim()) errors.studentCodeYearFormat = 'required'
+  if (!supportedYearFormats.includes(String(preferences.value.studentCodeYearFormat || '').trim().toUpperCase())) errors.studentCodeYearFormat = 'invalidYearFormat'
   if (!(Number(preferences.value.studentCodeSequenceLength) >= 1)) errors.studentCodeSequenceLength = 'positive'
   if (!(Number(preferences.value.defaultClassCapacity) >= 1)) errors.defaultClassCapacity = 'positive'
   if (!(Number(preferences.value.teacherStudentRatio) >= 1)) errors.teacherStudentRatio = 'positive'
   if (!(Number(preferences.value.minimumGuardians) >= 0)) errors.minimumGuardians = 'positive'
   if (!(Number(preferences.value.maximumGuardians) >= 0)) errors.maximumGuardians = 'positive'
+  if (!errors.minimumGuardians && !errors.maximumGuardians && Number(preferences.value.minimumGuardians) > Number(preferences.value.maximumGuardians)) {
+    errors.maximumGuardians = 'range'
+  }
 
   return {
     errors,
@@ -107,11 +169,12 @@ function validatePreferencesDraft() {
 async function loadPreferences() {
   loading.value = true
   errorMessage.value = ''
+  saveErrors.value = {}
 
   try {
     preferences.value = await fetchPreferences()
   } catch (error) {
-    preferences.value = createDefaultPreferences()
+    preferences.value = createEmptyPreferences()
     errorMessage.value = getApiErrorMessage(error, t('preschoolPreferencesSettingsPage.messages.loadFailed'))
   } finally {
     loading.value = false
@@ -135,12 +198,25 @@ async function handleSave() {
 
   try {
     preferences.value = await updatePreferences(preferences.value)
+    saveErrors.value = {}
     toast.add({
       severity: 'success',
       summary: t('preschoolPreferencesSettingsPage.messages.settingsSaved'),
       life: 2600,
     })
   } catch (error) {
+    const validationErrors = mapBackendValidationErrors(error)
+
+    if (Object.keys(validationErrors).length > 0) {
+      saveErrors.value = validationErrors
+      toast.add({
+        severity: 'warn',
+        summary: t('preschoolPreferencesSettingsPage.messages.validationFailed'),
+        life: 2600,
+      })
+      return
+    }
+
     toast.add({
       severity: 'error',
       summary: getApiErrorMessage(error, t('preschoolPreferencesSettingsPage.messages.saveFailed')),
@@ -199,7 +275,7 @@ onMounted(() => {
             <label class="field">
               <span>{{ t('preschoolPreferencesSettingsPage.fields.timezone') }}</span>
               <InputText v-model="preferences.timezone" />
-              <small v-if="saveErrors.timezone" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.timezone}`) }}</small>
+              <small v-if="saveErrors.timezone" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.timezone) }}</small>
             </label>
 
             <label class="field">
@@ -210,19 +286,19 @@ onMounted(() => {
                 option-label="label"
                 option-value="value"
               />
-              <small v-if="saveErrors.defaultLanguage" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.defaultLanguage}`) }}</small>
+              <small v-if="saveErrors.defaultLanguage" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.defaultLanguage) }}</small>
             </label>
 
             <label class="field">
               <span>{{ t('preschoolPreferencesSettingsPage.fields.dateFormat') }}</span>
               <InputText v-model="preferences.dateFormat" />
-              <small v-if="saveErrors.dateFormat" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.dateFormat}`) }}</small>
+              <small v-if="saveErrors.dateFormat" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.dateFormat) }}</small>
             </label>
 
             <label class="field">
               <span>{{ t('preschoolPreferencesSettingsPage.fields.timeFormat') }}</span>
               <InputText v-model="preferences.timeFormat" />
-              <small v-if="saveErrors.timeFormat" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.timeFormat}`) }}</small>
+              <small v-if="saveErrors.timeFormat" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.timeFormat) }}</small>
             </label>
           </div>
         </PreschoolSettingsSectionCard>
@@ -238,13 +314,13 @@ onMounted(() => {
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.minimumEnrollmentAgeMonths') }}</span>
                 <InputNumber v-model="preferences.minimumEnrollmentAgeMonths" :min="0" />
-                <small v-if="saveErrors.minimumEnrollmentAgeMonths" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.minimumEnrollmentAgeMonths}`) }}</small>
+                <small v-if="saveErrors.minimumEnrollmentAgeMonths" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.minimumEnrollmentAgeMonths) }}</small>
               </label>
 
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.maximumEnrollmentAgeMonths') }}</span>
                 <InputNumber v-model="preferences.maximumEnrollmentAgeMonths" :min="0" />
-                <small v-if="saveErrors.maximumEnrollmentAgeMonths" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.maximumEnrollmentAgeMonths}`) }}</small>
+                <small v-if="saveErrors.maximumEnrollmentAgeMonths" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.maximumEnrollmentAgeMonths) }}</small>
               </label>
 
               <label class="toggle md:col-span-2">
@@ -266,19 +342,19 @@ onMounted(() => {
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.studentCodePrefix') }}</span>
                 <InputText v-model="preferences.studentCodePrefix" />
-                <small v-if="saveErrors.studentCodePrefix" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.studentCodePrefix}`) }}</small>
+                <small v-if="saveErrors.studentCodePrefix" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.studentCodePrefix) }}</small>
               </label>
 
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.studentCodeYearFormat') }}</span>
                 <InputText v-model="preferences.studentCodeYearFormat" />
-                <small v-if="saveErrors.studentCodeYearFormat" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.studentCodeYearFormat}`) }}</small>
+                <small v-if="saveErrors.studentCodeYearFormat" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.studentCodeYearFormat) }}</small>
               </label>
 
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.studentCodeSequenceLength') }}</span>
                 <InputNumber v-model="preferences.studentCodeSequenceLength" :min="1" :max="12" />
-                <small v-if="saveErrors.studentCodeSequenceLength" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.studentCodeSequenceLength}`) }}</small>
+                <small v-if="saveErrors.studentCodeSequenceLength" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.studentCodeSequenceLength) }}</small>
               </label>
 
               <div class="preview-card">
@@ -304,13 +380,13 @@ onMounted(() => {
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.defaultClassCapacity') }}</span>
                 <InputNumber v-model="preferences.defaultClassCapacity" :min="1" />
-                <small v-if="saveErrors.defaultClassCapacity" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.defaultClassCapacity}`) }}</small>
+                <small v-if="saveErrors.defaultClassCapacity" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.defaultClassCapacity) }}</small>
               </label>
 
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.teacherStudentRatio') }}</span>
                 <InputNumber v-model="preferences.teacherStudentRatio" :min="1" />
-                <small v-if="saveErrors.teacherStudentRatio" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.teacherStudentRatio}`) }}</small>
+                <small v-if="saveErrors.teacherStudentRatio" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.teacherStudentRatio) }}</small>
               </label>
 
               <label class="toggle md:col-span-2">
@@ -332,13 +408,13 @@ onMounted(() => {
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.minimumGuardians') }}</span>
                 <InputNumber v-model="preferences.minimumGuardians" :min="0" />
-                <small v-if="saveErrors.minimumGuardians" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.minimumGuardians}`) }}</small>
+                <small v-if="saveErrors.minimumGuardians" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.minimumGuardians) }}</small>
               </label>
 
               <label class="field">
                 <span>{{ t('preschoolPreferencesSettingsPage.fields.maximumGuardians') }}</span>
                 <InputNumber v-model="preferences.maximumGuardians" :min="0" />
-                <small v-if="saveErrors.maximumGuardians" class="text-xs font-medium text-rose-600">{{ t(`preschoolPreferencesSettingsPage.validation.${saveErrors.maximumGuardians}`) }}</small>
+                <small v-if="saveErrors.maximumGuardians" class="text-xs font-medium text-rose-600">{{ mapValidationMessage(saveErrors.maximumGuardians) }}</small>
               </label>
 
               <label class="toggle">

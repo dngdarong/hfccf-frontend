@@ -17,9 +17,11 @@
   },
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
+    "@tabler/icons-vue": "^3.44.0",
     "@tailwindcss/vite": "^4.2.1",
     "axios": "^1.13.6",
     "html-to-image": "^1.11.13",
+    "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
@@ -29,7 +31,8 @@
     "vite": "^7.3.2",
     "vue": "^3.5.30",
     "vue-i18n": "^11.3.0",
-    "vue-router": "^5.0.3"
+    "vue-router": "^5.0.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,3 +1,5 @@
+import { formatMatchDateTimeForDisplay } from '@/modules/sport/services/api/sportApiUtils'
+
 export function normalize(value: string | number | undefined | null): string {
   return String(value ?? '')
     .trim()
@@ -20,6 +22,7 @@ export function formatDisplayScore(match: any = {}): string {
 export function toTableMatch(match: any): any {
   return {
     ...match,
+    schedule: formatMatchDateTimeForDisplay(match.schedule || match.scheduledAt || match.scheduled_at),
     score: String(match.score || formatDisplayScore(match)),
   }
 }

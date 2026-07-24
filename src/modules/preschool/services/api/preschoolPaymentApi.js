@@ -249,6 +249,33 @@ export async function printPreschoolInvoice(id) {
   return typeof response.data === 'string' ? response.data : ''
 }
 
+function resolveAttachmentFilename(headers = {}, fallback = 'invoice.pdf') {
+  const disposition = String(headers['content-disposition'] || headers['Content-Disposition'] || '')
+  const match = disposition.match(/filename="?([^";]+)"?/i)
+  if (match?.[1]) {
+    return match[1]
+  }
+
+  return fallback
+}
+
+export async function downloadPreschoolInvoiceExport(id, format = 'pdf') {
+  const invoiceId = String(id ?? '').trim()
+  if (!invoiceId) return null
+
+  const normalizedFormat = String(format ?? 'pdf').trim().toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf'
+  const response = await http.get(`/preschool/invoices/${encodeURIComponent(invoiceId)}/download`, {
+    params: { format: normalizedFormat },
+    responseType: 'blob',
+  })
+
+  return {
+    blob: response.data,
+    filename: resolveAttachmentFilename(response.headers, `preschool-invoice-${invoiceId}.${normalizedFormat}`),
+    mimeType: String(response.headers?.['content-type'] || ''),
+  }
+}
+
 export async function printPreschoolReceipt(id) {
   const receiptId = String(id ?? '').trim()
   if (!receiptId) return ''

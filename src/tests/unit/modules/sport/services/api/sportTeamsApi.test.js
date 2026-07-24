@@ -160,9 +160,11 @@ describe('sportTeamsApi', () => {
         data: { team: { id: 'new-t', name: 'New Team', division: 'U12' } },
       })
 
-      const result = await createSportTeam({ name: 'New Team', division: 'U12' })
+      const result = await createSportTeam({ name: 'New Team', division: 'U12', selectedPlayerIds: [1, 2] })
 
       expect(mockHttpPost).toHaveBeenCalledWith('/sport/teams', expect.any(Object))
+      const body = mockHttpPost.mock.calls[0][1]
+      expect(body.get('player_ids')).toBe('[1,2]')
       expect(result.id).toBe('new-t')
     })
 
@@ -183,12 +185,14 @@ describe('sportTeamsApi', () => {
         data: { team: { id: 't1', name: 'Updated Team' } },
       })
 
-      const result = await updateSportTeam('t1', { name: 'Updated Team' })
+      const result = await updateSportTeam('t1', { name: 'Updated Team', selectedPlayerIds: [4] })
 
       expect(mockHttpPost).toHaveBeenCalledWith(
         expect.stringContaining('t1'),
         expect.any(Object),
       )
+      const body = mockHttpPost.mock.calls[0][1]
+      expect(body.get('player_ids')).toBe('[4]')
       expect(result.name).toBe('Updated Team')
     })
 

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import Loading from '@/components/feedback/Loading.vue'
@@ -192,3 +192,4 @@ function handleMarkAllRead() {
   gap: 0.5rem;
 }
 </style>
+

@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
@@ -270,3 +270,4 @@ function fieldDisabled(name) {
   }
 }
 </style>
+

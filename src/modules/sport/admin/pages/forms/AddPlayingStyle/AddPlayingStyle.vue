@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
+import { useLanguage } from '@/composables/useLanguage'
 import { createSportPlayingStyle, fetchSportPlayingStyle, updateSportPlayingStyle } from '@/modules/sport/services/sportApi'
 
 defineOptions({
@@ -11,16 +12,17 @@ defineOptions({
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useLanguage()
 
 const isEditMode = computed(() => route.query.mode === 'edit' || !!route.params.id)
 const styleId = computed(() => route.params.id)
 const pageTitle = computed(() =>
-  isEditMode.value ? 'Edit Playing Style' : 'Create New Playing Style',
+  isEditMode.value ? t('sportPlayingStyleManagement.form.editTitle') : t('sportPlayingStyleManagement.form.createTitle'),
 )
 const pageSubtitle = computed(() =>
   isEditMode.value
-    ? 'Update playing style details and tactical approach'
-    : 'Define a new tactical approach for team classification',
+    ? t('sportPlayingStyleManagement.form.editSubtitle')
+    : t('sportPlayingStyleManagement.form.createSubtitle'),
 )
 
 const form = ref({
@@ -48,25 +50,25 @@ const formCompletion = computed(() => {
 const formSummaryCards = computed(() => [
   {
     id: 'style-name',
-    title: 'Style Name',
-    value: form.value.name || 'Not specified',
-    label: 'Primary identifier for this playing style',
+    title: t('sportPlayingStyleManagement.form.styleNameSummary'),
+    value: form.value.name || t('sportPlayingStyleManagement.form.notSpecified'),
+    label: t('sportPlayingStyleManagement.form.styleNameSummaryLabel'),
     status: form.value.name ? 'success' : 'warning',
     icon: 'M13 10V3L4 14h7v7l9-11h-7z',
   },
   {
     id: 'style-status',
-    title: 'Status',
-    value: form.value.status === 'active' ? 'Active' : 'Inactive',
-    label: 'Controls visibility and team assignment',
+    title: t('sportPlayingStyleManagement.form.status'),
+    value: form.value.status === 'active' ? t('sportPlayingStyleManagement.form.active') : t('sportPlayingStyleManagement.form.inactive'),
+    label: t('sportPlayingStyleManagement.form.statusSummaryLabel'),
     status: form.value.status,
     icon: 'M5 13l4 4L19 7',
   },
   {
     id: 'form-progress',
-    title: 'Form Progress',
+    title: t('sportPlayingStyleManagement.form.progressSummary'),
     value: `${formCompletion.value}%`,
-    label: 'Complete your playing style definition',
+    label: t('sportPlayingStyleManagement.form.progressSummaryLabel'),
     status: formCompletion.value === 100 ? 'success' : 'warning',
     icon: 'M13 10V3L4 14h7v7l9-11h-7z',
   },
@@ -76,11 +78,11 @@ function validateForm() {
   errors.value = {}
 
   if (!form.value.name?.trim()) {
-    errors.value.name = 'Playing style name is required'
+    errors.value.name = t('sportPlayingStyleManagement.form.nameRequired')
   }
 
   if (form.value.name && form.value.name.length > 100) {
-    errors.value.name = 'Playing style name must be 100 characters or less'
+    errors.value.name = t('sportPlayingStyleManagement.form.nameTooLong')
   }
 
   return Object.keys(errors.value).length === 0
@@ -107,8 +109,8 @@ async function handleSubmit() {
   } catch (error) {
     console.error('Error saving playing style:', error)
     errorMessage.value = isEditMode.value
-      ? 'Failed to update playing style'
-      : 'Failed to create playing style'
+      ? t('sportPlayingStyleManagement.form.updateFailed')
+      : t('sportPlayingStyleManagement.form.createFailed')
     showError.value = true
   } finally {
     isSubmitting.value = false
@@ -130,7 +132,7 @@ onMounted(async () => {
       }
     } catch (error) {
       console.error('Error loading playing style:', error)
-      errorMessage.value = 'Failed to load playing style'
+      errorMessage.value = t('sportPlayingStyleManagement.form.loadFailed')
       showError.value = true
     }
   }
@@ -170,9 +172,9 @@ onMounted(async () => {
         <form @submit.prevent="handleSubmit" class="playing-style-form">
           <!-- Form Section Header -->
           <div class="form-section-header">
-            <h3>Playing Style Details</h3>
+            <h3>{{ t('sportPlayingStyleManagement.form.detailsTitle') }}</h3>
             <p class="form-section-description">
-              Define the tactical characteristics and strategic approach for this playing style
+              {{ t('sportPlayingStyleManagement.form.detailsDescription') }}
             </p>
           </div>
 
@@ -180,7 +182,7 @@ onMounted(async () => {
           <div class="form-group">
             <div class="form-label-wrapper">
               <label for="name" class="form-label">
-                <span class="label-text">Playing Style Name</span>
+                <span class="label-text">{{ t('sportPlayingStyleManagement.form.styleName') }}</span>
                 <span class="label-required">*</span>
               </label>
               <span class="char-count" :class="{ 'char-count--warning': nameLength > 80 }">
@@ -191,7 +193,7 @@ onMounted(async () => {
               id="name"
               v-model="form.name"
               type="text"
-              placeholder="e.g., Defensive, Attacking, Balanced, High Press, Possession"
+              :placeholder="t('sportPlayingStyleManagement.form.styleNamePlaceholder')"
               class="form-input"
               :class="{ 'form-input--error': errors.name, 'form-input--valid': form.name && !errors.name }"
               maxlength="100"
@@ -199,35 +201,35 @@ onMounted(async () => {
             <p v-if="errors.name" class="form-error">
               <span class="error-icon">⚠</span> {{ errors.name }}
             </p>
-            <p v-else class="form-hint">Give your playing style a clear, descriptive name</p>
+            <p v-else class="form-hint">{{ t('sportPlayingStyleManagement.form.nameHint') }}</p>
           </div>
 
           <!-- Description Field -->
           <div class="form-group">
             <div class="form-label-wrapper">
               <label for="description" class="form-label">
-                <span class="label-text">Description</span>
-                <span class="label-optional">(Optional)</span>
+                <span class="label-text">{{ t('sportPlayingStyleManagement.form.description') }}</span>
+                <span class="label-optional">{{ t('sportPlayingStyleManagement.form.optional') }}</span>
               </label>
               <span class="char-count">{{ descriptionLength }}/500</span>
             </div>
             <textarea
               id="description"
               v-model="form.description"
-              placeholder="Describe the tactical approach, formation preferences, and key characteristics of this playing style..."
+              :placeholder="t('sportPlayingStyleManagement.form.descriptionPlaceholder')"
               class="form-textarea"
               rows="5"
               maxlength="500"
             />
             <p class="form-hint">
-              Provide context about team tactics, formation preferences, and strategic approach
+              {{ t('sportPlayingStyleManagement.form.descriptionHint') }}
             </p>
           </div>
 
           <!-- Status Field -->
           <div class="form-group">
             <label for="status" class="form-label">
-              <span class="label-text">Status</span>
+              <span class="label-text">{{ t('sportPlayingStyleManagement.form.status') }}</span>
               <span class="label-required">*</span>
             </label>
             <div class="status-selector">
@@ -247,12 +249,12 @@ onMounted(async () => {
                 />
                 <label :for="`status-${option}`" class="status-label">
                   <span class="status-dot" :class="`status-dot--${option}`" />
-                  <span class="status-text">{{ option === 'active' ? 'Active' : 'Inactive' }}</span>
+                  <span class="status-text">{{ option === 'active' ? t('sportPlayingStyleManagement.form.active') : t('sportPlayingStyleManagement.form.inactive') }}</span>
                 </label>
               </div>
             </div>
             <p class="form-hint">
-              Active styles are available for team assignment. Inactive styles are hidden from selection.
+              {{ t('sportPlayingStyleManagement.form.statusHint') }}
             </p>
           </div>
 
@@ -265,10 +267,10 @@ onMounted(async () => {
               :class="{ 'btn-loading': isSubmitting }"
             >
               <span v-if="isSubmitting" class="btn-spinner" />
-              {{ isSubmitting ? 'Saving...' : isEditMode ? 'Update Playing Style' : 'Create Playing Style' }}
+              {{ isSubmitting ? t('sportPlayingStyleManagement.form.saving') : isEditMode ? t('sportPlayingStyleManagement.form.update') : t('sportPlayingStyleManagement.form.create') }}
             </button>
             <button type="button" class="btn-secondary" @click="handleCancel" :disabled="isSubmitting">
-              Cancel
+              {{ t('sportPlayingStyleManagement.form.cancel') }}
             </button>
           </div>
         </form>
@@ -278,7 +280,7 @@ onMounted(async () => {
       <transition name="fade">
         <div v-if="showSuccess" class="success-banner">
           <span class="success-icon">✓</span>
-          <span>{{ isEditMode ? 'Playing style updated successfully!' : 'Playing style created successfully!' }}</span>
+          <span>{{ isEditMode ? t('sportAdminSharedMessages.success.playingStyleUpdated') : t('sportAdminSharedMessages.success.playingStyleCreated') }}</span>
         </div>
       </transition>
 

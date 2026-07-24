@@ -23,10 +23,20 @@ vi.mock('vue-router', async () => {
 })
 
 vi.mock('@/modules/preschool/composables/usePreschoolReports', () => ({
+  PRESCHOOL_REPORT_PERIOD_TYPE_OPTIONS: [
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Term', value: 'term' },
+    { label: 'Annual', value: 'annual' },
+  ],
   usePreschoolReports: () => mockUsePreschoolReports(),
 }))
 
 vi.mock('@/modules/preschool/composables/usePreschoolClassroomReports', () => ({
+  PRESCHOOL_CLASSROOM_REPORT_PERIOD_TYPE_OPTIONS: [
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Term', value: 'term' },
+    { label: 'Annual', value: 'annual' },
+  ],
   usePreschoolClassroomReports: () => mockUsePreschoolClassroomReports(),
 }))
 
@@ -68,8 +78,10 @@ describe('Preschool report pages', () => {
       loadLookupData: vi.fn().mockResolvedValue(undefined),
       loadReportPeriodOptions: vi.fn().mockResolvedValue(undefined),
       loading: ref(false),
+      reportPeriodLockMessage: ref(''),
       reportPeriods: ref([{ label: 'Term 1', assessmentCount: 2, studentCount: 1, classCount: 1 }]),
       studentOptions: ref([{ id: 1, label: 'Student One' }]),
+      selectedReportPeriod: ref({ label: 'Term 1', status: 'finalized' }),
     })
 
     const wrapper = mountPage(ReportManagement)
@@ -84,6 +96,7 @@ describe('Preschool report pages', () => {
     mockUsePreschoolReports.mockReturnValue({
       errorMessage: ref(''),
       loadLookupData: vi.fn().mockResolvedValue(undefined),
+      loadReportPeriodOptions: vi.fn().mockResolvedValue(undefined),
       loadStudentReport: vi.fn().mockResolvedValue(undefined),
       loading: ref(false),
       reportBundle: ref({
@@ -93,9 +106,11 @@ describe('Preschool report pages', () => {
         report: { summary: { finalizedAssessments: 2 } },
       }),
       reportPeriods: ref([{ label: 'Term 1' }]),
+      selectedPeriodType: ref('term'),
       selectedPeriodLabel: ref('Term 1'),
       selectedStudentId: ref('1'),
       setSelectedPeriodLabel: vi.fn(),
+      setSelectedPeriodType: vi.fn(),
       setSelectedStudentId: vi.fn(),
       studentOptions: ref([{ id: 1, label: 'Lina Chan (S-001)' }]),
     })
@@ -111,6 +126,7 @@ describe('Preschool report pages', () => {
     mockUsePreschoolClassroomReports.mockReturnValue({
       classOptions: ref([{ id: 3, label: 'PS-3 - Morning Class' }]),
       errorMessage: ref(''),
+      loadReportPeriodOptions: vi.fn().mockResolvedValue(undefined),
       loadClassroomReport: vi.fn().mockResolvedValue(undefined),
       loadLookupData: vi.fn().mockResolvedValue(undefined),
       loading: ref(false),
@@ -121,9 +137,11 @@ describe('Preschool report pages', () => {
         report: { summary: { finalizedAssessments: 4 }, studentSummaries: [], attendanceSummary: {}, categorySummaries: [], observations: [], assessments: [] },
       }),
       reportPeriods: ref([{ label: 'Term 2' }]),
+      selectedPeriodType: ref('term'),
       selectedClassId: ref('3'),
       selectedPeriodLabel: ref('Term 2'),
       setSelectedClassId: vi.fn(),
+      setSelectedPeriodType: vi.fn(),
       setSelectedPeriodLabel: vi.fn(),
     })
 
@@ -134,6 +152,3 @@ describe('Preschool report pages', () => {
     expect(wrapper.text()).toContain('4')
   })
 })
-
-
-

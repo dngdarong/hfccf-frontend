@@ -11,10 +11,11 @@
  * Renders nothing when the current route has no entry in the map.
  */
 import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useLanguage } from '@/composables/useLanguage'
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useLanguage()
 
 function goBack() {
@@ -42,11 +43,6 @@ const SPORT_CRUMB_MAP = {
     { labelKey: 'breadcrumb.sportDashboard', to: { name: 'dashboard-sport-admin' } },
     { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-sport-admin-attendance' } },
     { labelKey: 'breadcrumb.attendancePlayers' },
-  ],
-  'dashboard-sport-admin-attendance-coaches': [
-    { labelKey: 'breadcrumb.sportDashboard', to: { name: 'dashboard-sport-admin' } },
-    { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-sport-admin-attendance' } },
-    { labelKey: 'breadcrumb.attendanceCoaches' },
   ],
   'dashboard-sport-admin-attendance-idcard': [
     { labelKey: 'breadcrumb.sportDashboard', to: { name: 'dashboard-sport-admin' } },
@@ -142,6 +138,10 @@ const SPORT_CRUMB_MAP = {
   'dashboard-sport-coach-teams': [
     { labelKey: 'breadcrumb.coachDashboard', to: { name: 'dashboard-sport-coach' } },
     { labelKey: 'breadcrumb.myTeams' },
+  ],
+  'dashboard-sport-coach-attendance': [
+    { labelKey: 'breadcrumb.coachDashboard', to: { name: 'dashboard-sport-coach' } },
+    { labelKey: 'breadcrumb.attendancePlayers' },
   ],
   'dashboard-sport-coach-roster': [
     { labelKey: 'breadcrumb.coachDashboard', to: { name: 'dashboard-sport-coach' } },
@@ -250,7 +250,7 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.dashboard' },
   ],
 
-  // ── Students ��─────────────────────��────────────────────────────────��──────
+  // Students
   'dashboard-preschool-admin-students': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.students' },
@@ -271,7 +271,7 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.studentProfile' },
   ],
 
-  // ── Teachers ─────��────────────────────────────��───────────────────────────
+  // Teachers
   'dashboard-preschool-admin-users': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.teachers' },
@@ -287,10 +287,15 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.teacherDetail' },
   ],
 
-  // ── Classes ───────────────────────��─────────────────────────────���─────────
+  // Classes
   'dashboard-preschool-admin-classes': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.classes' },
+  ],
+  'dashboard-preschool-admin-class-details': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'breadcrumb.classes', to: { name: 'dashboard-preschool-admin-classes' } },
+    { labelKey: 'breadcrumb.classDetails' },
   ],
   'dashboard-preschool-admin-classes-add': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
@@ -298,18 +303,22 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.addClass' },
   ],
 
-  // ── Payment ───────────────────────���───────────────────────────────────────
+  // Payment
   'dashboard-preschool-admin-payment': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.payment' },
   ],
+  'dashboard-preschool-admin-invoices': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'breadcrumb.invoices' },
+  ],
   'dashboard-preschool-admin-invoice-detail': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.payment', to: { name: 'dashboard-preschool-admin-payment' } },
+    { labelKey: 'breadcrumb.invoices', to: { name: 'dashboard-preschool-admin-invoices' } },
     { labelKey: 'breadcrumb.invoiceDetail' },
   ],
 
-  // ── Attendance ────────────────────���───────────────────────────────────────
+  // Attendance
   'dashboard-preschool-admin-attendance': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.attendance' },
@@ -324,20 +333,10 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-preschool-admin-attendance' } },
     { labelKey: 'breadcrumb.attendanceHistory' },
   ],
-  'dashboard-preschool-admin-attendance-dashboard': [
-    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-preschool-admin-attendance' } },
-    { labelKey: 'breadcrumb.attendanceDashboard' },
-  ],
   'dashboard-preschool-admin-attendance-alerts': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-preschool-admin-attendance' } },
     { labelKey: 'breadcrumb.attendanceAlerts' },
-  ],
-  'dashboard-preschool-admin-attendance-calendar': [
-    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-preschool-admin-attendance' } },
-    { labelKey: 'breadcrumb.attendanceCalendar' },
   ],
   'dashboard-preschool-admin-attendance-profile': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
@@ -358,36 +357,45 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.healthRecords', to: { name: 'dashboard-preschool-admin-health' } },
     { labelKey: 'breadcrumb.studentHealthProfile' },
   ],
+  'preschool-health-records-create': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin-health' } },
+    { labelKey: 'breadcrumb.healthRecords', to: { name: 'dashboard-preschool-admin-health' } },
+    { labelKey: 'breadcrumb.addHealth' },
+  ],
+  'preschool-health-records-detail': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin-health' } },
+    { labelKey: 'breadcrumb.healthRecords', to: { name: 'dashboard-preschool-admin-health' } },
+    { labelKey: 'breadcrumb.healthDetail' },
+  ],
+  'preschool-health-records-edit': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin-health' } },
+    { labelKey: 'breadcrumb.healthRecords', to: { name: 'dashboard-preschool-admin-health' } },
+    { labelKey: 'breadcrumb.healthDetail', to: { name: 'preschool-health-records-detail' } },
+    { labelKey: 'breadcrumb.edit' },
+  ],
+  'dashboard-preschool-admin-guardian-communications': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'breadcrumb.guardianContactLog' },
+  ],
 
-  // ── Enrollment ──────────────────────────────────────────────────��─────────
+  // Enrollment
   'dashboard-preschool-admin-enrollments': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.enrollment' },
   ],
+  'dashboard-preschool-admin-enrollments-create': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'breadcrumb.enrollment', to: { name: 'dashboard-preschool-admin-enrollments' } },
+    { labelKey: 'breadcrumb.newApplication' },
+  ],
 
-  // ── Assignments ────────────────────────────────────────────────────��──────
+  // Assignments
   'dashboard-preschool-admin-assignments': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.assignments' },
   ],
 
-  // ── Assessments ───────────────────────────────────────��───────────────────
-  'dashboard-preschool-assessments': [
-    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.assessments' },
-  ],
-  'dashboard-preschool-assessments-add': [
-    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.assessments', to: { name: 'dashboard-preschool-assessments' } },
-    { labelKey: 'breadcrumb.addAssessment' },
-  ],
-  'dashboard-preschool-progress-summary': [
-    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.assessments', to: { name: 'dashboard-preschool-assessments' } },
-    { labelKey: 'breadcrumb.progressSummary' },
-  ],
-
-  // ── Schedules ───────────────────��─────────────────────────────────────────
+  // Schedules
   'dashboard-preschool-admin-schedules': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.schedules' },
@@ -403,38 +411,38 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.teacherSchedule' },
   ],
 
-  // ── Reports ──────────────────────────��─────────────────────────────────��──
+  // Reports
   'dashboard-preschool-admin-reports': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.reports' },
+    { labelKey: 'preschoolReportsCenterPage.pageTitle' },
   ],
   'dashboard-preschool-admin-student-reports': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.reports', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
     { labelKey: 'breadcrumb.studentReports' },
   ],
   'dashboard-preschool-admin-classroom-reports': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.reports', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
     { labelKey: 'breadcrumb.classroomReports' },
   ],
   'dashboard-preschool-admin-lifecycle-audit': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.reports', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
     { labelKey: 'breadcrumb.lifecycleAudit' },
   ],
   'dashboard-preschool-admin-report-snapshots': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.reports', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
     { labelKey: 'breadcrumb.snapshotArchive' },
   ],
   'dashboard-preschool-admin-export-governance': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
-    { labelKey: 'breadcrumb.reports', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
     { labelKey: 'breadcrumb.exportGovernance' },
   ],
 
-  // ── Governance ────────────────────────────────────────────────────────────
+  // Governance
   'dashboard-preschool-admin-governance-review': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.governance' },
@@ -456,7 +464,7 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.governanceCases' },
   ],
 
-  // ── Other admin pages ───────────────────────���─────────────────────────────
+  // Other admin pages
   'dashboard-preschool-admin-forms': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
     { labelKey: 'breadcrumb.forms' },
@@ -475,7 +483,7 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.settings' },
   ],
 
-  // ── Teacher portal ──────────────────────────────────────────────────��─────
+  // Teacher portal
   // root of the teacher section — single crumb, no parent link
   'dashboard-preschool-teacher': [
     { labelKey: 'breadcrumb.teacherDashboard' },
@@ -483,6 +491,15 @@ const CRUMB_MAP = {
   'dashboard-preschool-teacher-students': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-teacher' } },
     { labelKey: 'breadcrumb.myStudents' },
+  ],
+  'dashboard-preschool-teacher-classes': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-teacher' } },
+    { labelKey: 'breadcrumb.myClasses' },
+  ],
+  'dashboard-preschool-teacher-class-detail': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-teacher' } },
+    { labelKey: 'breadcrumb.myClasses', to: { name: 'dashboard-preschool-teacher-classes' } },
+    { labelKey: 'breadcrumb.classDetail' },
   ],
   'dashboard-preschool-teacher-schedule': [
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-teacher' } },
@@ -500,118 +517,350 @@ const CRUMB_MAP = {
     { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-teacher' } },
     { labelKey: 'breadcrumb.health' },
   ],
+}
 
-  // ── Assessment Module ────────────────────────────────────────────────────────
-  'assessment-dashboard': [
-    { labelKey: 'breadcrumb.assessment' },
+const EXTRA_CRUMB_MAP = {
+  // Dashboard shell and shared wrappers
+  'dashboard': [
+    { labelKey: 'breadcrumb.dashboard' },
   ],
-  'assessment-form-list': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.forms' },
+  'calendar': [
+    { labelKey: 'breadcrumb.dashboard', to: { name: 'dashboard' } },
+    { labelKey: 'pages.calendar.pageTitle' },
   ],
-  'assessment-form-create': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.forms', to: { name: 'assessment-form-list' } },
-    { labelKey: 'breadcrumb.newForm' },
+  'dashboard-notifications': [
+    { labelKey: 'breadcrumb.dashboard', to: { name: 'dashboard' } },
+    { labelKey: 'notifications.title' },
   ],
-  'assessment-form-edit': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.forms', to: { name: 'assessment-form-list' } },
-    { labelKey: 'breadcrumb.editForm' },
+  'notifications': [
+    { labelKey: 'notifications.title' },
   ],
-  'assessment-form-builder': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.forms', to: { name: 'assessment-form-list' } },
+  'notifications-create': [
+    { labelKey: 'notifications.title', to: { name: 'notifications' } },
+    { labelKey: 'notifications.create' },
+  ],
+
+  // Super Admin
+  'dashboard-super-admin': [
+    { labelKey: 'nav.items.commandCenter' },
+  ],
+  'dashboard-super-admin-command-center-executive-operations': [
+    { labelKey: 'nav.items.commandCenter', to: { name: 'dashboard-super-admin' } },
+    { labelKey: 'nav.items.executiveOperations' },
+  ],
+  'dashboard-super-admin-command-center-workflow-approvals': [
+    { labelKey: 'nav.items.commandCenter', to: { name: 'dashboard-super-admin' } },
+    { labelKey: 'nav.items.workflowApprovals' },
+  ],
+  'dashboard-super-admin-command-center-preschool-analytics': [
+    { labelKey: 'nav.items.commandCenter', to: { name: 'dashboard-super-admin' } },
+    { labelKey: 'nav.items.preschoolAnalytics' },
+  ],
+  'dashboard-super-admin-users-manage': [
+    { labelKey: 'nav.items.commandCenter', to: { name: 'dashboard-super-admin' } },
+    { labelKey: 'users.manageAdmins.title' },
+  ],
+  'dashboard-super-admin-users-view': [
+    { labelKey: 'nav.items.commandCenter', to: { name: 'dashboard-super-admin' } },
+    { labelKey: 'users.manageAdmins.title', to: { name: 'dashboard-super-admin-users-manage' } },
+    { labelKey: 'users.viewUser.title' },
+  ],
+  'dashboard-super-admin-users-add': [
+    { labelKey: 'nav.items.commandCenter', to: { name: 'dashboard-super-admin' } },
+    { labelKey: 'users.manageAdmins.title', to: { name: 'dashboard-super-admin-users-manage' } },
+    { labelKey: 'users.addAdmin.title' },
+  ],
+
+  // English
+  'dashboard-english-admin': [
+    { labelKey: 'english.dashboard.admin.title' },
+  ],
+  'dashboard-english-admin-users': [
+    { labelKey: 'english.dashboard.admin.title', to: { name: 'dashboard-english-admin' } },
+    { labelKey: 'english.teachers.title' },
+  ],
+  'dashboard-english-admin-students': [
+    { labelKey: 'english.dashboard.admin.title', to: { name: 'dashboard-english-admin' } },
+    { labelKey: 'english.students.title' },
+  ],
+  'dashboard-english-admin-classes': [
+    { labelKey: 'english.dashboard.admin.title', to: { name: 'dashboard-english-admin' } },
+    { labelKey: 'english.classes.title' },
+  ],
+  'dashboard-english-admin-tasks': [
+    { labelKey: 'english.dashboard.admin.title', to: { name: 'dashboard-english-admin' } },
+    { labelKey: 'english.tasks.title' },
+  ],
+  'dashboard-english-teacher-root': [
+    { labelKey: 'english.dashboard.teacher.title' },
+  ],
+  'dashboard-english-teacher': [
+    { labelKey: 'english.dashboard.teacher.title' },
+  ],
+  'dashboard-english-teacher-classes': [
+    { labelKey: 'english.dashboard.teacher.title', to: { name: 'dashboard-english-teacher' } },
+    { labelKey: 'english.classes.teacherTitle' },
+  ],
+  'dashboard-english-teacher-students': [
+    { labelKey: 'english.dashboard.teacher.title', to: { name: 'dashboard-english-teacher' } },
+    { labelKey: 'english.students.teacherTitle' },
+  ],
+  'dashboard-english-teacher-homework': [
+    { labelKey: 'english.dashboard.teacher.title', to: { name: 'dashboard-english-teacher' } },
+    { labelKey: 'english.tasks.teacherTitle' },
+  ],
+
+  // Scholarship
+  'dashboard-scholarship-admin': [
+    { labelKey: 'nav.items.scholarshipDashboard' },
+  ],
+  'dashboard-scholarship-admin-users': [
+    { labelKey: 'nav.items.scholarshipDashboard', to: { name: 'dashboard-scholarship-admin' } },
+    { labelKey: 'breadcrumb.scholarshipApplications' },
+  ],
+  'dashboard-scholarship-admin-students': [
+    { labelKey: 'nav.items.scholarshipDashboard', to: { name: 'dashboard-scholarship-admin' } },
+    { labelKey: 'breadcrumb.scholarshipStudents' },
+  ],
+  'dashboard-scholarship-teacher': [
+    { labelKey: 'breadcrumb.scholarshipTeacherDashboard' },
+  ],
+  'dashboard-scholarship-teacher-applications': [
+    { labelKey: 'breadcrumb.scholarshipTeacherDashboard', to: { name: 'dashboard-scholarship-teacher' } },
+    { labelKey: 'breadcrumb.scholarshipAssignedApplications' },
+  ],
+  'dashboard-scholarship-teacher-reviews': [
+    { labelKey: 'breadcrumb.scholarshipTeacherDashboard', to: { name: 'dashboard-scholarship-teacher' } },
+    { labelKey: 'breadcrumb.scholarshipReviews' },
+  ],
+
+  // Global reports
+  'reports-attendance': [
+    { labelKey: 'breadcrumb.attendanceReport' },
+  ],
+  'reports-student-performance': [
+    { labelKey: 'breadcrumb.studentPerformanceReport' },
+  ],
+  'reports-training': [
+    { labelKey: 'breadcrumb.trainingReport' },
+  ],
+  'reports-audit-logs': [
+    { labelKey: 'reports.auditLogs.title' },
+  ],
+
+  // Governance
+  'governance-dashboard': [
+    { labelKey: 'governance.pageTitle' },
+  ],
+  'governance-audit-logs': [
+    { labelKey: 'governance.pageTitle', to: { name: 'governance-dashboard' } },
+    { labelKey: 'governance.audit.pageTitle' },
+  ],
+  'governance-security-monitoring': [
+    { labelKey: 'governance.pageTitle', to: { name: 'governance-dashboard' } },
+    { labelKey: 'governance.security.pageTitle' },
+  ],
+  'governance-configuration-history': [
+    { labelKey: 'governance.pageTitle', to: { name: 'governance-dashboard' } },
+    { labelKey: 'governance.configuration.pageTitle' },
+  ],
+  'governance-risk-management': [
+    { labelKey: 'governance.pageTitle', to: { name: 'governance-dashboard' } },
+    { labelKey: 'governance.risk.pageTitle' },
+  ],
+  'governance-investigations': [
+    { labelKey: 'governance.pageTitle', to: { name: 'governance-dashboard' } },
+    { labelKey: 'governance.investigations.pageTitle' },
+  ],
+
+  // Settings
+  'profile-settings': [
+    { labelKey: 'breadcrumb.dashboard', to: { name: 'dashboard' } },
+    { labelKey: 'pages.profile.pageTitle' },
+  ],
+  'settings-about-website': [
+    { labelKey: 'breadcrumb.dashboard', to: { name: 'dashboard' } },
+    { labelKey: 'pages.profile.pageTitle', to: { name: 'profile-settings' } },
+    { labelKey: 'pages.profile.aboutWebsite.pageTitle' },
+  ],
+
+  // DSAM
+  'dsam-dashboard': [
+    { labelKey: 'nav.items.dsamDashboard' },
+  ],
+  'dsam-form-list': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamForms' },
+  ],
+  'dsam-form-builder': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamForms', to: { name: 'dsam-form-list' } },
     { labelKey: 'breadcrumb.formBuilder' },
   ],
-  'assessment-submission-list': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.submissions' },
+  'dsam-form-builder-edit': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamForms', to: { name: 'dsam-form-list' } },
+    { labelKey: 'breadcrumb.formBuilder' },
   ],
-  'assessment-submission-detail': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.submissions', to: { name: 'assessment-submission-list' } },
+  'dsam-form-versions': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamForms', to: { name: 'dsam-form-list' } },
+    { labelKey: 'breadcrumb.formVersions' },
+  ],
+  'dsam-submission-list': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamSubmissions' },
+  ],
+  'dsam-submission-detail': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamSubmissions', to: { name: 'dsam-submission-list' } },
     { labelKey: 'breadcrumb.submissionDetail' },
   ],
-  'assessment-reports': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.reports' },
-  ],
-  'assessment-wizard': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.wizard' },
-  ],
-  'assessment-scoring-manager': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.scoring' },
-  ],
-  'assessment-print-designer': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.printDesigner' },
-  ],
-  'assessment-audit-logs': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'assessment-dashboard' } },
-    { labelKey: 'breadcrumb.auditLogs' },
+  'dsam-wizard': [
+    { labelKey: 'nav.items.dsamDashboard', to: { name: 'dsam-dashboard' } },
+    { labelKey: 'nav.items.dsamWizard' },
   ],
 
-  'preschool-assessment-dashboard': [
-    { labelKey: 'breadcrumb.assessment' },
+  // Preschool dashboard shell
+  'dashboard-preschool-admin-operations': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.operations' },
   ],
-  'preschool-assessment-list': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessments' },
+  'dashboard-preschool-admin-workflows': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.workflowApprovals' },
   ],
-  'preschool-assessment-reports': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.reports' },
+  'dashboard-preschool-admin-workflow-details': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.workflowApprovals', to: { name: 'dashboard-preschool-admin-workflows' } },
+    { labelKey: 'breadcrumb.workflowDetails' },
   ],
-  'preschool-assessment-settings': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.settings' },
+  'dashboard-preschool-admin-workflow-sync-run': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.workflowApprovals', to: { name: 'dashboard-preschool-admin-workflows' } },
+    { labelKey: 'breadcrumb.syncRunDetails' },
   ],
-  'preschool-assessment-form-list': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessmentForms' },
+  'dashboard-preschool-admin-receipt-view': [
+    { labelKey: 'breadcrumb.payment', to: { name: 'dashboard-preschool-admin-payment' } },
+    { labelKey: 'breadcrumb.receiptView' },
   ],
-  'preschool-assessment-form-create': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessmentForms', to: { name: 'preschool-assessment-form-list' } },
-    { labelKey: 'breadcrumb.newForm' },
+  'dashboard-preschool-admin-attendance-session-details': [
+    { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-preschool-admin-attendance' } },
+    { labelKey: 'breadcrumb.sessionDetails' },
   ],
-  'preschool-assessment-form-edit': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessmentForms', to: { name: 'preschool-assessment-form-list' } },
-    { labelKey: 'breadcrumb.editForm' },
+  'dashboard-preschool-admin-schedule-details': [
+    { labelKey: 'breadcrumb.schedules', to: { name: 'dashboard-preschool-admin-schedules' } },
+    { labelKey: 'breadcrumb.scheduleDetails' },
   ],
-  'preschool-assessment-form-builder': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessmentForms', to: { name: 'preschool-assessment-form-list' } },
-    { labelKey: 'breadcrumb.formBuilder' },
+  'dashboard-preschool-admin-forms-manage': [
+    { labelKey: 'breadcrumb.forms', to: { name: 'dashboard-preschool-admin-forms' } },
+    { labelKey: 'breadcrumb.formsManage' },
   ],
-  'preschool-assessment-submission-list': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessmentSubmissions' },
+  'dashboard-preschool-admin-forms-build': [
+    { labelKey: 'breadcrumb.forms', to: { name: 'dashboard-preschool-admin-forms' } },
+    { labelKey: 'breadcrumb.formsBuild' },
   ],
-  'preschool-assessment-submission-detail': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.assessmentSubmissions', to: { name: 'preschool-assessment-submission-list' } },
-    { labelKey: 'breadcrumb.assessmentSubmissionDetail' },
+  'dashboard-preschool-admin-settings': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings' },
   ],
-  'preschool-assessment-wizard': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.wizard' },
+  'dashboard-preschool-admin-settings-academic': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings', to: { name: 'dashboard-preschool-admin-settings' } },
+    { labelKey: 'preschoolAcademicSettingsPage.pageTitle' },
   ],
-  'preschool-assessment-scoring': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.scoring' },
+  'dashboard-preschool-admin-settings-attendance': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings', to: { name: 'dashboard-preschool-admin-settings' } },
+    { labelKey: 'preschoolAttendanceSettingsPage.pageTitle' },
   ],
-  'preschool-assessment-print-designer': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.printDesigner' },
+  'dashboard-preschool-admin-settings-payments': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings', to: { name: 'dashboard-preschool-admin-settings' } },
+    { labelKey: 'preschoolPaymentSettingsPage.pageTitle' },
   ],
-  'preschool-assessment-audit-logs': [
-    { labelKey: 'breadcrumb.assessment', to: { name: 'preschool-assessment-dashboard' } },
-    { labelKey: 'breadcrumb.auditLogs' },
+  'dashboard-preschool-admin-settings-assessments': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings', to: { name: 'dashboard-preschool-admin-settings' } },
+    { labelKey: 'preschoolAssessmentSettingsPage.pageTitle' },
+  ],
+  'dashboard-preschool-admin-settings-health': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings', to: { name: 'dashboard-preschool-admin-settings' } },
+    { labelKey: 'preschoolHealthSettingsPage.pageTitle' },
+  ],
+  'dashboard-preschool-admin-settings-preferences': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolSettings', to: { name: 'dashboard-preschool-admin-settings' } },
+    { labelKey: 'preschoolPreferencesSettingsPage.pageTitle' },
+  ],
+  'dashboard-preschool-admin-analytics': [
+    { labelKey: 'breadcrumb.preschool', to: { name: 'dashboard-preschool-admin' } },
+    { labelKey: 'nav.items.preschoolAnalytics' },
+  ],
+  'dashboard-preschool-admin-analytics-attendance': [
+    { labelKey: 'nav.items.preschoolAnalytics', to: { name: 'dashboard-preschool-admin-analytics' } },
+    { labelKey: 'preschoolAnalyticsPage.attendanceAnalytics' },
+  ],
+  'dashboard-preschool-admin-analytics-sessions': [
+    { labelKey: 'nav.items.preschoolAnalytics', to: { name: 'dashboard-preschool-admin-analytics' } },
+    { labelKey: 'preschoolAnalyticsPage.sessionAnalytics' },
+  ],
+  'dashboard-preschool-admin-analytics-alerts': [
+    { labelKey: 'nav.items.preschoolAnalytics', to: { name: 'dashboard-preschool-admin-analytics' } },
+    { labelKey: 'preschoolAnalyticsPage.alertAnalytics' },
+  ],
+  'dashboard-preschool-admin-analytics-students': [
+    { labelKey: 'nav.items.preschoolAnalytics', to: { name: 'dashboard-preschool-admin-analytics' } },
+    { labelKey: 'preschoolAnalyticsPage.studentAnalytics' },
+  ],
+  'dashboard-preschool-admin-analytics-teachers': [
+    { labelKey: 'nav.items.preschoolAnalytics', to: { name: 'dashboard-preschool-admin-analytics' } },
+    { labelKey: 'preschoolAnalyticsPage.teacherAnalytics' },
+  ],
+  'dashboard-preschool-admin-analytics-guardian-contacts': [
+    { labelKey: 'nav.items.preschoolAnalytics', to: { name: 'dashboard-preschool-admin-analytics' } },
+    { labelKey: 'preschoolAnalyticsPage.guardianAnalytics' },
+  ],
+  'dashboard-preschool-admin-reports-student-summary': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'breadcrumb.studentReports' },
+  ],
+  'dashboard-preschool-admin-reports-attendance': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.sections.attendance.title' },
+  ],
+  'dashboard-preschool-admin-reports-assessments': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.sections.assessments.title' },
+  ],
+  'dashboard-preschool-admin-reports-health': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.sections.health.title' },
+  ],
+  'dashboard-preschool-admin-reports-payments': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.sections.payments.title' },
+  ],
+  'dashboard-preschool-admin-reports-enrollments': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.sections.enrollments.title' },
+  ],
+  'dashboard-preschool-admin-reports-guardians': [
+    { labelKey: 'preschoolReportsCenterPage.pageTitle', to: { name: 'dashboard-preschool-admin-reports' } },
+    { labelKey: 'preschoolReportsCenterPage.sections.guardians.title' },
+  ],
+  'dashboard-preschool-teacher-schedule-details': [
+    { labelKey: 'breadcrumb.mySchedule', to: { name: 'dashboard-preschool-teacher-schedule' } },
+    { labelKey: 'breadcrumb.teacherScheduleDetails' },
+  ],
+  'dashboard-preschool-teacher-attendance': [
+    { labelKey: 'breadcrumb.teacherDashboard', to: { name: 'dashboard-preschool-teacher' } },
+    { labelKey: 'breadcrumb.attendance' },
+  ],
+  'dashboard-preschool-teacher-attendance-session-details': [
+    { labelKey: 'breadcrumb.attendance', to: { name: 'dashboard-preschool-teacher-attendance' } },
+    { labelKey: 'breadcrumb.sessionDetails' },
   ],
 }
 
@@ -625,6 +874,7 @@ const crumbs = computed(() => {
   const trail = {
     ...SPORT_CRUMB_MAP,
     ...CRUMB_MAP,
+    ...EXTRA_CRUMB_MAP,
   }[route.name] ?? []
   return trail.map((item) => ({
     label: t(item.labelKey),
@@ -632,6 +882,14 @@ const crumbs = computed(() => {
     useHistory: item.useHistory ?? false,
   }))
 })
+
+const hasRoute = (to) => {
+  if (!to?.name) {
+    return false
+  }
+
+  return router.hasRoute(to.name)
+}
 </script>
 
 <template>
@@ -658,7 +916,7 @@ const crumbs = computed(() => {
 
         <!-- Router link crumbs (uses named routes) -->
         <RouterLink
-          v-else-if="crumb.to"
+          v-else-if="crumb.to && hasRoute(crumb.to)"
           :to="crumb.to"
           class="breadcrumb__link"
         >

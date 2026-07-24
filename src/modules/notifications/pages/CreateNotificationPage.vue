@@ -5,7 +5,7 @@ import Card from 'primevue/card'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
@@ -151,7 +151,7 @@ async function submitForm() {
 }
 
 function goBack() {
-  router.push({ name: 'notifications' })
+  router.push({ name: 'dashboard-notifications' })
 }
 
 async function handleSuccessClose() {
@@ -362,3 +362,4 @@ function handleErrorClose() {
   }
 }
 </style>
+

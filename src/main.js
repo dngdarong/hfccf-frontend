@@ -1,4 +1,5 @@
 import './assets/css/main.css'
+import './assets/styles/print.css'
 import 'primeicons/primeicons.css'
 
 import { createApp } from 'vue'

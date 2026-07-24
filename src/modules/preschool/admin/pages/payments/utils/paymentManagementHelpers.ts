@@ -45,6 +45,10 @@ export function normalize(value: any): string {
   return String(value ?? '').trim().toLowerCase()
 }
 
+function normalizeText(value: any): string {
+  return String(value ?? '').trim()
+}
+
 export function mapPayment(row: any, classMap: any, studentMap: any): any {
   return {
     ...row,
@@ -57,14 +61,18 @@ export function mapPayment(row: any, classMap: any, studentMap: any): any {
 
 export function normalizePayload(form: any) {
   return {
+    mode: form.mode,
     student_id: form.student_id,
     class_id: form.class_id,
+    invoice_id: form.invoice_id || null,
     payment_reference: form.payment_reference.trim(),
+    description: normalizeText(form.description),
     amount: Number(form.amount || 0),
     currency: form.currency,
     payment_method: form.payment_method,
     payment_status: form.payment_status,
     paid_at: form.paid_at || null,
+    issue_date: form.issue_date || null,
     due_date: form.due_date || null,
     note: form.note.trim(),
   }

@@ -12,7 +12,6 @@ import { preschoolRoutes } from '@/modules/preschool/routes'
 import { scholarshipRoutes } from '@/modules/scholarship/routes'
 import { sportRoutes } from '@/modules/sport/routes'
 import { settingsRoutes } from '@/modules/settings/routes'
-import { assessmentRoutes } from '@/modules/assessment/routes/assessment.routes'
 import { dsamRoutes } from '@/modules/dsam/routes/dsam.routes'
 import { validateRouteConfig } from '@/router/routeValidator'
 
@@ -28,7 +27,6 @@ const routes = [
   ...scholarshipRoutes,
   ...sportRoutes,
   ...settingsRoutes,
-  ...assessmentRoutes,
   ...dsamRoutes,
   {
     path: '/:pathMatch(.*)*',

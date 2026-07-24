@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import Breadcrumb from '@/components/navigation/Breadcrumb.vue'
 import { useLanguage } from '@/composables/useLanguage'
 
 const props = defineProps({
@@ -20,11 +21,14 @@ const resolvedDescription = computed(() => props.description || t('common.shell.
 </script>
 
 <template>
-  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+  <div class="space-y-3">
+    <Breadcrumb />
+    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">
       {{ t('common.shell.modulePage') }}
     </p>
     <h1 class="mt-3 text-2xl font-bold text-slate-900">{{ resolvedTitle }}</h1>
     <p class="mt-2 max-w-2xl text-sm text-slate-600">{{ resolvedDescription }}</p>
-  </section>
+    </section>
+  </div>
 </template>

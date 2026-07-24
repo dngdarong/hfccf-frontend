@@ -3,7 +3,6 @@
 // focus on selection while the summary table stays easy to extend later.
 import { computed } from 'vue'
 import { useLanguage } from '@/composables/useLanguage'
-import ProgressTrendList from '@/modules/preschool/shared/components/assessment/ProgressTrendList.vue'
 import ReportSummaryCard from './ReportSummaryCard.vue'
 import AttendanceSummaryCard from './AttendanceSummaryCard.vue'
 import ReportSnapshotBadge from './ReportSnapshotBadge.vue'
@@ -75,8 +74,6 @@ const summaryCards = computed(() => [
     </div>
 
     <AttendanceSummaryCard :summary="report.attendanceSummary" />
-
-    <ProgressTrendList :items="report.categorySummaries" />
 
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="border-b border-slate-200 px-4 py-3">

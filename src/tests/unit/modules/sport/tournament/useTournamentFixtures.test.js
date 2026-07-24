@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { withI18nSetup } from '@/tests/helpers/mount'
 import { useTournamentFixtures } from '@/modules/sport/tournament/composables/useTournamentFixtures'
 
+const apiMocks = vi.hoisted(() => ({ generateTournamentFixtures: vi.fn(), updateTournamentResult: vi.fn() }))
+vi.mock('@/modules/sport/tournament/api/tournamentApi', () => apiMocks)
+
 describe('useTournamentFixtures', () => {
-  it('generates, applies, and resets fixture previews', () => {
+  it('previews locally but generates authoritative fixtures through the backend', async () => {
     const tournament = ref({
       id: 'tournament-1',
       state: 'group_draw_completed',
@@ -44,24 +47,11 @@ describe('useTournamentFixtures', () => {
       },
     })
 
-    const updateTournament = vi.fn((id, payload) => {
-      tournament.value = {
-        ...tournament.value,
-        ...payload,
-      }
-      return tournament.value
-    })
-
-    const transitionTournament = vi.fn((id, nextState) => {
-      tournament.value = {
-        ...tournament.value,
-        state: nextState,
-      }
-      return tournament.value
-    })
+    apiMocks.generateTournamentFixtures.mockResolvedValueOnce({ matches: [] })
+    const reloadTournament = vi.fn()
 
     const result = withI18nSetup(
-      () => useTournamentFixtures(tournament, { updateTournament, transitionTournament }),
+      () => useTournamentFixtures(tournament, { reloadTournament }),
       {},
     )
 
@@ -70,15 +60,12 @@ describe('useTournamentFixtures', () => {
     expect(result.previewFixtures.value).toHaveLength(6)
     expect(result.previewVisible.value).toBe(true)
 
-    const applied = result.applyPreview()
+    const applied = await result.applyPreview()
 
     expect(applied.id).toBe('tournament-1')
-    expect(updateTournament).toHaveBeenCalled()
-    expect(transitionTournament).toHaveBeenCalledWith('tournament-1', 'fixtures_generated')
-    expect(tournament.value.fixtures).toHaveLength(6)
-    expect(tournament.value.results).toHaveLength(0)
-    expect(tournament.value.statistics.matches).toBe(6)
+    expect(apiMocks.generateTournamentFixtures).toHaveBeenCalledWith('tournament-1', expect.objectContaining({ replace: true }))
+    expect(reloadTournament).toHaveBeenCalledTimes(1)
 
-    expect(result.resetFixtures()).toBe(true)
+    expect(result.resetFixtures()).toBe(false)
   })
 })

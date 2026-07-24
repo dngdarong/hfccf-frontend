@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { withI18nSetup } from '@/tests/helpers/mount'
 import { useTournamentResults } from '@/modules/sport/tournament/composables/useTournamentResults'
 
+const apiMocks = vi.hoisted(() => ({ updateTournamentResult: vi.fn(), addTournamentMatchEvent: vi.fn() }))
+vi.mock('@/modules/sport/tournament/api/tournamentApi', () => apiMocks)
+
 describe('useTournamentResults', () => {
-  it('updates the selected fixture, recalculates standings, and activates the tournament on the first result', () => {
+  it('saves the supported result fields through the backend and reloads', async () => {
     const tournament = ref({
       id: 'tournament-1',
       state: 'fixtures_generated',
@@ -49,24 +52,11 @@ describe('useTournamentResults', () => {
       },
     })
 
-    const updateTournament = vi.fn((id, payload) => {
-      tournament.value = {
-        ...tournament.value,
-        ...payload,
-      }
-      return tournament.value
-    })
-
-    const transitionTournament = vi.fn((id, nextState) => {
-      tournament.value = {
-        ...tournament.value,
-        state: nextState,
-      }
-      return tournament.value
-    })
+    apiMocks.updateTournamentResult.mockResolvedValueOnce({ match: { id: 'fixture-1' }, standings: [] })
+    const reloadTournament = vi.fn()
 
     const result = withI18nSetup(
-      () => useTournamentResults(tournament, { updateTournament, transitionTournament }),
+      () => useTournamentResults(tournament, { reloadTournament }),
       {},
     )
 
@@ -83,19 +73,14 @@ describe('useTournamentResults', () => {
       ],
     })
 
-    const updated = result.saveResult()
-
+    const updated = await result.saveResult()
     expect(updated.id).toBe('tournament-1')
-    expect(updateTournament).toHaveBeenCalled()
-    expect(transitionTournament).toHaveBeenCalledWith('tournament-1', 'active')
-    expect(tournament.value.fixtures[0].status).toBe('completed')
-    expect(tournament.value.results).toHaveLength(1)
-    expect(tournament.value.standings).toHaveLength(1)
-    expect(tournament.value.fixtures[0].eventScore.score).toEqual({
-      home: 3,
-      away: 0,
-    })
-    expect(tournament.value.standings[0].rows[0].teamId).toBe('team-a')
-    expect(tournament.value.standings[0].rows[0].points).toBe(3)
+    expect(apiMocks.updateTournamentResult).toHaveBeenCalledWith('tournament-1', 'fixture-1', expect.objectContaining({
+      homeScore: 0,
+      awayScore: 0,
+      status: 'completed',
+      notes: '',
+    }))
+    expect(reloadTournament).toHaveBeenCalledTimes(1)
   })
 })

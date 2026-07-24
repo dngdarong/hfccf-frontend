@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 import StatusBadge from '@/components/badges/StatusBadge.vue'
 import { getCommandCenterTone } from './commandCenterTone'
 
@@ -73,3 +73,4 @@ const tone = computed(() => getCommandCenterTone(props.status))
     </div>
   </article>
 </template>
+

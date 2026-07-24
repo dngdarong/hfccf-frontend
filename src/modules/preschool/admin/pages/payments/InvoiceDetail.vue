@@ -4,10 +4,20 @@ import { useRoute, useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import HeaderSection from '@/components/navigation/HeaderSection.vue'
 import Button from '@/components/buttons/Button.vue'
+import AlertQuestion from '@/components/alerts/AlertQuestion.vue'
 import AlertSuccess from '@/components/alerts/AlertSuccess.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { formatDate } from '@/utils/date'
-import { createPreschoolReceiptFromPayment, fetchPreschoolInvoice, issuePreschoolInvoice, deletePreschoolInvoice, cancelPreschoolInvoice, printPreschoolInvoice } from '@/modules/preschool/services/api/preschoolPaymentApi'
+import {
+  cancelPreschoolInvoice,
+  createPreschoolReceiptFromPayment,
+  deletePreschoolInvoice,
+  downloadPreschoolInvoiceExport,
+  fetchPreschoolInvoice,
+  issuePreschoolInvoice,
+  printPreschoolInvoice,
+  printPreschoolReceipt,
+} from '@/modules/preschool/services/api/preschoolPaymentApi'
 
 defineOptions({
   name: 'PreschoolAdminInvoiceDetailPage',
@@ -21,12 +31,43 @@ const loading = ref(false)
 const errorMessage = ref('')
 const invoice = ref(null)
 const actionLoading = ref(false)
+const exportLoading = ref(false)
+const exportFormat = ref('')
 const showSuccess = ref(false)
 const successMessage = ref('')
+const deleteDialogOpen = ref(false)
+const cancelDialogOpen = ref(false)
+const navigateAfterSuccess = ref(false)
 
 const itemRows = computed(() => invoice.value?.items || [])
-const paymentRows = computed(() => invoice.value?.payments || [])
 const receiptRows = computed(() => invoice.value?.receipts || [])
+const receiptRowsByPayment = computed(() =>
+  receiptRows.value.reduce((carry, receipt) => {
+    const paymentId = String(receipt.paymentId || '')
+    if (!paymentId) return carry
+
+    if (!carry[paymentId]) {
+      carry[paymentId] = []
+    }
+
+    carry[paymentId].push(receipt)
+    return carry
+  }, {}),
+)
+const paymentRows = computed(() =>
+  (invoice.value?.payments || []).map((payment) => ({
+    ...payment,
+    linkedReceipts: receiptRowsByPayment.value[String(payment.id || '')] || [],
+  })),
+)
+const normalizedStatus = computed(() => String(invoice.value?.status || '').trim().toLowerCase())
+const canIssueInvoice = computed(() => !!invoice.value?.id && normalizedStatus.value === 'draft')
+const canDeleteInvoice = computed(() => !!invoice.value?.id && normalizedStatus.value === 'draft')
+const canCancelInvoice = computed(() => !!invoice.value?.id && ['issued', 'partial', 'overdue'].includes(normalizedStatus.value))
+const canAddPayment = computed(() => {
+  const balanceDue = Number(invoice.value?.balanceDue ?? invoice.value?.balance_due ?? 0)
+  return !!invoice.value?.id && balanceDue > 0 && ['issued', 'partial', 'overdue'].includes(normalizedStatus.value)
+})
 
 async function loadInvoice() {
   const invoiceId = String(route.params.id || '').trim()
@@ -57,7 +98,12 @@ async function loadInvoice() {
 }
 
 function goBack() {
-  router.push({ name: 'dashboard-preschool-admin-payment' })
+  router.push({ name: 'dashboard-preschool-admin-invoices' })
+}
+
+function onAddPayment() {
+  if (!canAddPayment.value || !invoice.value?.id) return
+  router.push({ name: 'dashboard-preschool-admin-payment', query: { invoiceId: invoice.value.id } })
 }
 
 async function reloadAfterAction(action) {
@@ -70,18 +116,41 @@ async function reloadAfterAction(action) {
   }
 }
 
+function triggerDownload(blob, filename) {
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 async function onIssueInvoice() {
   if (!invoice.value?.id) return
-  await reloadAfterAction(() => issuePreschoolInvoice(invoice.value.id))
+
+  try {
+    await reloadAfterAction(() => issuePreschoolInvoice(invoice.value.id))
+    successMessage.value = t('preschoolPaymentManagementPage.messages.issueInvoiceSuccess')
+    navigateAfterSuccess.value = false
+    showSuccess.value = true
+  } catch (error) {
+    errorMessage.value = error?.message || t('preschoolPaymentManagementPage.messages.saveInvoiceFailed')
+  }
 }
 
 async function onDeleteInvoice() {
   if (!invoice.value?.id) return
+
   actionLoading.value = true
   try {
     await deletePreschoolInvoice(invoice.value.id)
     successMessage.value = t('preschoolPaymentManagementPage.messages.deleteInvoiceSuccess')
+    navigateAfterSuccess.value = true
     showSuccess.value = true
+    deleteDialogOpen.value = false
+    invoice.value = null
   } catch (error) {
     errorMessage.value = error?.message || t('preschoolPaymentManagementPage.messages.saveInvoiceFailed')
   } finally {
@@ -91,33 +160,95 @@ async function onDeleteInvoice() {
 
 async function onCancelInvoice() {
   if (!invoice.value?.id) return
-  await reloadAfterAction(() => cancelPreschoolInvoice(invoice.value.id))
+
+  try {
+    await reloadAfterAction(() => cancelPreschoolInvoice(invoice.value.id))
+    successMessage.value = t('preschoolPaymentManagementPage.messages.cancelInvoiceSuccess')
+    navigateAfterSuccess.value = false
+    showSuccess.value = true
+    cancelDialogOpen.value = false
+  } catch (error) {
+    errorMessage.value = error?.message || t('preschoolPaymentManagementPage.messages.saveInvoiceFailed')
+  }
 }
 
 async function onPrintInvoice() {
   if (!invoice.value?.id) return
-  const html = await printPreschoolInvoice(invoice.value.id)
-  if (!html) return
-  const win = window.open('', '_blank', 'noopener,noreferrer')
-  if (win) {
+
+  try {
+    const html = await printPreschoolInvoice(invoice.value.id)
+    if (!html) return
+
+    const win = window.open('', '_blank')
+    if (!win) {
+      errorMessage.value = t('preschoolPaymentManagementPage.messages.exportFailed')
+      return
+    }
+
     win.document.open()
     win.document.write(html)
     win.document.close()
     win.focus()
+  } catch (error) {
+    errorMessage.value = error?.message || t('preschoolPaymentManagementPage.messages.exportFailed')
+  }
+}
+
+async function onDownloadInvoice(format) {
+  if (!invoice.value?.id) return
+
+  exportLoading.value = true
+  exportFormat.value = format
+
+  try {
+    const file = await downloadPreschoolInvoiceExport(invoice.value.id, format)
+    if (file?.blob) {
+      triggerDownload(file.blob, file.filename)
+    }
+  } catch (error) {
+    errorMessage.value = error?.message || t('preschoolPaymentManagementPage.messages.exportFailed')
+  } finally {
+    exportLoading.value = false
+    exportFormat.value = ''
   }
 }
 
 async function onGenerateReceipt(payment) {
   if (!payment?.id) return
+
   const receipt = await createPreschoolReceiptFromPayment(payment.id)
   if (receipt?.id) {
     router.push({ name: 'dashboard-preschool-admin-receipt-view', params: { id: receipt.id } })
   }
 }
 
+async function onPrintReceipt(receipt) {
+  if (!receipt?.id) return
+
+  try {
+    const html = await printPreschoolReceipt(receipt.id)
+    if (!html) return
+
+    const win = window.open('', '_blank')
+    if (!win) {
+      errorMessage.value = t('preschoolPaymentManagementPage.messages.exportFailed')
+      return
+    }
+
+    win.document.open()
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+  } catch (error) {
+    errorMessage.value = error?.message || t('preschoolPaymentManagementPage.messages.exportFailed')
+  }
+}
+
 function onCloseSuccess() {
   showSuccess.value = false
-  goBack()
+  if (navigateAfterSuccess.value) {
+    goBack()
+  }
 }
 
 watch(() => route.params.id, loadInvoice)
@@ -138,25 +269,66 @@ onMounted(loadInvoice)
             {{ t('preschoolPaymentManagementPage.actions.back') }}
           </Button>
           <Button
+            v-if="canAddPayment"
+            type="button"
+            variant="primary"
+            rounded="xl"
+            @click="onAddPayment"
+          >
+            {{ t('preschoolPaymentManagementPage.actions.addPayment') }}
+          </Button>
+          <Button
+            v-if="canIssueInvoice"
             type="button"
             variant="secondary"
             rounded="xl"
-            :disabled="actionLoading || !invoice || invoice.status !== 'draft'"
+            :disabled="actionLoading"
             @click="onIssueInvoice"
           >
             {{ t('preschoolPaymentManagementPage.actions.issueInvoice') }}
           </Button>
           <Button
+            v-if="canDeleteInvoice"
             type="button"
             variant="danger"
             rounded="xl"
-            :disabled="actionLoading || !invoice || invoice.status === 'cancelled'"
-            @click="invoice?.status === 'draft' ? onDeleteInvoice() : onCancelInvoice()"
+            :disabled="actionLoading"
+            @click="deleteDialogOpen = true"
           >
-            {{ invoice?.status === 'draft' ? t('common.delete') : t('preschoolPaymentManagementPage.actions.cancelInvoice') }}
+            {{ t('common.delete') }}
+          </Button>
+          <Button
+            v-if="canCancelInvoice"
+            type="button"
+            variant="danger"
+            rounded="xl"
+            :disabled="actionLoading"
+            @click="cancelDialogOpen = true"
+          >
+            {{ t('preschoolPaymentManagementPage.actions.cancelInvoice') }}
           </Button>
           <Button type="button" variant="primary" rounded="xl" @click="onPrintInvoice">
             {{ t('preschoolPaymentManagementPage.actions.printInvoice') }}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            rounded="xl"
+            :loading="exportLoading && exportFormat === 'pdf'"
+            :disabled="exportLoading"
+            @click="onDownloadInvoice('pdf')"
+          >
+            {{ t('preschoolPaymentManagementPage.actions.downloadPdf') }}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            rounded="xl"
+            :loading="exportLoading && exportFormat === 'xlsx'"
+            :disabled="exportLoading"
+            @click="onDownloadInvoice('xlsx')"
+          >
+            {{ t('preschoolPaymentManagementPage.actions.downloadExcel') }}
           </Button>
         </div>
 
@@ -196,49 +368,118 @@ onMounted(loadInvoice)
               <strong>{{ invoice.balanceDue.toFixed(2) }}</strong>
             </article>
             <article class="invoice-detail-page__card">
-              <span>{{ t('preschoolPaymentManagementPage.invoiceLabels.issueDate') }}</span>
-              <strong>{{ formatDate(invoice.issueDate) || invoice.issueDate || '-' }}</strong>
+              <span>{{ t('preschoolPaymentManagementPage.invoiceLabels.dueDate') }}</span>
+              <strong>{{ formatDate(invoice.dueDate) || invoice.dueDate || '-' }}</strong>
             </article>
           </div>
 
           <div class="invoice-detail-page__grid">
             <section class="invoice-detail-page__panel">
-              <h3>{{ t('preschoolPaymentManagementPage.invoiceSection.items') }}</h3>
-              <table class="invoice-detail-page__table">
-                <thead>
-                  <tr>
-                    <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.description') }}</th>
-                    <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.quantity') }}</th>
-                    <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.unitPrice') }}</th>
-                    <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.amount') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in itemRows" :key="item.id">
-                    <td>{{ item.description }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.unitPrice.toFixed(2) }}</td>
-                    <td>{{ item.amount.toFixed(2) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <h3>{{ t('preschoolInvoiceDetailPage.sections.information') }}</h3>
+              <dl class="invoice-detail-page__info-list">
+                <div>
+                  <dt>{{ t('preschoolPaymentManagementPage.columns.student') }}</dt>
+                  <dd>{{ invoice.studentName || '-' }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('preschoolPaymentManagementPage.columns.class') }}</dt>
+                  <dd>{{ invoice.className || '-' }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('preschoolPaymentManagementPage.invoiceLabels.issueDate') }}</dt>
+                  <dd>{{ formatDate(invoice.issueDate) || invoice.issueDate || '-' }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('preschoolPaymentManagementPage.invoiceLabels.dueDate') }}</dt>
+                  <dd>{{ formatDate(invoice.dueDate) || invoice.dueDate || '-' }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('preschoolPaymentManagementPage.columns.status') }}</dt>
+                  <dd>{{ t(`preschoolPaymentManagementPage.invoiceStatus.${invoice.status}`) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('preschoolPaymentManagementPage.invoiceLabels.balance') }}</dt>
+                  <dd>{{ invoice.balanceDue.toFixed(2) }}</dd>
+                </div>
+              </dl>
             </section>
 
             <section class="invoice-detail-page__panel">
-              <h3>{{ t('preschoolPaymentManagementPage.invoiceSection.payments') }}</h3>
+              <h3>{{ t('preschoolPaymentManagementPage.invoiceSection.items') }}</h3>
+              <template v-if="itemRows.length">
+                <table class="invoice-detail-page__table">
+                  <thead>
+                    <tr>
+                      <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.description') }}</th>
+                      <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.quantity') }}</th>
+                      <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.unitPrice') }}</th>
+                      <th>{{ t('preschoolPaymentManagementPage.invoiceLabels.amount') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in itemRows" :key="item.id">
+                      <td>{{ item.description }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>{{ item.unitPrice.toFixed(2) }}</td>
+                      <td>{{ item.amount.toFixed(2) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </template>
+              <div v-else class="invoice-detail-page__empty">
+                {{ t('preschoolPaymentManagementPage.messages.noInvoiceHistory') }}
+              </div>
+            </section>
+
+            <section class="invoice-detail-page__panel">
+              <h3>{{ t('preschoolInvoiceDetailPage.sections.paymentSummary') }}</h3>
               <div v-if="paymentRows.length" class="invoice-detail-page__stack">
                 <article v-for="payment in paymentRows" :key="payment.id" class="invoice-detail-page__entry">
-                  <div>
-                    <strong>{{ payment.paymentReference }}</strong>
-                    <p>{{ payment.amount.toFixed(2) }} | {{ payment.paymentStatus }}</p>
+                  <div class="invoice-detail-page__entry-copy">
+                    <strong>{{ payment.paymentReference || '-' }}</strong>
+                    <dl class="invoice-detail-page__inline-list">
+                      <div>
+                        <dt>{{ t('preschoolPaymentManagementPage.dialog.formLabels.paymentDate') }}</dt>
+                        <dd>{{ formatDate(payment.paidAt) || payment.paidAt || '-' }}</dd>
+                      </div>
+                      <div>
+                        <dt>{{ t('preschoolPaymentManagementPage.dialog.formLabels.paymentMethod') }}</dt>
+                        <dd>{{ payment.paymentMethod || '-' }}</dd>
+                      </div>
+                      <div>
+                        <dt>{{ t('preschoolPaymentManagementPage.dialog.formLabels.amount') }}</dt>
+                        <dd>{{ payment.amount.toFixed(2) }}</dd>
+                      </div>
+                      <div>
+                        <dt>{{ t('preschoolPaymentManagementPage.receiptLabels.number') }}</dt>
+                        <dd>
+                          <template v-if="payment.linkedReceipts.length">
+                            {{ payment.linkedReceipts.map((receipt) => receipt.receiptNumber).join(', ') }}
+                          </template>
+                          <template v-else>-</template>
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
                   <div class="invoice-detail-page__entry-actions">
                     <Button
+                      v-for="receipt in payment.linkedReceipts"
+                      :key="`payment-${payment.id}-receipt-${receipt.id}`"
                       type="button"
                       size="sm"
                       variant="secondary"
                       rounded="xl"
-                      :disabled="payment.receiptCount > 0"
+                      @click="router.push({ name: 'dashboard-preschool-admin-receipt-view', params: { id: receipt.id } })"
+                    >
+                      {{ t('preschoolPaymentManagementPage.actions.viewReceipt') }}
+                    </Button>
+                    <Button
+                      v-if="!payment.linkedReceipts.length"
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      rounded="xl"
+                      :disabled="String(payment.paymentStatus || '').trim().toLowerCase() !== 'paid'"
                       @click="onGenerateReceipt(payment)"
                     >
                       {{ t('preschoolPaymentManagementPage.actions.generateReceipt') }}
@@ -252,12 +493,21 @@ onMounted(loadInvoice)
             </section>
 
             <section class="invoice-detail-page__panel invoice-detail-page__panel--wide">
-              <h3>{{ t('preschoolPaymentManagementPage.invoiceSection.receipts') }}</h3>
+              <h3>{{ t('preschoolInvoiceDetailPage.sections.receiptSummary') }}</h3>
               <div v-if="receiptRows.length" class="invoice-detail-page__stack">
                 <article v-for="receipt in receiptRows" :key="receipt.id" class="invoice-detail-page__entry">
-                  <div>
+                  <div class="invoice-detail-page__entry-copy">
                     <strong>{{ receipt.receiptNumber }}</strong>
-                    <p>{{ formatDate(receipt.issuedAt) || receipt.issuedAt || '-' }} | {{ receipt.amount.toFixed(2) }}</p>
+                    <dl class="invoice-detail-page__inline-list">
+                      <div>
+                        <dt>{{ t('preschoolPaymentManagementPage.receiptLabels.issuedAt') }}</dt>
+                        <dd>{{ formatDate(receipt.issuedAt) || receipt.issuedAt || '-' }}</dd>
+                      </div>
+                      <div>
+                        <dt>{{ t('preschoolPaymentManagementPage.dialog.formLabels.amount') }}</dt>
+                        <dd>{{ receipt.amount.toFixed(2) }}</dd>
+                      </div>
+                    </dl>
                   </div>
                   <div class="invoice-detail-page__entry-actions">
                     <Button
@@ -268,6 +518,15 @@ onMounted(loadInvoice)
                       @click="router.push({ name: 'dashboard-preschool-admin-receipt-view', params: { id: receipt.id } })"
                     >
                       {{ t('preschoolPaymentManagementPage.actions.viewReceipt') }}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      rounded="xl"
+                      @click="onPrintReceipt(receipt)"
+                    >
+                      {{ t('preschoolPaymentManagementPage.actions.printReceipt') }}
                     </Button>
                   </div>
                 </article>
@@ -287,6 +546,28 @@ onMounted(loadInvoice)
       :message="successMessage"
       :button-text="t('preschoolPaymentManagementPage.alerts.close')"
       @close="onCloseSuccess"
+    />
+
+    <AlertQuestion
+      :show="deleteDialogOpen"
+      :title="t('preschoolPaymentManagementPage.alerts.deleteTitle')"
+      :message="t('preschoolPaymentManagementPage.alerts.deleteMessage', { name: invoice?.invoiceNumber || t('preschoolPaymentManagementPage.alerts.deleteFallback') })"
+      :confirm-text="t('common.delete')"
+      :cancel-text="t('common.cancel')"
+      type="danger"
+      @confirm="onDeleteInvoice"
+      @cancel="deleteDialogOpen = false"
+    />
+
+    <AlertQuestion
+      :show="cancelDialogOpen"
+      :title="t('preschoolPaymentManagementPage.actions.cancelInvoice')"
+      :message="t('preschoolPaymentManagementPage.alerts.cancelInvoiceMessage', { name: invoice?.invoiceNumber || t('preschoolPaymentManagementPage.alerts.deleteFallback') })"
+      :confirm-text="t('preschoolPaymentManagementPage.actions.cancelInvoice')"
+      :cancel-text="t('common.cancel')"
+      type="warning"
+      @confirm="onCancelInvoice"
+      @cancel="cancelDialogOpen = false"
     />
   </MainLayout>
 </template>
@@ -424,6 +705,38 @@ onMounted(loadInvoice)
   color: #0f172a;
 }
 
+.invoice-detail-page__info-list,
+.invoice-detail-page__inline-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.invoice-detail-page__info-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invoice-detail-page__info-list div,
+.invoice-detail-page__inline-list div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.invoice-detail-page__info-list dt,
+.invoice-detail-page__inline-list dt {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.invoice-detail-page__info-list dd,
+.invoice-detail-page__inline-list dd {
+  margin: 0;
+  color: #0f172a;
+}
+
 .invoice-detail-page__table {
   width: 100%;
   border-collapse: collapse;
@@ -453,13 +766,16 @@ onMounted(loadInvoice)
   background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 }
 
-.invoice-detail-page__entry p {
-  margin: 0.25rem 0 0;
-  color: #64748b;
+.invoice-detail-page__entry-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .invoice-detail-page__entry-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -486,7 +802,8 @@ onMounted(loadInvoice)
   }
 
   .invoice-detail-page__summary,
-  .invoice-detail-page__grid {
+  .invoice-detail-page__grid,
+  .invoice-detail-page__info-list {
     grid-template-columns: 1fr;
   }
 }

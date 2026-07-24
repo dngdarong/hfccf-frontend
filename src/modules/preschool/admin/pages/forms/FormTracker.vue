@@ -272,22 +272,13 @@ onMounted(load)
         </div>
 
         <div class="forms-tracker__row forms-tracker__row--full">
-          <h2 class="forms-tracker__section-title">🎯 Related Assessment Features</h2>
+          <h2 class="forms-tracker__section-title">🎯 Related Features</h2>
           <div class="forms-tracker__related-grid">
-            <div class="forms-tracker__related-card" @click="router.push({ name: 'preschool-assessment-dashboard' })">
-              <div class="forms-tracker__related-icon">📊</div>
-              <div class="forms-tracker__related-info">
-                <div class="forms-tracker__related-title">Assessment Dashboard</div>
-                <div class="forms-tracker__related-desc">View overall metrics and insights</div>
-              </div>
-              <div class="forms-tracker__related-arrow">→</div>
-            </div>
-
             <div class="forms-tracker__related-card" @click="router.push({ name: 'dashboard-preschool-admin-forms-review' })">
               <div class="forms-tracker__related-icon">📥</div>
               <div class="forms-tracker__related-info">
-                <div class="forms-tracker__related-title">Submissions</div>
-                <div class="forms-tracker__related-desc">Track form responses and results</div>
+                <div class="forms-tracker__related-title">Form Review</div>
+                <div class="forms-tracker__related-desc">Manage form submissions and responses</div>
               </div>
               <div class="forms-tracker__related-arrow">→</div>
             </div>
@@ -295,17 +286,8 @@ onMounted(load)
             <div class="forms-tracker__related-card" @click="router.push({ name: formBuilderRouteName })">
               <div class="forms-tracker__related-icon">✨</div>
               <div class="forms-tracker__related-info">
-                <div class="forms-tracker__related-title">Assessment Wizard</div>
-                <div class="forms-tracker__related-desc">Create assessments for students</div>
-              </div>
-              <div class="forms-tracker__related-arrow">→</div>
-            </div>
-
-            <div class="forms-tracker__related-card" @click="router.push({ name: 'preschool-assessment-reports' })">
-              <div class="forms-tracker__related-icon">📈</div>
-              <div class="forms-tracker__related-info">
-                <div class="forms-tracker__related-title">Reports</div>
-                <div class="forms-tracker__related-desc">Analyze performance and trends</div>
+                <div class="forms-tracker__related-title">Form Builder</div>
+                <div class="forms-tracker__related-desc">Create and design new forms</div>
               </div>
               <div class="forms-tracker__related-arrow">→</div>
             </div>

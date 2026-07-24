@@ -1,5 +1,5 @@
 <script setup>
-import Button from 'primevue/button'
+import Button from '@/components/buttons/Button.vue'
 
 defineOptions({
   name: 'PreschoolClassesToolbar',
@@ -164,3 +164,4 @@ defineEmits(['add'])
   }
 }
 </style>
+

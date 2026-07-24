@@ -81,6 +81,10 @@ const sortedIncidentCategories = computed(() => sortRows(incidentCategories.valu
 const sortedVaccinationCategories = computed(() => sortRows(vaccinationCategories.value))
 const sortedHealthCheckCategories = computed(() => sortRows(healthCheckCategories.value))
 
+function extractListItems(result) {
+  return result?.items ?? []
+}
+
 const severityReferenceOptions = computed(() => {
   if (sortedSeverityLevels.value.length > 0) {
     return sortedSeverityLevels.value.map((level) => ({
@@ -397,19 +401,19 @@ async function loadPage() {
   }
 
   if (severityResult.status === 'fulfilled') {
-    severityLevels.value = sortRows((severityResult.value || []).map(normalizeSeverityLevel))
+    severityLevels.value = sortRows(extractListItems(severityResult.value).map(normalizeSeverityLevel))
   }
 
   if (incidentResult.status === 'fulfilled') {
-    incidentCategories.value = sortRows((incidentResult.value || []).map(normalizeIncidentCategory))
+    incidentCategories.value = sortRows(extractListItems(incidentResult.value).map(normalizeIncidentCategory))
   }
 
   if (vaccinationResult.status === 'fulfilled') {
-    vaccinationCategories.value = sortRows((vaccinationResult.value || []).map(normalizeVaccinationCategory))
+    vaccinationCategories.value = sortRows(extractListItems(vaccinationResult.value).map(normalizeVaccinationCategory))
   }
 
   if (checkResult.status === 'fulfilled') {
-    healthCheckCategories.value = sortRows((checkResult.value || []).map(normalizeHealthCheckCategory))
+    healthCheckCategories.value = sortRows(extractListItems(checkResult.value).map(normalizeHealthCheckCategory))
   }
 
   if (rejection) {

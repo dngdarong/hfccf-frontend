@@ -11,10 +11,3 @@ export function statusLabel(status: string | null | undefined, t: any): string {
   if (key === 'excused') return t('sportAttendanceStatus.excused')
   return key || '-'
 }
-
-export function typeLabel(type: string | null | undefined, t: any): string {
-  if (String(type || '').trim().toLowerCase() === 'coach') {
-    return t('sportAttendanceType.coach')
-  }
-  return t('sportAttendanceType.player')
-}

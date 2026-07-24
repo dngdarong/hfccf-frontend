@@ -1,5 +1,5 @@
-﻿<script setup>
-import Button from 'primevue/button'
+<script setup>
+import Button from '@/components/buttons/Button.vue'
 import DatePicker from 'primevue/datepicker'
 import InputNumber from 'primevue/inputnumber'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -21,6 +21,10 @@ const props = defineProps({
     default: false,
   },
   canReset: {
+    type: Boolean,
+    default: false,
+  },
+  pending: {
     type: Boolean,
     default: false,
   },
@@ -132,7 +136,7 @@ function updateSetting(key, value) {
         type="button"
         class="rounded-xl"
         severity="info"
-        :disabled="!canGenerate"
+        :disabled="!canGenerate || pending"
         :label="t('sportTournament.fixtures.actions.previewFixtures')"
         @click="emit('preview')"
       />
@@ -140,7 +144,7 @@ function updateSetting(key, value) {
         type="button"
         class="rounded-xl"
         severity="success"
-        :disabled="!canGenerate || !previewCount"
+        :disabled="!canGenerate || !previewCount || pending"
         :label="t('sportTournament.fixtures.actions.applyPreview')"
         @click="emit('apply')"
       />
@@ -148,7 +152,7 @@ function updateSetting(key, value) {
         type="button"
         class="rounded-xl"
         outlined
-        :disabled="!canReset"
+        :disabled="!canReset || pending"
         :label="t('sportTournament.fixtures.actions.resetFixtures')"
         @click="emit('reset')"
       />
@@ -288,3 +292,4 @@ function updateSetting(key, value) {
   }
 }
 </style>
+

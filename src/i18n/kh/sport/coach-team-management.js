@@ -38,6 +38,8 @@ export default {
       approve: 'អនុម័ត',
       reject: 'បដិសេធ',
       saveAssignment: 'រក្សាទុកការចាត់តាំង',
+      updateAssignment: 'ធ្វើបច្ចុប្បន្នភាពការចាត់តាំង',
+      cancel: 'បោះបង់',
       deactivate: 'បិទសកម្មភាព',
     },
     myTeams: {
@@ -67,6 +69,8 @@ export default {
       subtitle: 'តាមដានសំណើកីឡាករ និងការប្រកួតដែលអ្នកបានដាក់ស្នើ។',
       playersTitle: 'សំណើកីឡាករ',
       matchesTitle: 'សំណើការប្រកួត',
+      emptyPlayers: 'មិនទាន់មានសំណើកីឡាករណាមួយទេ។',
+      emptyMatches: 'មិនទាន់មានសំណើការប្រកួតណាមួយទេ។',
     },
     assignments: {
       title: 'ការចាត់តាំងក្រុមឲ្យគ្រូបង្វឹក',

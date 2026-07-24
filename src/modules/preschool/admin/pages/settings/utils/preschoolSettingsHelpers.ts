@@ -10,7 +10,10 @@ export function formatLifecycleDate(value: any): string {
   if (!value) return ''
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 10)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function formatPreviewDate(value: any, language: string): string {
@@ -63,13 +66,25 @@ export function buildStatusOptions(t: any) {
   ]
 }
 
-export function buildClassLevelOptions(t: any) {
-  return [
-    { label: t('preschoolSettingsPage.classLevels.nursery'), value: 'nursery' },
-    { label: t('preschoolSettingsPage.classLevels.kindergarten1'), value: 'kindergarten-1' },
-    { label: t('preschoolSettingsPage.classLevels.kindergarten2'), value: 'kindergarten-2' },
-    { label: t('preschoolSettingsPage.classLevels.prep'), value: 'prep' },
-  ]
+function normalizeText(value: any): string {
+  return String(value ?? '').trim()
+}
+
+export function buildClassLevelOptions(classLevels: any[] = [], locale = 'EN') {
+  const isKh = String(locale || 'EN').toUpperCase() === 'KH'
+
+  return [...classLevels]
+    .filter((level) => level && level.isActive !== false)
+    .sort((left, right) => Number(left.sortOrder ?? 0) - Number(right.sortOrder ?? 0) || String(left.nameEn || '').localeCompare(String(right.nameEn || '')))
+    .map((level) => ({
+      label: isKh
+        ? normalizeText(level.nameKh || level.name_kh || level.nameEn || level.name_en || level.name || level.code)
+        : normalizeText(level.nameEn || level.name_en || level.nameKh || level.name_kh || level.name || level.code),
+      value: normalizeText(level.code || ''),
+      id: String(level.id ?? ''),
+      code: normalizeText(level.code || ''),
+      isActive: Boolean(level.isActive ?? level.is_active ?? true),
+    }))
 }
 
 export function buildTeacherOptions(t: any) {

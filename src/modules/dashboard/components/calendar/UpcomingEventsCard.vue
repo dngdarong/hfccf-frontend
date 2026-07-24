@@ -1,8 +1,6 @@
 <script setup>
 import UpcomingEventItem from '@/modules/dashboard/components/calendar/UpcomingEventItem.vue'
 
-defineEmits(['select-event'])
-
 defineProps({
   title: {
     type: String,
@@ -67,7 +65,6 @@ defineProps({
         :context-label="contextLabel"
         :target-icon="targetIcon"
         :target-label="targetLabel"
-        @select="$emit('select-event', $event)"
       />
 
       <div v-if="!events.length" class="upcoming-events-card__empty">

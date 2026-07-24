@@ -19,6 +19,10 @@ defineProps({
     type: String,
     required: true,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['view', 'edit', 'delete'])
@@ -68,6 +72,7 @@ function handleDelete(team) {
   <DataTable
     :value="teams"
     data-key="id"
+    :loading="loading"
     striped-rows
     removable-sort
     class="teams-table"
@@ -101,7 +106,7 @@ function handleDelete(team) {
               {{ data.name }}
             </div>
             <div class="text-[11px] text-surface-500 sm:text-xs">
-              {{ t('sportTeamsManagement.table.captainPrefix', { captain: data.captain }) }}
+              {{ t('sportTeamsManagement.table.captainPrefix', { captain: data.captainName || '-' }) }}
             </div>
           </div>
         </div>

@@ -13,6 +13,12 @@ import {
   fetchStudentReports,
 } from '@/modules/preschool/services/api/preschoolReportsApi'
 
+export const PRESCHOOL_REPORT_PERIOD_TYPE_OPTIONS = [
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Term', value: 'term' },
+  { label: 'Annual', value: 'annual' },
+]
+
 function normalizeText(value) {
   return String(value ?? '').trim()
 }
@@ -35,10 +41,13 @@ export function usePreschoolReports() {
   const studentOptions = ref([])
   const reportPeriods = ref([])
   const selectedStudentId = ref('')
+  const selectedPeriodType = ref('term')
   const selectedPeriodLabel = ref('')
   const reportBundle = ref({ student: null, periods: [], period: null, report: null })
   const selectedReportPeriod = computed(() =>
-    reportPeriods.value.find((period) => String(period.label || '') === String(selectedPeriodLabel.value || '')) || null,
+    reportPeriods.value.find((period) =>
+      String(period.label || '') === String(selectedPeriodLabel.value || '')
+      && String(period.periodType || 'term') === String(selectedPeriodType.value || 'term')) || null,
   )
 
   const isReportPeriodLocked = computed(() => ['finalized', 'locked', 'archived'].includes(String(selectedReportPeriod.value?.status || '').toLowerCase()))
@@ -80,19 +89,24 @@ export function usePreschoolReports() {
     }
   }
 
-  async function loadReportPeriodOptions(studentId = '') {
+  async function loadReportPeriodOptions(studentId = selectedStudentId.value, periodType = selectedPeriodType.value) {
     const resolvedStudentId = String(studentId || '').trim()
+    const resolvedPeriodType = String(periodType || '').trim() || 'term'
 
     loading.value = true
     errorMessage.value = ''
 
     try {
+      selectedPeriodType.value = resolvedPeriodType
       reportPeriods.value = await fetchReportPeriods(
-        resolvedStudentId ? { studentId: resolvedStudentId } : {},
+        resolvedStudentId
+          ? { studentId: resolvedStudentId, periodType: resolvedPeriodType }
+          : { periodType: resolvedPeriodType },
       )
 
-      if (!selectedPeriodLabel.value) {
-        selectedPeriodLabel.value = String(reportPeriods.value[0]?.label || '').trim()
+      const matched = reportPeriods.value.find((period) => String(period.periodType || 'term') === resolvedPeriodType)
+      if (!selectedPeriodLabel.value || !reportPeriods.value.some((period) => String(period.label || '') === selectedPeriodLabel.value && String(period.periodType || 'term') === resolvedPeriodType)) {
+        selectedPeriodLabel.value = String(matched?.label || reportPeriods.value[0]?.label || '').trim()
       }
     } catch (error) {
       reportPeriods.value = []
@@ -102,7 +116,7 @@ export function usePreschoolReports() {
     }
   }
 
-  async function loadStudentReport(studentId = selectedStudentId.value, periodLabel = selectedPeriodLabel.value) {
+  async function loadStudentReport(studentId = selectedStudentId.value, periodLabel = selectedPeriodLabel.value, periodType = selectedPeriodType.value) {
     const resolvedStudentId = String(studentId || '').trim()
     if (!resolvedStudentId) return null
 
@@ -111,13 +125,19 @@ export function usePreschoolReports() {
 
     try {
       const normalizedPeriodLabel = String(periodLabel || '').trim()
+      const normalizedPeriodType = String(periodType || selectedPeriodType.value || 'term').trim() || 'term'
       const bundle = normalizedPeriodLabel
-        ? await fetchStudentReportPeriod(resolvedStudentId, normalizedPeriodLabel)
-        : await fetchStudentReports(resolvedStudentId)
+        ? await fetchStudentReportPeriod(resolvedStudentId, normalizedPeriodLabel, {
+          periodType: normalizedPeriodType,
+        })
+        : await fetchStudentReports(resolvedStudentId, {
+          periodType: normalizedPeriodType,
+        })
 
       reportBundle.value = bundle
       reportPeriods.value = bundle.periods || reportPeriods.value
       selectedStudentId.value = resolvedStudentId
+      selectedPeriodType.value = bundle.period?.periodType || bundle.periods?.find((period) => period.label === selectedPeriodLabel.value)?.periodType || normalizedPeriodType
       selectedPeriodLabel.value = bundle.period?.label || bundle.periods?.[0]?.label || normalizedPeriodLabel
       return bundle
     } catch (error) {
@@ -137,6 +157,10 @@ export function usePreschoolReports() {
     selectedPeriodLabel.value = String(periodLabel || '').trim()
   }
 
+  function setSelectedPeriodType(periodType) {
+    selectedPeriodType.value = String(periodType || '').trim() || 'term'
+  }
+
   return {
     errorMessage,
     isTeacher,
@@ -149,9 +173,11 @@ export function usePreschoolReports() {
     reportPeriodLockMessage,
     isReportPeriodLocked,
     selectedPeriodLabel,
+    selectedPeriodType,
     selectedStudentId,
     selectedReportPeriod,
     setSelectedPeriodLabel,
+    setSelectedPeriodType,
     setSelectedStudentId,
     studentOptions,
   }
